@@ -1,111 +1,116 @@
-# Attack Surface Analysis Cheat Sheet
+# 攻击面分析备忘录
 
-## What is Attack Surface Analysis and Why is it Important
+## 什么是攻击面分析，为什么它很重要
 
-This article describes a simple and pragmatic way of doing Attack Surface Analysis and managing an application's Attack Surface. It is targeted to be used by developers to understand and manage application security risks as they design and change an application, as well as by application security specialists doing a security risk assessment. The focus here is on protecting an application from external attack - it does not take into account attacks on the users or operators of the system (e.g. malware injection, social engineering attacks), and there is less focus on insider threats, although the principles remain the same. The internal attack surface is likely to be different from the external attack surface and some users may have a lot of access.
+本文描述了一种简单且务实的攻击面分析和管理应用程序攻击面的方法。它旨在帮助开发人员在设计和更改应用程序时理解和管理应用程序安全风险，同时也适用于进行安全风险评估的应用程序安全专家。本文重点关注保护应用程序免受外部攻击，不考虑针对系统用户或操作者的攻击（如恶意软件注入、社会工程攻击），对内部威胁的关注相对较少，尽管基本原则仍然相同。内部攻击面可能与外部攻击面不同，某些用户可能拥有大量访问权限。
 
-Attack Surface Analysis is about mapping out what parts of a system need to be reviewed and tested for security vulnerabilities. The point of Attack Surface Analysis is to understand the risk areas in an application, to make developers and security specialists aware of what parts of the application are open to attack, to find ways of minimizing this, and to notice when and how the Attack Surface changes and what this means from a risk perspective.
+攻击面分析是关于梳理系统中需要审查和测试安全漏洞的部分。攻击面分析的目的是：
 
-While Attack Surface Analysis is usually done by security architects and pen testers, developers should understand and monitor the Attack Surface as they design and build and change a system.
+1. 了解应用程序中的风险区域
+2. 使开发人员和安全专家意识到应用程序中哪些部分容易受到攻击
+3. 找到最小化这些风险的方法
+4. 注意攻击面何时以及如何变化，并评估其风险影响
 
-Attack Surface Analysis helps you to:
+虽然攻击面分析通常由安全架构师和渗透测试人员执行，但开发人员在设计、构建和更改系统时也应该理解和监控攻击面。
 
-1. identify what functions and what parts of the system you need to review/test for security vulnerabilities
-2. identify high risk areas of code that require defense-in-depth protection - what parts of the system that you need to defend
-3. identify when you have changed the attack surface and need to do some kind of threat assessment
+攻击面分析可以帮助您：
 
-## Defining the Attack Surface of an Application
+1. 识别需要审查/测试安全漏洞的功能和系统部分
+2. 识别需要深度防御保护的高风险代码区域
+3. 识别攻击面的变化，并需要进行某种威胁评估
 
-The Attack Surface describes all of the different points where an attacker could get into a system, and where they could get data out.
+## 定义应用程序的攻击面
 
-The Attack Surface of an application is:
+攻击面描述了攻击者可能进入系统和获取数据的所有不同点。
 
-1. the sum of all paths for data/commands into and out of the application, and
-2. the code that protects these paths (including resource connection and authentication, authorization, activity logging, data validation and encoding)
-3. all valuable data used in the application, including secrets and keys, intellectual property, critical business data, personal data and PII, and
-4. the code that protects these data (including encryption and checksums, access auditing, and data integrity and operational security controls).
+应用程序的攻击面包括：
 
-You overlay this model with the different types of users - roles, privilege levels - that can access the system (whether authorized or not). Complexity increases with the number of different types of users. It is important to focus on the two extremes: unauthenticated, anonymous users and highly privileged admin users (e.g. database administrators, system administrators).
+1. 进入和离开应用程序的所有数据/命令路径
+2. 保护这些路径的代码（包括资源连接、认证、授权、活动日志、数据验证和编码）
+3. 应用程序中使用的所有有价值的数据，包括秘密和密钥、知识产权、关键业务数据、个人数据和个人可识别信息（PII）
+4. 保护这些数据的代码（包括加密、校验和、访问审计以及数据完整性和操作安全控制）
 
-Group each type of attack point into buckets based on risk (external-facing or internal-facing), purpose, implementation, design and technology. Then, count the number of attack points of each type. Next, choose some cases for each type. Finally, focus your review/assessment on those cases.
+将此模型与可以访问系统的不同类型用户（角色、权限级别）叠加。复杂性随着不同类型用户数量的增加而增加。重点关注两个极端：未经身份验证的匿名用户和高权限管理员用户（如数据库管理员、系统管理员）。
 
-With this approach, you don't need to understand every endpoint in order to understand the Attack Surface and the potential risk profile of a system. Instead, you can count the different general type of endpoints and the number of points of each type. This enables you to budget what it will take to assess risk at scale, and you can tell when the risk profile of an application has significantly changed.
+根据风险（面向外部或面向内部）、目的、实现、设计和技术，将每种攻击点分组到不同的类别中。然后，计算每种类型的攻击点数量。接下来，为每种类型选择一些案例。最后，将审查/评估重点放在这些案例上。
 
-### Microservice and Cloud Native Applications
+通过这种方法，您无需了解每个端点就能理解系统的攻击面和潜在风险配置。相反，您可以计算不同类型端点的数量。这使您能够预算大规模风险评估所需的成本，并且可以判断应用程序的风险状况何时发生重大变化。
 
-Microservice and Cloud Native applications are comprised of multiple smaller components, loosely coupled using APIs and independently scalable. When assessing the attack surface for applications of this architectural style, you should prioritize the components that are reachable from an attack source (e.g. external traffic from the Internet). Such components may be located behind tiers of proxies, load balancers and ingress controllers, and may auto-scale without warning.
+### 微服务和云原生应用程序
 
-Open source tooling such as [Scope](https://github.com/weaveworks/scope) or [ThreatMapper](https://github.com/deepfence/ThreatMapper) assist in visualizing the attack surface.
+微服务和云原生应用程序由多个较小的组件组成，使用 API 松散耦合并可独立扩展。在评估这种架构风格的应用程序的攻击面时，应优先考虑可从攻击源（例如来自互联网的外部流量）访问的组件。这些组件可能位于代理、负载均衡器和入口控制器的多个层后面，并且可能在未经警告的情况下自动扩展。
 
-## Identifying and Mapping the Attack Surface
+开源工具如 [Scope](https://github.com/weaveworks/scope) 或 [ThreatMapper](https://github.com/deepfence/ThreatMapper) 可帮助可视化攻击面。
 
-You can start building a baseline description of the Attack Surface in a picture and notes. Spend a few hours reviewing design and architecture documents from an attacker's perspective. Read through the source code and identify different points of entry/exit:
+## 识别和映射攻击面
 
-- User interface (UI) forms and fields
-- HTTP headers and cookies
-- APIs
-- Files
-- Databases
-- Other local storage
-- Email or other kinds of messages
-- Runtime arguments
-- ...Your points of entry/exit
+您可以从图片和笔记开始构建攻击面的基准描述。花几个小时从攻击者的角度审查设计和架构文档。阅读源代码并识别不同的入口/出口点：
 
-The total number of different attack points can easily add up into the thousands or more. To make this manageable, break the model into different types based on function, design and technology:
+- 用户界面（UI）表单和字段
+- HTTP 头和 Cookie
+- API
+- 文件
+- 数据库
+- 其他本地存储
+- 电子邮件或其他类型的消息
+- 运行时参数
+- ...您的入口/出口点
 
-- Login/authentication entry points
-- Admin interfaces
-- Inquiries and search functions
-- Data entry (CRUD) forms
-- Business workflows
-- Transactional interfaces/APIs
-- Operational command and monitoring interfaces/APIs
-- Interfaces with other applications/systems
-- ...Your types
+不同攻击点的总数很容易达到数千个或更多。为了使其可管理，根据功能、设计和技术将模型划分为不同类型：
 
-You also need to identify the valuable data (e.g. confidential, sensitive, regulated) in the application, by interviewing developers and users of the system, and again by reviewing the source code.
+- 登录/身份验证入口点
+- 管理界面
+- 查询和搜索功能
+- 数据输入（CRUD）表单
+- 业务工作流
+- 事务性接口/API
+- 操作命令和监控接口/API
+- 与其他应用程序/系统的接口
+- ...您的类型
 
-You can also build up a picture of the Attack Surface by scanning the application. For web apps you can use a tool like the [OWASP ZAP](https://www.zaproxy.org/) or [Arachni](http://arachni-scanner.com/) or [Skipfish](http://code.google.com/p/skipfish/) or [w3af](https://docs.w3af.org) or one of the many commercial dynamic testing and vulnerability scanning tools or services to crawl your app and map the parts of the application that are accessible over the web. Some web application firewalls (WAFs) may also be able to export a model of the application's entry points.
+通过访谈开发人员和系统用户，并再次通过审查源代码，您还需要识别应用程序中有价值的数据（例如机密、敏感、受监管的数据）。
 
-Validate and fill in your understanding of the Attack Surface by walking through some of the main use cases in the system: signing up and creating a user profile, logging in, searching for an item, placing an order, changing an order, and so on. Follow the flow of control and data through the system, see how information is validated and where it is stored, what resources are touched and what other systems are involved. There is a recursive relationship between Attack Surface Analysis and [Application Threat Modeling](https://owasp.org/www-community/Application_Threat_Modeling): changes to the Attack Surface should trigger threat modeling, and threat modeling helps you to understand the Attack Surface of the application.
+您还可以通过扫描应用程序来构建攻击面的图像。对于 Web 应用程序，您可以使用 [OWASP ZAP](https://www.zaproxy.org/)、[Arachni](http://arachni-scanner.com/)、[Skipfish](http://code.google.com/p/skipfish/) 或 [w3af](https://docs.w3af.org) 等工具，或众多商业动态测试和漏洞扫描工具或服务来爬取您的应用程序并映射可通过 Web 访问的应用程序部分。某些 Web 应用程序防火墙（WAF）也可能能够导出应用程序入口点的模型。
 
-The Attack Surface model may be rough and incomplete to start, especially if you haven't done any security work on the application before. Fill in the holes as you dig deeper in a security analysis, or as you work more with the application and realize that your understanding of the Attack Surface has improved.
+通过演练系统中的一些主要用例来验证和填充您对攻击面的理解：注册和创建用户配置文件、登录、搜索项目、下单、更改订单等。跟踪系统中的控制和数据流，查看信息如何验证和存储，触及哪些资源，涉及哪些其他系统。攻击面分析和[应用程序威胁建模](https://owasp.org/www-community/Application_Threat_Modeling)之间存在递归关系：攻击面的变化应触发威胁建模，而威胁建模有助于理解应用程序的攻击面。
 
-## Measuring and Assessing the Attack Surface
+攻击面模型一开始可能是粗糙且不完整的，尤其是在您之前没有对应用程序进行任何安全工作的情况下。随着您在安全分析中深入挖掘，或者随着您更多地使用应用程序并意识到对攻击面的理解已经改进，逐步填补空白。
 
-Once you have a map of the Attack Surface, identify the high risk areas. Focus on remote entry points – interfaces with outside systems and to the Internet – and especially where the system allows anonymous, public access.
+## 测量和评估攻击面
 
-- Network-facing, especially internet-facing code
-- Web forms
-- Files from outside of the network
-- Backward compatible interfaces with other systems – old protocols, sometimes old code and libraries, hard to maintain and test multiple versions
-- Custom APIs – protocols etc – likely to have mistakes in design and implementation
-- Security code: anything to do with cryptography, authentication, authorization (access control) and session management
+一旦绘制出攻击面地图，就识别高风险区域。重点关注远程入口点 - 与外部系统和互联网的接口，尤其是系统允许匿名、公共访问的地方。
 
-These are often where you are most exposed to attack. Then understand what compensating controls you have in place, operational controls like network firewalls and application firewalls, and intrusion detection or prevention systems to help protect your application.
+- 面向网络，尤其是面向互联网的代码
+- Web 表单
+- 来自网络外部的文件
+- 与其他系统的向后兼容接口 - 旧协议、有时是旧代码和库，难以维护和测试多个版本
+- 自定义 API - 协议等 - 可能在设计和实现中存在错误
+- 安全代码：与加密、认证、授权（访问控制）和会话管理有关的任何内容
 
-Michael Howard at Microsoft and other researchers have developed a method for measuring the Attack Surface of an application, and to track changes to the Attack Surface over time, called the [Relative Attack Surface Quotient (RSQ)](https://www.cs.cmu.edu/~wing/publications/Howard-Wing03.pdf). Using this method you calculate an overall attack surface score for the system, and measure this score as changes are made to the system and to how it is deployed. Researchers at Carnegie Mellon built on this work to develop a formal way to calculate an [Attack Surface Metric](https://mlsec.info/pdf/tse11.pdf) for large systems like SAP. They calculate the Attack Surface as the sum of all entry and exit points, channels (the different ways that clients or external systems connect to the system, including TCP/UDP ports, RPC end points, named pipes...) and untrusted data elements. Then they apply a damage potential/effort ratio to these Attack Surface elements to identify high-risk areas.
+这些往往是您最容易受到攻击的地方。然后了解您已经部署的补偿性控制措施，如网络防火墙、应用程序防火墙，以及入侵检测或预防系统，以帮助保护您的应用程序。
 
-Note that deploying multiple versions of an application, leaving features in that are no longer used just in case they may be needed in the future, or leaving old backup copies and unused code increases the Attack Surface. Source code control and robust change management/configurations practices should be used to ensure the actual deployed Attack Surface matches the theoretical one as closely as possible.
+微软的 Michael Howard 和其他研究人员开发了一种测量应用程序攻击面的方法，称为[相对攻击面商数（RSQ）](https://www.cs.cmu.edu/~wing/publications/Howard-Wing03.pdf)，用于跟踪攻击面随时间的变化。使用这种方法，您可以计算系统的整体攻击面得分，并在系统和部署方式发生变化时测量该得分。卡内基梅隆的研究人员在此基础上开发了一种正式的方法，为 SAP 等大型系统计算[攻击面指标](https://mlsec.info/pdf/tse11.pdf)。他们将攻击面计算为所有入口和出口点、通道（客户端或外部系统连接到系统的不同方式，包括 TCP/UDP 端口、RPC 端点、命名管道...）和不受信任的数据元素的总和。然后，他们对这些攻击面元素应用损害潜力/努力比率，以识别高风险区域。
 
-Backups of code and data - online, and on offline media - are an important but often ignored part of a system's Attack Surface. Protecting your data and IP by writing secure software and hardening the infrastructure will all be wasted if you hand everything over to bad actors by not protecting your backups.
+请注意，部署多个应用程序版本，保留不再使用的功能以防将来可能需要，或保留旧备份副本和未使用的代码都会增加攻击面。应使用源代码控制和强大的变更管理/配置实践，确保实际部署的攻击面尽可能接近理论攻击面。
 
-## Managing the Attack Surface
+代码和数据的备份 - 在线和离线媒体 - 是系统攻击面的重要但常被忽视的部分。通过编写安全软件和加固基础设施来保护您的数据和知识产权，如果由于未保护备份而将所有内容交给不良行为者，这一切都将付之东流。
 
-Once you have a baseline understanding of the Attack Surface, you can use it to incrementally identify and manage risks going forward as you make changes to the application. Ask yourself:
+## 管理攻击面
 
-- What has changed?
-- What are you doing different? (technology, new approach, ….)
-- What holes could you have opened?
+一旦建立了对攻击面的基准理解，您可以在对应用程序进行更改时逐步识别和管理未来的风险。问问自己：
 
-The first web page that you create opens up the system's Attack Surface significantly and introduces all kinds of new risks. If you add another field to that page, or another web page like it, while technically you have made the Attack Surface bigger, you haven't increased the risk profile of the application in a meaningful way. Each of these incremental changes is more of the same, unless you follow a new design or use a new framework.
+- 发生了什么变化？
+- 您在做什么不同的事情？（技术、新方法等）
+- 您可能打开了哪些漏洞？
 
-If you add another web page that follows the same design and using the same technology as existing web pages, it's easy to understand how much security testing and review it needs. If you add a new web services API or file that can be uploaded from the Internet, each of these changes have a different risk profile again - see if the change fits in an existing bucket, see if the existing controls and protections apply. If you're adding something that doesn't fall into an existing bucket, this means that you have to go through a more thorough risk assessment to understand what kind of security holes you may open and what protections you need to put in place.
+您创建的第一个网页显著地打开了系统的攻击面，并引入了各种新风险。如果您在该页面添加另一个字段，或者添加类似的另一个网页，从技术上讲，您已经扩大了攻击面，但并未以有意义的方式增加应用程序的风险状况。除非您遵循新的设计或使用新框架，否则这些增量更改都是类似的。
 
-Changes to session management, authentication and password management directly affect the Attack Surface and need to be reviewed. So do changes to authorization and access control logic, especially adding or changing role definitions, adding admin users or admin functions with high privileges. Similarly for changes to the code that handles encryption and secrets. Fundamental changes to how data validation is done. And major architectural changes to layering and trust relationships, or fundamental changes in technical architecture – swapping out your web server or database platform, or changing the runtime operating system.
+如果您添加的新网页遵循现有网页的相同设计和技术，很容易理解它需要多少安全测试和审查。如果您添加新的 Web 服务 API 或可从互联网上传的文件，每个这样的更改都有不同的风险状况 - 查看更改是否符合现有类别，现有的控制和保护是否适用。如果您添加的内容不属于现有类别，这意味着您必须进行更彻底的风险评估，以了解可能打开哪些安全漏洞以及需要采取哪些保护措施。
 
-As you add new user types or roles or privilege levels, you do the same kind of analysis and risk assessment. Overlay the type of access across the data and functions and look for problems and inconsistencies. It's important to understand the access model for the application, whether it is positive (access is deny by default) or negative (access is allow by default). In a positive access model, any mistakes in defining what data or functions are permitted to a new user type or role are easy to see. In a negative access model, you have to be much more careful to ensure that a user does not get access to data/functions that they should not be permitted to.
+对会话管理、认证和密码管理的更改直接影响攻击面，需要进行审查。对授权和访问控制逻辑的更改也是如此，尤其是添加或更改角色定义、添加具有高权限的管理员用户或管理员功能。同样适用于处理加密和秘密的代码更改。以及对数据验证方式的基本更改。对分层和信任关系的主要架构更改，或技术架构的基本更改 - 更换 Web 服务器或数据库平台，或更改运行时操作系统。
 
-This kind of threat or risk assessment can be done periodically, or as a part of design work in serial / phased / spiral / waterfall development projects, or continuously and incrementally in Agile / iterative development.
+随着您添加新的用户类型、角色或权限级别，进行相同类型的分析和风险评估。将访问类型叠加到数据和功能上，查找问题和不一致之处。重要的是要理解应用程序的访问模型，是正向（默认拒绝访问）还是反向（默认允许访问）。在正向访问模型中，定义对新用户类型或角色的数据或功能权限时的任何错误都很容易发现。在反向访问模型中，您必须更加小心，确保用户不会获得不应被允许的数据/功能的访问权限。
 
-Normally, an application's Attack Surface will increase over time as you add more interfaces and user types and integrate with other systems. You also want to look for ways to reduce the size of the Attack Surface when you can by simplifying the model (reducing the number of user levels for example or not storing confidential data that you don't absolutely have to), turning off features and interfaces that aren't being used, by introducing operational controls such as a Web Application Firewall (WAF) and real-time application-specific attack detection.
+这种威胁或风险评估可以定期进行，或作为串行/阶段/螺旋/瀑布开发项目的设计工作的一部分，或在敏捷/迭代开发中持续且增量地进行。
+
+通常，随着添加更多接口、用户类型和与其他系统集成，应用程序的攻击面会随时间增加。您还希望寻找通过简化模型（例如减少用户级别数量）、关闭未使用的功能和接口来减小攻击面的方法，通过引入操作控制（如 Web 应用程序防火墙（WAF）和实时应用程序特定攻击检测）。
