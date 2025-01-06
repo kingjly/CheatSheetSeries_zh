@@ -1,126 +1,126 @@
-# Authentication Cheat Sheet
+# 身份认证备忘录
 
-## Introduction
+## 引言
 
-**Authentication** (**AuthN**) is the process of verifying that an individual, entity, or website is who or what it claims to be by determining the validity of one or more authenticators (like passwords, fingerprints, or security tokens) that are used to back up this claim.
+**身份认证**（**AuthN**）是通过验证一个或多个身份验证器（如密码、指纹或安全令牌）的有效性，来确认个人、实体或网站是其声称的身份的过程。
 
-**Digital Identity** is the unique representation of a subject engaged in an online transaction. A digital identity is always unique in the context of a digital service but does not necessarily need to be traceable back to a specific real-life subject.
+**数字身份**是参与在线交易的主体的唯一表示。数字身份在数字服务的上下文中始终是唯一的，但不一定需要可追溯到特定的现实生活主体。
 
-**Identity Proofing** establishes that a subject is actually who they claim to be. This concept is related to KYC concepts and it aims to bind a digital identity with a real person.
+**身份验证**旨在确立主体确实是其声称的身份。这个概念与了解客户（KYC）的概念相关，其目标是将数字身份与真实的人绑定。
 
-**Session Management** is a process by which a server maintains the state of an entity interacting with it. This is required for a server to remember how to react to subsequent requests throughout a transaction. Sessions are maintained on the server by a session identifier which can be passed back and forth between the client and server when transmitting and receiving requests. Sessions should be unique per user and computationally very difficult to predict. The [Session Management Cheat Sheet](Session_Management_Cheat_Sheet.md) contains further guidance on the best practices in this area.
+**会话管理**是服务器维护与其交互的实体状态的过程。这要求服务器在整个事务过程中记住如何响应后续请求。会话通过会话标识符在服务器上维护，该标识符可以在客户端和服务器之间来回传递以发送和接收请求。会话应该对每个用户是唯一的，并且在计算上极难预测。[会话管理备忘录](Session_Management_Cheat_Sheet.md)包含了该领域的最佳实践指南。
 
-## Authentication General Guidelines
+## 身份认证通用指南
 
-### User IDs
+### 用户 ID
 
-The primary function of a User ID is to uniquely identify a user within a system. Ideally, User IDs should be randomly generated to prevent the creation of predictable or sequential IDs, which could pose a security risk, especially in systems where User IDs might be exposed or inferred from external sources.
+用户 ID 的主要功能是在系统中唯一标识用户。理想情况下，用户 ID 应该随机生成，以防止创建可预测或连续的 ID，这可能构成安全风险，尤其是在用户 ID 可能暴露或从外部来源推断的系统中。
 
-### Usernames
+### 用户名
 
-Usernames are easy-to-remember identifiers chosen by the user and used for identifying themselves when logging into a system or service. The terms User ID and username might be used interchangeably if the username chosen by the user also serves as their unique identifier within the system.
+用户名是用户选择的易于记忆的标识符，用于在登录系统或服务时识别自己。如果用户选择的用户名也作为其在系统中的唯一标识符，则用户 ID 和用户名这两个术语可能会互换使用。
 
-Users should be permitted to use their email address as a username, provided the email is verified during signup. Additionally, they should have the option to choose a username other than an email address. For information on validating email addresses, please visit the [input validation cheatsheet email discussion](Input_Validation_Cheat_Sheet.md#email-address-validation).
+用户应该被允许使用其电子邮件地址作为用户名，前提是在注册期间验证了电子邮件。此外，他们应该有选择除电子邮件地址之外的用户名的选项。关于验证电子邮件地址的更多信息，请访问[输入验证备忘录中的电子邮件讨论](Input_Validation_Cheat_Sheet.md#email-address-validation)。
 
-### Authentication Solution and Sensitive Accounts
+### 身份认证解决方案和敏感账户
 
-- Do **NOT** allow login with sensitive accounts (i.e. accounts that can be used internally within the solution such as to a back-end / middle-ware / DB) to any front-end user interface
-- Do **NOT** use the same authentication solution (e.g. IDP / AD) used internally for unsecured access (e.g. public access / DMZ)
+- **不要**允许使用敏感账户（即在解决方案内部使用的账户，如后端/中间件/数据库）登录任何前端用户界面
+- **不要**对不安全访问（如公共访问/DMZ）使用内部使用的相同身份认证解决方案（如身份提供者/活动目录）
 
-### Implement Proper Password Strength Controls
+### 实施适当的密码强度控制
 
-A key concern when using passwords for authentication is password strength. A "strong" password policy makes it difficult or even improbable for one to guess the password through either manual or automated means. The following characteristics define a strong password:
+使用密码进行身份认证时，密码强度是一个关键考虑因素。"强"密码策略使得通过手动或自动方式猜测密码变得困难甚至不可能。以下特征定义了强密码：
 
-- Password Length
-    - **Minimum** length of the passwords should be **enforced** by the application. Passwords **shorter than 8 characters** are considered to be weak ([NIST SP800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html)).
-    - **Maximum** password length should be **at least 64 characters** to allow passphrases ([NIST SP800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html)). Note that certain implementations of hashing algorithms may cause [long password denial of service](https://www.acunetix.com/vulnerabilities/web/long-password-denial-of-service/).
-- Do not silently truncate passwords. The [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md#maximum-password-lengths) provides further guidance on how to handle passwords that are longer than the maximum length.
-- Allow usage of **all** characters including unicode and whitespace. There should be no password composition rules limiting the type of characters permitted. There should be no requirement for upper or lower case or numbers or special characters.
-- Ensure credential rotation when a password leak occurs, or at the time of compromise identification.
-- Include a password strength meter to help users create a more complex password and block common and previously breached passwords
-    - [zxcvbn-ts library](https://github.com/zxcvbn-ts/zxcvbn) can be used for this purpose.
-    - [Pwned Passwords](https://haveibeenpwned.com/Passwords) is a service where passwords can be checked against previously breached passwords. You can host it yourself or use the [API](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+- 密码长度
+    - 应用程序应**强制执行**密码的**最小**长度。**少于8个字符**的密码被认为是弱密码（[NIST SP800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html)）。
+    - 密码的**最大**长度应**至少为64个字符**，以允许使用通行短语（[NIST SP800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html)）。请注意，某些哈希算法的实现可能导致[长密码拒绝服务](https://www.acunetix.com/vulnerabilities/web/long-password-denial-of-service/)。
+- 不要静默截断密码。[密码存储备忘录](Password_Storage_Cheat_Sheet.md#maximum-password-lengths)提供了关于如何处理超过最大长度的密码的进一步指导。
+- 允许使用**所有**字符，包括 Unicode 和空白。不应有限制允许字符类型的密码组成规则。不应要求大小写、数字或特殊字符。
+- 在发生密码泄露或识别到泄露时，确保凭据轮换。
+- 包含密码强度计，帮助用户创建更复杂的密码并阻止常见和之前已泄露的密码
+    - 可以使用 [zxcvbn-ts 库](https://github.com/zxcvbn-ts/zxcvbn) 实现此目的。
+    - [Pwned Passwords](https://haveibeenpwned.com/Passwords) 是一个可以检查密码是否已被泄露的服务。您可以自行托管或使用 [API](https://haveibeenpwned.com/API/v3#PwnedPasswords)。
 
-#### For more detailed information check
+#### 更多详细信息请查看
 
-- [ASVS v4.0 Password Security Requirements](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x11-V2-Authentication.md#v21-password-security-requirements)
-- [Passwords Evolved: Authentication Guidance for the Modern Era](https://www.troyhunt.com/passwords-evolved-authentication-guidance-for-the-modern-era/)
+- [ASVS v4.0 密码安全要求](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x11-V2-Authentication.md#v21-password-security-requirements)
+- [密码演进：现代时代的身份认证指南](https://www.troyhunt.com/passwords-evolved-authentication-guidance-for-the-modern-era/)
 
-### Implement Secure Password Recovery Mechanism
+### 实施安全的密码恢复机制
 
-It is common for an application to have a mechanism that provides a means for a user to gain access to their account in the event they forget their password. Please see [Forgot Password Cheat Sheet](Forgot_Password_Cheat_Sheet.md) for details on this feature.
+应用程序通常会提供一种机制，使用户在忘记密码时能够重新访问其账户。有关此功能的详细信息，请参见[忘记密码备忘录](Forgot_Password_Cheat_Sheet.md)。
 
-### Store Passwords in a Secure Fashion
+### 安全地存储密码
 
-It is critical for an application to store a password using the right cryptographic technique. Please see [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md) for details on this feature.
+对于应用程序来说，使用正确的加密技术存储密码至关重要。有关此功能的详细信息，请参见[密码存储备忘录](Password_Storage_Cheat_Sheet.md)。
 
-### Compare Password Hashes Using Safe Functions
+### 使用安全函数比较密码哈希
 
-Where possible, the user-supplied password should be compared to the stored password hash using a secure password comparison function provided by the language or framework, such as the [password_verify()](https://www.php.net/manual/en/function.password-verify.php) function in PHP. Where this is not possible, ensure that the comparison function:
+在可能的情况下，应使用语言或框架提供的安全密码比较函数（如 PHP 中的 [password_verify()](https://www.php.net/manual/en/function.password-verify.php) 函数）将用户提供的密码与存储的密码哈希进行比较。如果无法做到这一点，请确保比较函数：
 
-- Has a maximum input length, to protect against denial of service attacks with very long inputs.
-- Explicitly sets the type of both variables, to protect against type confusion attacks such as [Magic Hashes](https://www.whitehatsec.com/blog/magic-hashes/) in PHP.
-- Returns in constant time, to protect against timing attacks.
+- 具有最大输入长度，以防止使用非常长的输入进行拒绝服务攻击。
+- 显式设置两个变量的类型，以防止类型混淆攻击，如 PHP 中的[魔术哈希](https://www.whitehatsec.com/blog/magic-hashes/)。
+- 以恒定时间返回，以防止时间攻击。
 
-### Change Password Feature
+### 更改密码功能
 
-When developing a change password feature, ensure to have:
+在开发更改密码功能时，确保：
 
-- User is authenticated with active session.
-- Current password verification. This is to ensure that it's the legitimate user who is changing the password. The abuse case is this: a legitimate user is using a public computer to log in. This user forgets to log out. Then another person is using this public computer. If we don't verify the current password, this other person may be able to change the password.
+- 用户已通过活动会话进行身份认证。
+- 验证当前密码。这是为了确保是合法用户在更改密码。滥用场景是：合法用户在公共计算机上登录。该用户忘记退出。然后另一个人使用这台公共计算机。如果我们不验证当前密码，这个人可能能够更改密码。
 
-### Transmit Passwords Only Over TLS or Other Strong Transport
+### 仅通过 TLS 或其他强传输传输密码
 
-See: [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md)
+参见：[传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)
 
-The login page and all subsequent authenticated pages must be exclusively accessed over TLS or other strong transport. Failure to utilize TLS or other strong transport for the login page allows an attacker to modify the login form action, causing the user's credentials to be posted to an arbitrary location. Failure to utilize TLS or other strong transport for authenticated pages after login enables an attacker to view the unencrypted session ID and compromise the user's authenticated session.
+登录页面和所有后续经过身份认证的页面必须仅通过 TLS 或其他强传输访问。未能为登录页面使用 TLS 或其他强传输允许攻击者修改登录表单操作，导致用户凭据被发布到任意位置。未能为登录后的经过身份认证的页面使用 TLS 或其他强传输使攻击者能够查看未加密的会话 ID 并破坏用户的经过身份认证的会话。
 
-### Require Re-authentication for Sensitive Features
+### 对敏感功能要求重新认证
 
-In order to mitigate CSRF and session hijacking, it's important to require the current credentials for an account before updating sensitive account information such as the user's password or email address -- or before sensitive transactions, such as shipping a purchase to a new address. Without this countermeasure, an attacker may be able to execute sensitive transactions through a CSRF or XSS attack without needing to know the user's current credentials. Additionally, an attacker may get temporary physical access to a user's browser or steal their session ID to take over the user's session.
+为了缓解 CSRF 和会话劫持，在更新敏感的账户信息（如用户的密码或电子邮件地址）或进行敏感交易（如将购买发送到新地址）之前，要求提供账户的当前凭据非常重要。没有这种对策，攻击者可能通过 CSRF 或 XSS 攻击执行敏感交易，而无需知道用户的当前凭据。此外，攻击者可能获得用户浏览器的临时物理访问权或窃取其会话 ID 以接管用户会话。
 
-### Consider Strong Transaction Authentication
+### 考虑强事务认证
 
-Some applications should use a second factor to check whether a user may perform sensitive operations. For more information, see the [Transaction Authorization Cheat Sheet](Transaction_Authorization_Cheat_Sheet.md).
+某些应用程序应使用第二因素来检查用户是否可以执行敏感操作。更多信息，请参见[事务授权备忘录](Transaction_Authorization_Cheat_Sheet.md)。
 
-#### TLS Client Authentication
+#### TLS 客户端认证
 
-TLS Client Authentication, also known as two-way TLS authentication, consists of both, browser and server, sending their respective TLS certificates during the TLS handshake process. Just as you can validate the authenticity of a server by using the certificate and asking a verifiably-valid Certificate Authority (CA) if the certificate is valid, the server can authenticate the user by receiving a certificate from the client and validating against a third-party CA or its own CA. To do this, the server must provide the user with a certificate generated specifically for him, assigning values to the subject so that these can be used to determine what user the certificate should validate. The user installs the certificate on a browser and now uses it for the website.
+TLS 客户端认证，也称为双向 TLS 认证，包括浏览器和服务器在 TLS 握手过程中发送各自的 TLS 证书。就像通过使用证书并询问可验证的有效证书颁发机构（CA）证书是否有效来验证服务器的真实性一样，服务器可以通过接收来自客户端的证书并针对第三方 CA 或其自身 CA 进行验证来认证用户。为此，服务器必须为用户提供专门为其生成的证书，为主题分配值，以便可以用于确定证书应验证哪个用户。用户在浏览器上安装证书，现在将其用于网站。
 
-It is a good idea to do this when:
+在以下情况下使用这种方法是个好主意：
 
-- It is acceptable (or even preferred) that the user has access to the website only from a single computer/browser.
-- The user is not easily scared by the process of installing TLS certificates on his browser, or there will be someone, probably from IT support, who will do this for the user.
-- The website requires an extra step of security.
-- It is also a good thing to use when the website is for an intranet of a company or organization.
+- 用户仅从单台计算机/浏览器访问网站是可接受的（甚至是首选）。
+- 用户不会被在浏览器上安装 TLS 证书的过程吓倒，或者会有人（可能是 IT 支持）为用户执行此操作。
+- 网站需要额外的安全步骤。
+- 在公司或组织的内部网站上使用也是个好主意。
 
-It is generally not a good idea to use this method for widely and publicly available websites that will have an average user. For example, it wouldn't be a good idea to implement this for a website like Facebook. While this technique can prevent the user from having to type a password (thus protecting against an average keylogger from stealing it), it is still considered a good idea to consider using both a password and TLS client authentication combined.
+对于广泛和公开可用的网站（将拥有普通用户），通常不建议使用此方法。例如，在像 Facebook 这样的网站上实施这种方法并不是个好主意。虽然这种技术可以防止用户输入密码（从而防止普通键盘记录器窃取），但仍然建议考虑同时使用密码和 TLS 客户端认证。
 
-Additionally, if the client is behind an enterprise proxy that performs SSL/TLS decryption, this will break certificate authentication unless the site is allowed on the proxy.
+另外，如果客户端位于执行 SSL/TLS 解密的企业代理后面，除非在代理上允许该站点，否则这将破坏证书认证。
 
-For more information, see: [Client-authenticated TLS handshake](https://en.wikipedia.org/wiki/Transport_Layer_Security#Client-authenticated_TLS_handshake)
+更多信息，请参见：[客户端认证的 TLS 握手](https://en.wikipedia.org/wiki/Transport_Layer_Security#Client-authenticated_TLS_handshake)
 
-### Authentication and Error Messages
+### 身份认证和错误消息
 
-Incorrectly implemented error messages in the case of authentication functionality can be used for the purposes of user ID and password enumeration. An application should respond (both HTTP and HTML) in a generic manner.
+身份认证功能中错误实现的错误消息可用于用户 ID 和密码枚举。应用程序应以通用方式响应（包括 HTTP 和 HTML）。
 
-#### Authentication Responses
+#### 身份验证响应
 
-Using any of the authentication mechanisms (login, password reset, or password recovery), an application must respond with a generic error message regardless of whether:
+使用任何身份验证机制（登录、密码重置或密码恢复），应用程序必须返回一个通用的错误消息，无论是否出现以下情况：
 
-- The user ID or password was incorrect.
-- The account does not exist.
-- The account is locked or disabled.
+- 用户 ID 或密码不正确。
+- 账户不存在。
+- 账户被锁定或禁用。
 
-The account registration feature should also be taken into consideration, and the same approach of a generic error message can be applied regarding the case in which the user exists.
+还应考虑用户注册功能，对于用户已存在的情况，也可以应用相同的通用错误消息方法。
 
-The objective is to prevent the creation of a [discrepancy factor](https://cwe.mitre.org/data/definitions/204.html), allowing an attacker to mount a user enumeration action against the application.
+目的是防止创建[差异因素](https://cwe.mitre.org/data/definitions/204.html)，阻止攻击者对应用程序进行用户枚举攻击。
 
-It is interesting to note that the business logic itself can bring a discrepancy factor related to the processing time taken. Indeed, depending on the implementation, the processing time can be significantly different according to the case (success vs failure) allowing an attacker to mount a [time-based attack](https://en.wikipedia.org/wiki/Timing_attack) (delta of some seconds for example).
+值得注意的是，业务逻辑本身可能会带来与处理时间相关的差异因素。事实上，根据实现方式的不同，处理时间可能会因成功和失败的情况而显著不同，从而允许攻击者发起[基于时间的攻击](https://en.wikipedia.org/wiki/Timing_attack)（例如，几秒钟的时间差）。
 
-Example using pseudo-code for a login feature:
+使用伪代码的登录功能示例：
 
-- First implementation using the "quick exit" approach
+- 使用"快速退出"方法的第一种实现
 
 ```text
 IF USER_EXISTS(username) THEN
@@ -134,9 +134,9 @@ ELSE
 ENDIF
 ```
 
-It can be clearly seen that if the user doesn't exist, the application will directly throw an error. Otherwise, when the user exists and the password doesn't, it is apparent that there will be more processing before the application errors out. In return, the response time will be different for the same error, allowing the attacker to differentiate between a wrong username and a wrong password.
+可以清楚地看出，如果用户不存在，应用程序将直接抛出错误。而当用户存在但密码不正确时，在返回错误之前会有更多的处理过程。因此，响应时间对于相同的错误会有所不同，使攻击者能够区分错误的用户名和错误的密码。
 
-- Second implementation without relying on the "quick exit" approach:
+- 不依赖"快速退出"方法的第二种实现：
 
 ```text
 password_hash=HASH(password)
@@ -146,209 +146,209 @@ IF NOT IS_VALID THEN
 ENDIF
 ```
 
-This code will go through the same process no matter what the user or the password is, allowing the application to return in approximately the same response time.
+这段代码无论用户名或密码是什么，都会经历相同的处理过程，使应用程序能够在大致相同的响应时间内返回结果。
 
-The problem with returning a generic error message for the user is a User Experience (UX) matter. A legitimate user might feel confused with the generic messages, thus making it hard for them to use the application, and might after several retries, leave the application because of its complexity. The decision to return a *generic error message* can be determined based on the criticality of the application and its data. For example, for critical applications, the team can decide that under the failure scenario, a user will always be redirected to the support page and a *generic error message* will be returned.
+对于返回通用错误消息，用户体验（UX）是一个需要考虑的问题。合法用户可能会对通用消息感到困惑，这会使他们难以使用应用程序，并且在多次重试后可能会因复杂性而放弃应用程序。返回*通用错误消息*的决定可以根据应用程序及其数据的关键程度来确定。例如，对于关键应用程序，团队可以决定在失败场景下，用户将始终被重定向到支持页面，并返回*通用错误消息*。
 
-Regarding the user enumeration itself, protection against [brute-force attacks](#protect-against-automated-attacks) is also effective because it prevents an attacker from applying the enumeration at scale. Usage of [CAPTCHA](https://en.wikipedia.org/wiki/CAPTCHA) can be applied to a feature for which a *generic error message* cannot be returned because the *user experience* must be preserved.
+关于用户枚举本身，[防止暴力破解攻击](#防止自动化攻击)也很有效，因为它可以防止攻击者大规模地进行枚举。可以在无法返回*通用错误消息*且必须保留*用户体验*的功能上应用[验证码](https://en.wikipedia.org/wiki/CAPTCHA)。
 
-##### Incorrect and correct response examples
+##### 不正确和正确的响应示例
 
-###### Login
+###### 登录
 
-Incorrect response examples:
+不正确的响应示例：
 
-- "Login for User foo: invalid password."
-- "Login failed, invalid user ID."
-- "Login failed; account disabled."
-- "Login failed; this user is not active."
+- "用户 foo 登录：密码无效。"
+- "登录失败，无效的用户 ID。"
+- "登录失败；账户已禁用。"
+- "登录失败；此用户未激活。"
 
-Correct response example:
+正确的响应示例：
 
-- "Login failed; Invalid user ID or password."
+- "登录失败；无效的用户 ID 或密码。"
 
-###### Password recovery
+###### 密码恢复
 
-Incorrect response examples:
+不正确的响应示例：
 
-- "We just sent you a password reset link."
-- "This email address doesn't exist in our database."
+- "我们刚刚向您发送了密码重置链接。"
+- "此电子邮件地址在我们的数据库中不存在。"
 
-Correct response example:
+正确的响应示例：
 
-- "If that email address is in our database, we will send you an email to reset your password."
+- "如果该电子邮件地址在我们的数据库中，我们将向您发送重置密码的邮件。"
 
-###### Account creation
+###### 账户创建
 
-Incorrect response examples:
+不正确的响应示例：
 
-- "This user ID is already in use."
-- "Welcome! You have signed up successfully."
+- "此用户 ID 已被使用。"
+- "欢迎！您已成功注册。"
 
-Correct response example:
+正确的响应示例：
 
-- "A link to activate your account has been emailed to the address provided."
+- "激活账户的链接已发送到您提供的邮件地址。"
 
-##### Error Codes and URLs
+##### 错误代码和 URL
 
-The application may return a different [HTTP Error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) depending on the authentication attempt response. It may respond with a 200 for a positive result and a 403 for a negative result. Even though a generic error page is shown to a user, the HTTP response code may differ which can leak information about whether the account is valid or not.
+应用程序可能根据身份验证尝试的响应返回不同的 [HTTP 错误代码](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)。对于正面结果可能返回 200，对于负面结果可能返回 403。即使向用户显示通用错误页面，HTTP 响应代码可能不同，这可能泄露账户是否有效的信息。
 
-Error disclosure can also be used as a discrepancy factor, consult the [error handling cheat sheet](Error_Handling_Cheat_Sheet.md) regarding the global handling of different errors in an application.
+错误披露也可以作为差异因素，请查阅[错误处理备忘录](Error_Handling_Cheat_Sheet.md)，了解应用程序中不同错误的全局处理方法。
 
-### Protect Against Automated Attacks
+### 防止自动化攻击
 
-There are a number of different types of automated attacks that attackers can use to try and compromise user accounts. The most common types are listed below:
+攻击者可以使用多种不同类型的自动化攻击来尝试破坏用户账户。下面列出了最常见的类型：
 
-| Attack Type | Description |
+| 攻击类型 | 描述 |
 |-------------|-------------|
-| Brute Force | Testing multiple passwords from a dictionary or other source against a single account. |
-| Credential Stuffing | Testing username/password pairs obtained from the breach of another site. |
-| Password Spraying | Testing a single weak password against a large number of different accounts.|
+| 暴力破解 | 针对单个账户测试来自字典或其他来源的多个密码。 |
+| 凭证填充 | 测试从另一个网站泄露的用户名/密码组合。 |
+| 密码喷洒 | 对大量不同账户测试单个弱密码。|
 
-Different protection mechanisms can be implemented to protect against these attacks. In many cases, these defenses do not provide complete protection, but when a number of them are implemented in a defense-in-depth approach, a reasonable level of protection can be achieved.
+可以实施不同的保护机制来防御这些攻击。在许多情况下，这些防御并不能提供完全保护，但当采用深度防御方法实施多种防御时，可以达到合理的保护水平。
 
-The following sections will focus primarily on preventing brute-force attacks, although these controls can also be effective against other types of attacks. For further guidance on defending against credential stuffing and password spraying, see the [Credential Stuffing Cheat Sheet](Credential_Stuffing_Prevention_Cheat_Sheet.md).
+以下章节将主要关注防止暴力破解攻击，尽管这些控制措施对其他类型攻击也有效。关于防御凭证填充和密码喷洒的进一步指导，请参见[凭证填充防御备忘录](Credential_Stuffing_Prevention_Cheat_Sheet.md)。
 
-#### Multi-Factor Authentication
+#### 多因素认证
 
-Multi-factor authentication (MFA) is by far the best defense against the majority of password-related attacks, including brute-force attacks, with analysis by Microsoft suggesting that it would have stopped [99.9% of account compromises](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984). As such, it should be implemented wherever possible; however, depending on the audience of the application, it may not be practical or feasible to enforce the use of MFA.
+多因素认证（MFA）是防御大多数与密码相关攻击的最佳防御手段，包括暴力破解攻击。微软的分析表明，MFA 可以阻止 [99.9% 的账户入侵](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984)。因此，应尽可能实施；但是，根据应用程序的目标用户，强制使用 MFA 可能并不实际或可行。
 
-The [Multifactor Authentication Cheat Sheet](Multifactor_Authentication_Cheat_Sheet.md) contains further guidance on implementing MFA.
+[多因素认证备忘录](Multifactor_Authentication_Cheat_Sheet.md)包含了实施 MFA 的进一步指导。
 
-#### Login Throttling
+#### 登录限流
 
-Login Throttling is a protocol used to prevent an attacker from making too many attempts at guessing a password through normal interactive means, it includes:
+登录限流是一种防止攻击者通过正常交互方式猜测密码的协议，包括：
 
-- Maximum number of attempts.
+- 最大尝试次数。
 
-##### Account Lockout
+##### 账户锁定
 
-The most common protection against these attacks is to implement account lockout, which prevents any more login attempts for a period after a certain number of failed logins.
+防御这些攻击最常见的方法是实施账户锁定，即在一定数量的登录失败后，在一段时间内阻止任何登录尝试。
 
-The counter of failed logins should be associated with the account itself, rather than the source IP address, in order to prevent an attacker from making login attempts from a large number of different IP addresses. There are a number of different factors that should be considered when implementing an account lockout policy in order to find a balance between security and usability:
+失败登录次数的计数器应与账户本身关联，而不是源 IP 地址，以防止攻击者从大量不同 IP 地址发起登录尝试。在实施账户锁定策略时，需要考虑多个因素，以在安全性和可用性之间找到平衡：
 
-- The number of failed attempts before the account is locked out (lockout threshold).
-- The time period that these attempts must occur within (observation window).
-- How long the account is locked out for (lockout duration).
+- 锁定前的失败尝试次数（锁定阈值）。
+- 这些尝试必须发生的时间段（观察窗口）。
+- 账户被锁定的时长（锁定持续时间）。
 
-Rather than implementing a fixed lockout duration (e.g., ten minutes), some applications use an exponential lockout, where the lockout duration starts as a very short period (e.g., one second), but doubles after each failed login attempt.
+与实施固定锁定持续时间（例如十分钟）不同，一些应用程序使用指数锁定，即锁定持续时间从很短的时间（例如一秒）开始，并在每次失败登录尝试后成倍增加。
 
-- Amount of time to delay after each account lockout (max 2-3, after that permanent account lockout).
+- 每次账户锁定后延迟的时间（最多 2-3 次，之后永久锁定账户）。
 
-When designing an account lockout system, care must be taken to prevent it from being used to cause a denial of service by locking out other users' accounts. One way this could be performed is to allow the user of the forgotten password functionality to log in, even if the account is locked out.
+在设计账户锁定系统时，必须小心防止其被用于对其他用户账户进行拒绝服务攻击。一种方法是允许使用忘记密码功能的用户登录，即使账户已被锁定。
 
-#### CAPTCHA
+#### 验证码
 
-The use of an effective CAPTCHA can help to prevent automated login attempts against accounts. However, many CAPTCHA implementations have weaknesses that allow them to be solved using automated techniques or can be outsourced to services that can solve them. As such, the use of CAPTCHA should be viewed as a defense-in-depth control to make brute-force attacks more time-consuming and expensive, rather than as a preventative.
+使用有效的验证码可以帮助防止针对账户的自动化登录尝试。然而，许多验证码实现存在弱点，可以通过自动技术解决，或者可以外包给可以解决验证码的服务。因此，验证码的使用应被视为深度防御控制，使暴力破解攻击更加耗时和昂贵，而不是完全的预防措施。
 
-It may be more user-friendly to only require a CAPTCHA be solved after a small number of failed login attempts, rather than requiring it from the very first login.
+可能对用户更友好的做法是，仅在少量登录失败后要求解决验证码，而不是从第一次登录就要求。
 
-#### Security Questions and Memorable Words
+#### 安全问题和记忆词
 
-The addition of a security question or memorable word can also help protect against automated attacks, especially when the user is asked to enter a number of randomly chosen characters from the word. It should be noted that this does **not** constitute multi-factor authentication, as both factors are the same (something you know). Furthermore, security questions are often weak and have predictable answers, so they must be carefully chosen. The [Choosing and Using Security Questions cheat sheet](Choosing_and_Using_Security_Questions_Cheat_Sheet.md) contains further guidance on this.
+添加安全问题或记忆词也可以帮助防御自动化攻击，尤其是在要求用户输入词中随机选择的字符时。需要注意的是，这**不**构成多因素认证，因为两个因素都是相同的（知道的事物）。此外，安全问题通常较弱且答案可预测，因此必须谨慎选择。[选择和使用安全问题备忘录](Choosing_and_Using_Security_Questions_Cheat_Sheet.md)包含了进一步的指导。
 
-## Logging and Monitoring
+## 日志记录和监控
 
-Enable logging and monitoring of authentication functions to detect attacks/failures on a real-time basis
+启用身份验证功能的日志记录和监控，以实时检测攻击/失败
 
-- Ensure that all failures are logged and reviewed
-- Ensure that all password failures are logged and reviewed
-- Ensure that all account lockouts are logged and reviewed
+- 确保记录和审查所有失败情况
+- 确保记录和审查所有密码失败情况
+- 确保记录和审查所有账户锁定情况
 
-## Use of authentication protocols that require no password
+## 使用无需密码的身份验证协议
 
-While authentication through a combination of username, password, and multi-factor authentication is considered generally secure, there are use cases where it isn't considered the best option or even safe. Examples of this are third-party applications that desire to connect to the web application, either from a mobile device, another website, desktop, or other situations. When this happens, it is NOT considered safe to allow the third-party application to store the user/password combo, since then it extends the attack surface into their hands, where it isn't in your control. For this and other use cases, there are several authentication protocols that can protect you from exposing your users' data to attackers.
+虽然通过用户名、密码和多因素认证的组合进行身份验证通常被认为是安全的，但在某些用例中，这并不被视为最佳选择或安全。例如，第三方应用程序希望从移动设备、其他网站、桌面或其他情况连接到 Web 应用程序。在这种情况下，允许第三方应用程序存储用户/密码组合是不安全的，因为这会将攻击面扩展到不受你控制的地方。对于这种情况和其他用例，有几种身份验证协议可以保护你免于向攻击者暴露用户数据。
 
 ### OAuth
 
-Open Authorization (OAuth) is a protocol that allows an application to authenticate against a server as a user, without requiring passwords or any third-party server that acts as an identity provider. It uses a token generated by the server and provides how the authorization flows most occur, so that a client, such as a mobile application, can tell the server what user is using the service.
+开放授权（OAuth）是一种协议，允许应用程序以用户身份对服务器进行身份验证，无需密码或任何作为身份提供者的第三方服务器。它使用服务器生成的令牌，并提供授权流程，使客户端（如移动应用程序）可以告诉服务器正在使用服务的用户。
 
-The recommendation is to use and implement [OAuth 2.0](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics) since the very first version (OAuth1.0) has been found to be vulnerable to session fixation.
+建议使用并实施 [OAuth 2.0](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics)，因为最初的版本（OAuth1.0）被发现容易受到会话固定攻击。
 
-OAuth 2.0 relies on HTTPS for security and is currently used and implemented by APIs from companies such as Facebook, Google, Twitter, and Microsoft. OAuth 1.0a is more difficult to use because it requires the use of cryptographic libraries for digital signatures. However, since OAuth 1.0a does not rely on HTTPS for security, it can be more suited for higher-risk transactions.
+OAuth 2.0 依赖 HTTPS 进行安全，目前被 Facebook、Google、Twitter 和 Microsoft 等公司的 API 使用和实施。OAuth 1.0a 使用起来更加困难，因为它需要使用加密库进行数字签名。然而，由于 OAuth 1.0a 不依赖 HTTPS 进行安全，它可能更适合高风险交易。
 
 ### OpenId
 
-OpenId is an HTTP-based protocol that uses identity providers to validate that a user is who they say they are. It is a very simple protocol that allows a service-provider-initiated way for single sign-on (SSO). This allows the user to re-use a single identity given to a trusted OpenId identity provider and be the same user on multiple websites, without the need to provide any website with the password, except for the OpenId identity provider.
+OpenId 是一种基于 HTTP 的协议，使用身份提供者验证用户是否是他们所声称的身份。这是一个非常简单的协议，允许服务提供者发起的单点登录（SSO）方式。这使得用户可以重复使用提供给可信 OpenId 身份提供者的单一身份，并在多个网站上成为同一用户，而无需向除 OpenId 身份提供者之外的任何网站提供密码。
 
-Due to its simplicity and that it provides protection of passwords, OpenId has been well adopted. Some of the well-known identity providers for OpenId are Stack Exchange, Google, Facebook, and Yahoo!
+由于其简单性和密码保护，OpenId 已被广泛采用。一些著名的 OpenId 身份提供者包括 Stack Exchange、Google、Facebook 和 Yahoo!
 
-For non-enterprise environments, OpenId is considered a secure and often better choice, as long as the identity provider is of trust.
+对于非企业环境，只要身份提供者值得信赖，OpenId 被认为是一个安全且通常更好的选择。
 
 ### SAML
 
-Security Assertion Markup Language (SAML) is often considered to compete with OpenId. The most recommended version is 2.0 since it is very feature-complete and provides strong security. Like OpenId, SAML uses identity providers, but unlike OpenId, it is XML-based and provides more flexibility. SAML is based on browser redirects which send XML data. Furthermore, SAML isn't only initiated by a service provider; it can also be initiated from the identity provider. This allows the user to navigate through different portals while still being authenticated without having to do anything, making the process transparent.
+安全断言标记语言（SAML）常被认为与 OpenId 竞争。最推荐的版本是 2.0，因为它功能非常完整且提供强大的安全性。与 OpenId 类似，SAML 使用身份提供者，但与 OpenId 不同的是，它是基于 XML 的，并提供更多灵活性。SAML 基于浏览器重定向，发送 XML 数据。此外，SAML 不仅由服务提供者发起；还可以由身份提供者发起。这允许用户在不执行任何操作的情况下浏览不同的门户，同时保持身份验证，使过程透明。
 
-While OpenId has taken most of the consumer market, SAML is often the choice for enterprise applications because there are few OpenId identity providers which are considered enterprise-class (meaning that the way they validate the user identity doesn't have high standards required for enterprise identity). It is more common to see SAML being used inside of intranet websites, sometimes even using a server from the intranet as the identity provider.
+虽然 OpenId 占据了大部分消费者市场，但 SAML 常常是企业应用程序的选择，因为很少有 OpenId 身份提供者被认为是企业级的（意味着他们验证用户身份的方式没有企业身份所需的高标准）。在内部网站中使用 SAML 更为常见，有时甚至使用内部网服务器作为身份提供者。
 
-In the past few years, applications like SAP ERP and SharePoint (SharePoint by using Active Directory Federation Services 2.0) have decided to use SAML 2.0 authentication as an often preferred method for single sign-on implementations whenever enterprise federation is required for web services and web applications.
+在过去几年中，像 SAP ERP 和 SharePoint（SharePoint 使用 Active Directory 联合服务 2.0）这样的应用程序已决定在需要 Web 服务和 Web 应用程序的企业联合时，使用 SAML 2.0 身份验证作为首选的单点登录实现方法。
 
-**See also: [SAML Security Cheat Sheet](SAML_Security_Cheat_Sheet.md)**
+**另请参见：[SAML 安全备忘录](SAML_Security_Cheat_Sheet.md)**
 
 ### FIDO
 
-The Fast Identity Online (FIDO) Alliance has created two protocols to facilitate online authentication: the Universal Authentication Framework (UAF) protocol and the Universal Second Factor (U2F) protocol. While UAF focuses on passwordless authentication, U2F allows the addition of a second factor to existing password-based authentication. Both protocols are based on a public key cryptography challenge-response model.
+快速在线身份（FIDO）联盟创建了两种协议来促进在线身份验证：通用认证框架（UAF）协议和通用第二因素（U2F）协议。虽然 UAF 专注于无密码认证，但 U2F 允许为现有基于密码的认证添加第二因素。两种协议都基于公钥密码学的挑战-响应模型。
 
-UAF takes advantage of existing security technologies present on devices for authentication including fingerprint sensors, cameras (face biometrics), microphones (voice biometrics), Trusted Execution Environments (TEEs), Secure Elements (SEs), and others. The protocol is designed to plug these device capabilities into a common authentication framework. UAF works with both native applications and web applications.
+UAF 利用设备上现有的安全技术进行认证，包括指纹传感器、摄像头（面部生物识别）、麦克风（语音生物识别）、可信执行环境（TEEs）、安全元件（SEs）等。该协议旨在将这些设备功能插入通用认证框架。UAF 适用于原生应用程序和 Web 应用程序。
 
-U2F augments password-based authentication using a hardware token (typically USB) that stores cryptographic authentication keys and uses them for signing. The user can use the same token as a second factor for multiple applications. U2F works with web applications. It provides **protection against phishing** by using the URL of the website to look up the stored authentication key.
+U2F 使用硬件令牌（通常是 USB）增强基于密码的认证，该令牌存储加密认证密钥并用于签名。用户可以在多个应用程序中使用相同的令牌作为第二因素。U2F 适用于 Web 应用程序。它通过使用网站的 URL 查找存储的认证密钥，提供**防钓鱼**保护。
 
-## Password Managers
+## 密码管理器
 
-Password managers are programs, browser plugins, or web services that automate the management of a large quantity of different credentials. Most password managers have functionality to allow users to easily use them on websites, either:
-(a) by pasting the passwords into the login form
--- or --
-(b) by simulating the user typing them in.
+密码管理器是程序、浏览器插件或 Web 服务，可自动管理大量不同的凭证。大多数密码管理器具有帮助用户在网站上轻松使用的功能，方式包括：
+(a) 将密码粘贴到登录表单中
+-- 或 --
+(b) 模拟用户输入。
 
-Web applications should not make the job of password managers more difficult than necessary by observing the following recommendations:
+Web 应用程序应通过遵循以下建议，不要不必要地增加密码管理器的使用难度：
 
-- Use standard HTML forms for username and password input with appropriate `type` attributes.
-- Avoid plugin-based login pages (such as Flash or Silverlight).
-- Implement a reasonable maximum password length, at least 64 characters, as discussed in the [Implement Proper Password Strength Controls section](#implement-proper-password-strength-controls).
-- Allow any printable characters to be used in passwords.
-- Allow users to paste into the username, password, and MFA fields.
-- Allow users to navigate between the username and password field with a single press of the `Tab` key.
+- 对用户名和密码输入使用标准 HTML 表单，并使用适当的 `type` 属性。
+- 避免使用基于插件的登录页面（如 Flash 或 Silverlight）。
+- 实施合理的最大密码长度，至少 64 个字符，如[实施适当的密码强度控制部分](#实施适当的密码强度控制)中讨论的。
+- 允许使用任何可打印字符作为密码。
+- 允许用户粘贴到用户名、密码和多因素认证字段。
+- 允许用户使用单次 `Tab` 键在用户名和密码字段之间导航。
 
-## Changing A User's Registered Email Address
+## 更改用户注册邮箱地址
 
-User email addresses often change. The following process is recommended to handle such situations in a system:
+用户的电子邮件地址经常变更。以下是处理此类情况的推荐流程：
 
-*Note: The process is less stringent with [Multifactor Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html), as proof-of-identity is stronger than relying solely on a password.*
+*注意：如果启用了[多因素认证](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html)，该过程的要求会更低，因为身份证明更强，不仅仅依赖于密码。*
 
-### Recommended Process If the User HAS [Multifactor Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html) Enabled
+### 启用多因素认证的推荐流程
 
-1. Confirm the validity of the user's authentication cookie/token. If not valid, display a login screen.
-2. Describe the process for changing the registered email address to the user.
-3. Ask the user to submit a proposed new email address, ensuring it complies with system rules.
-4. Request the use of [Multifactor Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html) for identity verification.
-5. Store the proposed new email address as a pending change.
-6. Create and store **two** time-limited nonces for (a) system administrators' notification, and (b) user confirmation.
-7. Send two email messages with links that include those nonces:
+1. 确认用户的认证 cookie/令牌有效性。如果无效，显示登录界面。
+2. 向用户描述更改注册邮箱地址的流程。
+3. 要求用户提交拟更改的新邮箱地址，确保符合系统规则。
+4. 请求使用[多因素认证](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html)进行身份验证。
+5. 将拟更改的新邮箱地址存储为待定更改。
+6. 创建并存储**两个**时间限制的随机数（nonce）：(a) 系统管理员通知，(b) 用户确认。
+7. 发送包含这些随机数链接的两封邮件：
 
-    - A **notification-only email message** to the current address, alerting the user to the impending change and providing a link for an unexpected situation.
+    - 仅**通知的邮件**发送到当前地址，提醒用户即将更改并提供意外情况链接。
 
-    - A **confirmation-required email message** to the proposed new address, instructing the user to confirm the change and providing a link for unexpected situations.
+    - **需确认的邮件**发送到拟更改的新地址，指示用户确认更改并提供意外情况链接。
 
-8. Handle responses from the links accordingly.
+8. 根据链接响应进行相应处理。
 
-### Recommended Process If the User DOES NOT HAVE Multifactor Authentication Enabled
+### 未启用多因素认证的推荐流程
 
-1. Confirm the validity of the user's authentication cookie/token. If not valid, display a login screen.
-2. Describe the process for changing the registered email address to the user.
-3. Ask the user to submit a proposed new email address, ensuring it complies with system rules.
-4. Request the user's current password for identity verification.
-5. Store the proposed new email address as a pending change.
-6. Create and store three time-limited nonces for system administrators' notification, user confirmation, and an additional step for password reliance.
-7. Send two email messages with links to those nonces:
+1. 确认用户的认证 cookie/令牌有效性。如果无效，显示登录界面。
+2. 向用户描述更改注册邮箱地址的流程。
+3. 要求用户提交拟更改的新邮箱地址，确保符合系统规则。
+4. 请求用户提供当前密码以验证身份。
+5. 将拟更改的新邮箱地址存储为待定更改。
+6. 创建并存储三个时间限制的随机数：系统管理员通知、用户确认和依赖密码的额外步骤。
+7. 发送包含这些随机数链接的两封邮件：
 
-    - A **confirmation-required email message** to the current address, instructing the user to confirm the change and providing a link for an unexpected situation.
+    - 发送到当前地址的**需确认的邮件**，指示用户确认更改并提供意外情况链接。
 
-    - A **separate confirmation-required email message** to the proposed new address, instructing the user to confirm the change and providing a link for unexpected situations.
+    - 发送到拟更改新地址的**单独确认邮件**，指示用户确认更改并提供意外情况链接。
 
-8. Handle responses from the links accordingly.
+8. 根据链接响应进行相应处理。
 
-### Notes on the Above Processes
+### 上述流程的注意事项
 
-- It's worth noting that Google adopts a different approach with accounts secured only by a password -- [where the current email address receives a notification-only email](https://support.google.com/accounts/answer/55393?hl=en). This method carries risks and requires user vigilance.
+- 值得注意的是，Google 对仅由密码保护的账户采用不同方法 -- [当前邮箱地址仅收到通知邮件](https://support.google.com/accounts/answer/55393?hl=en)。这种方法存在风险，需要用户保持警惕。
 
-- Regular social engineering training is crucial. System administrators and help desk staff should be trained to follow the prescribed process and recognize and respond to social engineering attacks. Refer to [CISA's "Avoiding Social Engineering and Phishing Attacks"](https://www.cisa.gov/news-events/news/avoiding-social-engineering-and-phishing-attacks) for guidance.
+- 定期进行社会工程学培训至关重要。系统管理员和帮助台工作人员应接受培训，遵循规定流程，识别和应对社会工程学攻击。请参考 [CISA 的"避免社会工程学和钓鱼攻击"](https://www.cisa.gov/news-events/news/avoiding-social-engineering-and-phishing-attacks)以获取指导。
