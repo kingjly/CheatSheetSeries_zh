@@ -1,5 +1,5 @@
-# DEPRECATED: Access Control Cheatsheet
+# 已弃用：访问控制备忘录
 
-The Access Control cheatsheet has been deprecated.
+本访问控制备忘录已被弃用。
 
-Please visit the [Authorization Cheatsheet](Authorization_Cheat_Sheet.md) instead.
+请访问 [授权备忘录](Authorization_Cheat_Sheet.md)。
