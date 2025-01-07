@@ -1,59 +1,59 @@
-# Cross-Site Request Forgery Prevention Cheat Sheet
+# 跨站请求伪造（CSRF）防御备忘录
 
-## Introduction
+## 引言
 
-A [Cross-Site Request Forgery (CSRF)](https://owasp.org/www-community/attacks/csrf) attack occurs when a malicious web site, email, blog, instant message, or program tricks an authenticated user's web browser into performing an unwanted action on a trusted site. If a target user is authenticated to the site, unprotected target sites cannot distinguish between legitimate authorized requests and forged authenticated requests.
+[跨站请求伪造（CSRF）](https://owasp.org/www-community/attacks/csrf)攻击发生在恶意网站、电子邮件、博客、即时消息或程序诱使经过身份验证的用户的网络浏览器在受信任站点上执行非预期操作时。如果目标用户已通过目标站点的身份验证，未受保护的目标站点无法区分合法授权请求和伪造的经过身份验证的请求。
 
-Since browser requests automatically include all cookies including session cookies, this attack works unless proper authorization is used, which means that the target site's challenge-response mechanism does not verify the identity and authority of the requester. In effect, CSRF attacks make a target system perform attacker-specified functions via the victim's browser without the victim's knowledge (normally until after the unauthorized actions have been committed).
+由于浏览器请求自动包含所有 Cookie（包括会话 Cookie），除非使用适当的授权，否则此攻击将起作用，这意味着目标站点的挑战-响应机制无法验证请求者的身份和权限。实际上，CSRF 攻击使目标系统通过受害者的浏览器执行攻击者指定的功能，而受害者并不知情（通常直到未经授权的操作已经完成）。
 
-However, successful CSRF attacks can only exploit the capabilities exposed by the vulnerable application and the user's privileges. Depending on the user's credentials, the attacker can transfer funds, change a password, make an unauthorized purchase, elevate privileges for a target account, or take any action that the user is permitted to do.
+然而，成功的 CSRF 攻击只能利用易受攻击应用程序公开的功能和用户的权限。根据用户的凭据，攻击者可以转账、更改密码、进行未经授权的购买、提升目标账户的权限，或执行用户被允许的任何操作。
 
-In short, the following principles should be followed to defend against CSRF:
+简而言之，应遵循以下原则来防御 CSRF：
 
-**IMPORTANT: Remember that Cross-Site Scripting (XSS) can defeat all CSRF mitigation techniques!**
+**重要：请记住跨站脚本（XSS）可以击败所有 CSRF 缓解技术！**
 
-- **See the OWASP [XSS Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md) for detailed guidance on how to prevent XSS flaws.**
-- **First, check if your framework has [built-in CSRF protection](#use-built-in-or-existing-csrf-implementations-for-csrf-protection) and use it**
-- **If the framework does not have built-in CSRF protection, add [CSRF tokens](#token-based-mitigation) to all state changing requests (requests that cause actions on the site) and validate them on the backend**
-- **Stateful software should use the [synchronizer token pattern](#synchronizer-token-pattern)**
-- **Stateless software should use [double submit cookies](#alternative-using-a-double-submit-cookie-pattern)**
-- **If an API-driven site can't use `<form>` tags, consider [using custom request headers](#employing-custom-request-headers-for-ajaxapi)**
-- **Implement at least one mitigation from [Defense in Depth Mitigations](#defense-in-depth-techniques) section**
-- **[SameSite Cookie Attribute](#samesite-cookie-attribute) can be used for session cookies** but be careful to NOT set a cookie specifically for a domain. This action introduces a security vulnerability because all subdomains of that domain will share the cookie, and this is particularly an issue if a subdomain has a CNAME to domains not in your control.
-- **Consider implementing [user interaction based protection](#user-interaction-based-csrf-defense) for highly sensitive operations**
-- **Consider [verifying the origin with standard headers](#verifying-origin-with-standard-headers)**
-- **Do not use GET requests for state changing operations.**
-- **If for any reason you do it, protect those resources against CSRF**
+- **请参阅 OWASP [XSS 防御速查表](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)，了解如何防止 XSS 漏洞的详细指导。**
+- **首先，检查您的框架是否具有[内置 CSRF 保护](#使用内置或现有的-csrf-实现进行-csrf-保护)并使用它**
+- **如果框架没有内置 CSRF 保护，请在所有状态改变的请求（在站点上导致操作的请求）中添加 [CSRF 令牌](#基于令牌的缓解)并在后端验证它们**
+- **有状态软件应使用[同步器令牌模式](#同步器令牌模式)**
+- **无状态软件应使用[双重提交 Cookie](#使用双重提交-cookie-模式的替代方案)**
+- **如果 API 驱动的站点无法使用 `<form>` 标签，请考虑[使用自定义请求头](#为-ajaxapi-使用自定义请求头)**
+- **从[纵深防御缓解](#纵深防御技术)部分实施至少一种缓解措施**
+- **[SameSite Cookie 属性](#samesite-cookie-属性)可用于会话 Cookie**，但要小心不要为特定域设置 Cookie。此操作会引入安全漏洞，因为该域的所有子域将共享 Cookie，如果子域有 CNAME 指向不受控制的域，这尤其成问题。
+- **对于高度敏感的操作，考虑实施[基于用户交互的保护](#基于用户交互的-csrf-防御)**
+- **考虑[使用标准头验证源](#使用标准头验证源)**
+- **不要对状态改变的操作使用 GET 请求。**
+- **如果出于任何原因这样做，请防范这些资源的 CSRF**
 
-## Token-Based Mitigation
+## 基于令牌的缓解
 
-The [synchronizer token pattern](#synchronizer-token-pattern) is one of the most popular and recommended methods to mitigate CSRF.
+[同步器令牌模式](#同步器令牌模式)是最流行和推荐的 CSRF 缓解方法之一。
 
-### Use Built-In Or Existing CSRF Implementations for CSRF Protection
+### 使用内置或现有的 CSRF 实现进行 CSRF 保护
 
-Since synchronizer token defenses are built into many frameworks, find out if your framework has CSRF protection available by default before you build a custom token generating system. For example, .NET can use [built-in protection](https://docs.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-2.1) to add tokens to CSRF vulnerable resources. If you choose to use this protection, .NET makes you responsible for proper configuration (such as key management and token management).
+由于许多框架都内置了同步器令牌防御，在构建自定义令牌生成系统之前，请先查明您的框架是否默认提供 CSRF 保护。例如，.NET 可以使用[内置保护](https://docs.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-2.1)为易受 CSRF 攻击的资源添加令牌。如果选择使用此保护，.NET 会让您负责正确配置（如密钥管理和令牌管理）。
 
-### Synchronizer Token Pattern
+### 同步器令牌模式
 
-CSRF tokens should be generated on the server-side and they should be generated only once per user session or each request. Because the time range for an attacker to exploit the stolen tokens is minimal for per-request tokens, they are more secure than per-session tokens. However, using per-request tokens may result in usability concerns.
+CSRF 令牌应在服务器端生成，并且每个用户会话或每个请求只生成一次。由于攻击者利用被盗令牌的时间范围对于每次请求的令牌来说是最小的，因此它们比每会话令牌更安全。然而，使用每次请求的令牌可能会引起可用性问题。
 
-For example, the "Back" button browser capability can be hindered by a per-request token as the previous page may contain a token that is no longer valid. In this case, interaction with a previous page will result in a CSRF false positive security event on the server-side. If per-session token implementations occur after the initial generation of a token, the value is stored in the session and is used for each subsequent request until the session expires.
+例如，浏览器的"返回"按钮功能可能会受到每次请求令牌的阻碍，因为前一个页面可能包含不再有效的令牌。在这种情况下，与前一个页面的交互将在服务器端导致 CSRF 误报安全事件。如果在初始令牌生成后发生每会话令牌实现，则该值将存储在会话中，并用于每个后续请求，直到会话过期。
 
-When a client issues a request, the server-side component must verify the existence and validity of the token in that request and compare it to the token found in the user session. The request should be rejected if that token was not found within the request or the value provided does not match the value within the user session. Additional actions such as logging the event as a potential CSRF attack in progress should also be considered.
+当客户端发出请求时，服务器端组件必须验证该请求中令牌的存在和有效性，并将其与用户会话中找到的令牌进行比较。如果在请求中未找到该令牌，或提供的值与用户会话中的值不匹配，则应拒绝该请求。还应考虑记录事件作为正在进行的潜在 CSRF 攻击的额外操作。
 
-CSRF tokens should be:
+CSRF 令牌应该：
 
-- Unique per user session.
-- Secret
-- Unpredictable (large random value generated by a [secure method](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#rule---use-cryptographically-secure-pseudo-random-number-generators-csprng)).
+- 对每个用户会话唯一
+- 保密
+- 不可预测（由[安全方法](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#rule---use-cryptographically-secure-pseudo-random-number-generators-csprng)生成的大型随机值）
 
-CSRF tokens prevent CSRF because without a CSRF token, an attacker cannot create valid requests to the backend server.
+CSRF 令牌可以防止 CSRF，因为没有 CSRF 令牌，攻击者无法创建对后端服务器的有效请求。
 
-#### Transmissing CSRF Tokens in Synchronized Patterns
+#### 同步模式中的 CSRF 令牌传输
 
-The CSRF token can be transmitted to the client as part of a response payload, such as a HTML or JSON response, then it can be transmitted back to the server as a hidden field on a form submission or via an AJAX request as a custom header value or part of a JSON payload. A CSRF token should not be transmitted in a cookie for synchronized patterns. A CSRF token must not be leaked in the server logs or in the URL. GET requests can potentially leak CSRF tokens at several locations, such as the browser history, log files, network utilities that log the first line of a HTTP request, and Referer headers if the protected site links to an external site.
+CSRF 令牌可以作为响应有效载荷的一部分传输给客户端，如 HTML 或 JSON 响应，然后可以通过表单提交中的隐藏字段或通过 AJAX 请求作为自定义头值或 JSON 有效载荷的一部分传回服务器。在同步模式下，不应在 Cookie 中传输 CSRF 令牌。CSRF 令牌不得泄露在服务器日志或 URL 中。GET 请求可能在多个位置泄露 CSRF 令牌，如浏览器历史记录、日志文件、记录 HTTP 请求第一行的网络实用程序以及如果受保护站点链接到外部站点时的 Referer 头。
 
-For example:
+例如：
 
 ```html
 <form action="/transfer.do" method="post">
@@ -62,130 +62,130 @@ For example:
 </form>
 ```
 
-Since requests with custom headers are automatically subject to the same-origin policy, it is more secure to insert the CSRF token in a custom HTTP request header via JavaScript than adding a CSRF token in the hidden field form parameter.
+由于带有自定义头的请求自动受同源策略约束，通过 JavaScript 在自定义 HTTP 请求头中插入 CSRF 令牌比在隐藏字段表单参数中添加 CSRF 令牌更安全。
 
-### ALTERNATIVE: Using A Double-Submit Cookie Pattern
+### 替代方案：使用双重提交 Cookie 模式
 
-If maintaining the state for CSRF token on the server is problematic, you can use an alternative technique known as the Double Submit Cookie pattern. This technique is easy to implement and is stateless. There are different ways to implement this technique, where the _naive_ pattern is the most commonly used variation.
+如果在服务器上维护 CSRF 令牌的状态存在问题，您可以使用一种称为双重提交 Cookie 模式的替代技术。这种技术易于实现且无状态。有不同的方法来实现这种技术，其中最常用的变体是"朴素"模式。
 
-#### Signed Double-Submit Cookie (RECOMMENDED)
+#### 签名双重提交 Cookie（推荐）
 
-The most secure implementation of the Double Submit Cookie pattern is the _Signed Double-Submit Cookie_, which uses a secret key known only to the server. This ensures that an attacker cannot create and inject their own, known, CSRF token into the victim's authenticated session. The system's tokens should be secured by hashing or encrypting them.
+双重提交 Cookie 模式最安全的实现是"签名双重提交 Cookie"，它使用仅服务器知道的秘密密钥。这确保攻击者无法在受害者的经过身份验证的会话中创建和注入自己已知的 CSRF 令牌。系统的令牌应通过哈希或加密进行保护。
 
-We strongly recommend that you use the Hash-based Message Authentication (HMAC) algorithm because it is less computationally intensive than encrypting and decrypting the cookie. You should also bind the CSRF token with the user's current session to even further enhance security.
+我们强烈建议使用基于哈希的消息认证（HMAC）算法，因为它比加密和解密 Cookie 的计算强度更低。您还应将 CSRF 令牌与用户的当前会话绑定，以进一步增强安全性。
 
-##### Employing HMAC CSRF Tokens
+##### 使用 HMAC CSRF 令牌
 
-To generate HMAC CSRF tokens (with a session-dependent user value), the system must have:
+要生成 HMAC CSRF 令牌（使用会话相关的用户值），系统必须具备：
 
-- **A session-dependent value that changes with each login session**. This value should only be valid for the entirety of the users authenticated session. Avoid using static values like the user's email or ID, as they are not secure ([1](https://stackoverflow.com/a/8656417) | [2](https://stackoverflow.com/a/30539335) | [3](https://security.stackexchange.com/a/22936)). It's worth noting that updating the CSRF token too frequently, such as for each request, is a misconception that assumes it adds substantial security while actually harming the user experience ([1](https://security.stackexchange.com/a/22936)). For example, you could choose one, or a combination, of the following session-dependent values:
-    - The server-side session ID (e.g. [PHP](https://www.php.net/manual/en/function.session-start.php) or [ASP.NET](<https://learn.microsoft.com/en-us/previous-versions/aspnet/ms178581(v=vs.100)>)). This value should never leave the server or be in plain text in the CSRF Token.
-    - A random value (e.g. UUID) within a JWT that changes every time a JWT is created.
-- **A secret cryptographic key** Not to be confused with the random value from the naive implementation. This value is used to generate the HMAC hash. Ideally, store this key as discussed in the [Cryptographic Storage page](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#key-storage).
-- **A random value for anti-collision purposes**. Generate a random value (preferably cryptographically random) to ensure that consecutive calls within the same second do not produce the same hash ([1](https://github.com/data-govt-nz/ckanext-security/issues/23#issuecomment-479752531)).
+- **一个随每次登录会话变化的会话相关值**。此值应仅在用户整个经过身份验证的会话期间有效。避免使用静态值，如用户的电子邮件或 ID，因为它们不安全（[1](https://stackoverflow.com/a/8656417) | [2](https://stackoverflow.com/a/30539335) | [3](https://security.stackexchange.com/a/22936)）。值得注意的是，过于频繁地更新 CSRF 令牌（如每次请求）是一种误解，认为这会增加实质性安全性，而实际上会损害用户体验（[1](https://security.stackexchange.com/a/22936)）。例如，您可以选择以下一种或组合的会话相关值：
+    - 服务器端会话 ID（例如 [PHP](https://www.php.net/manual/en/function.session-start.php) 或 [ASP.NET](<https://learn.microsoft.com/en-us/previous-versions/aspnet/ms178581(v=vs.100)>)）。此值永远不应离开服务器或在 CSRF 令牌中以明文存在。
+    - JWT 中每次创建时变化的随机值（如 UUID）。
+- **一个秘密的加密密钥**。不要与朴素实现中的随机值混淆。此值用于生成 HMAC 哈希。理想情况下，按照[加密存储页面](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#key-storage)中讨论的方式存储此密钥。
+- **用于防止冲突的随机值**。生成一个随机值（最好是密码学随机值），以确保同一秒内的连续调用不会产生相同的哈希（[1](https://github.com/data-govt-nz/ckanext-security/issues/23#issuecomment-479752531)）。
 
-**Should Timestamps be Included in CSRF Tokens for Expiration?**
+**是否应在 CSRF 令牌中包含时间戳以设置过期时间？**
 
-It's a common misconception to include timestamps as a value to specify the CSRF token expiration time. A CSRF Token is not an access token. They are used to verify the authenticity of requests throughout a session, using session information. A new session should generate a new token ([1](https://stackoverflow.com/a/30539335)).
+包含时间戳以指定 CSRF 令牌过期时间是一种常见的误解。CSRF 令牌不是访问令牌。它们用于在整个会话期间验证请求的真实性，使用会话信息。新会话应生成新令牌（[1](https://stackoverflow.com/a/30539335)）。
 
-##### Pseudo-Code For Implementing HMAC CSRF Tokens
+##### HMAC CSRF 令牌实现的伪代码
 
-Below is an example in pseudo-code that demonstrates the implementation steps described above:
+下面是一个伪代码示例，演示了上述实现步骤：
 
 ```code
-// Gather the values
-secret = readEnvironmentVariable("CSRF_SECRET") // HMAC secret key
-sessionID = session.sessionID // Current authenticated user session
-randomValue = cryptographic.randomValue() // Cryptographic random value
+// 收集值
+secret = readEnvironmentVariable("CSRF_SECRET") // HMAC 秘密密钥
+sessionID = session.sessionID // 当前经过身份验证的用户会话
+randomValue = cryptographic.randomValue() // 密码学随机值
 
-// Create the CSRF Token
-message = sessionID.length + "!" + sessionID + "!" + randomValue.length + "!" + randomValue // HMAC message payload
-hmac = hmac("SHA256", secret, message) // Generate the HMAC hash
-csrfToken = hmac + "." + randomValue // Add the `randomValue` to the HMAC hash to create the final CSRF token. Avoid using the `message` because it contains the sessionID in plain text, which the server already stores separately.
+// 创建 CSRF 令牌
+message = sessionID.length + "!" + sessionID + "!" + randomValue.length + "!" + randomValue // HMAC 消息有效载荷
+hmac = hmac("SHA256", secret, message) // 生成 HMAC 哈希
+csrfToken = hmac + "." + randomValue // 将 `randomValue` 添加到 HMAC 哈希以创建最终的 CSRF 令牌。避免使用 `message`，因为它包含明文的 sessionID，服务器已单独存储
 
-// Store the CSRF Token in a cookie
-response.setCookie("csrf_token=" + csrfToken + "; Secure") // Set Cookie without HttpOnly flag
+// 在 Cookie 中存储 CSRF 令牌
+response.setCookie("csrf_token=" + csrfToken + "; Secure") // 设置 Cookie，不使用 HttpOnly 标志
 ```
 
-### Naive Double-Submit Cookie Pattern (DISCOURAGED)
+### 朴素双重提交 Cookie 模式（不推荐）
 
-The _Naive Double-Submit Cookie_ method is a scalable and easy-to-implement technique which uses a cryptographically strong random value as a cookie and as a request parameter (even before user authentication). Then the server verifies if the cookie value and request value match. The site must require that every transaction request from the user includes this random value as a hidden form value or inside the request header. If the value matches at server side, the server accepts it as a legitimate request and if they don't, it rejects the request.
+"朴素双重提交 Cookie"方法是一种可扩展且易于实现的技术，它使用密码学强随机值作为 Cookie 和请求参数（甚至在用户身份验证之前）。然后服务器验证 Cookie 值和请求值是否匹配。站点必须要求用户的每个事务请求都包含这个随机值作为隐藏表单值或请求头中。如果服务器端值匹配，则接受为合法请求；如果不匹配，则拒绝请求。
 
-Since an attacker is unable to access the cookie value during a cross-site request, they cannot include a matching value in the hidden form value or as a request parameter/header.
+由于攻击者无法在跨站请求期间访问 Cookie 值，因此他们无法在隐藏表单值或作为请求参数/头中包含匹配的值。
 
-Though the Naive Double-Submit Cookie method is a good initial step to counter CSRF, it still remains vulnerable to certain attacks. [This resource](https://owasp.org/www-chapter-london/assets/slides/David_Johansson-Double_Defeat_of_Double-Submit_Cookie.pdf) provides more information on some vulnerabilities. Thus, we strongly recommend that you use the _Signed Double-Submit Cookie_ pattern.
+尽管朴素双重提交 Cookie 方法是对抗 CSRF 的良好初步步骤，但它仍然容易受到某些攻击。[这个资源](https://owasp.org/www-chapter-london/assets/slides/David_Johansson-Double_Defeat_of_Double-Submit_Cookie.pdf)提供了更多关于一些漏洞的信息。因此，我们强烈建议使用"签名双重提交 Cookie"模式。
 
-## Disallowing simple requests
+## 禁止简单请求
 
-When a `<form>` tag is used to submit data, it sends a ["simple" request](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests) that browsers do not designate as "to be preflighted". These "simple" requests introduce risk of CSRF because browsers permit them to be sent to any origin. If your application uses `<form>` tags to submit data anywhere in your client, you will still need to protect them with alternate approaches described in this document such as tokens.
+当使用 `<form>` 标签提交数据时，它会发送浏览器不会指定为"需要预检"的["简单"请求](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests)。这些"简单"请求引入了 CSRF 风险，因为浏览器允许它们被发送到任何源。如果您的应用程序在客户端的任何位置使用 `<form>` 标签提交数据，您仍需要使用本文档中描述的替代方法（如令牌）进行保护。
 
-> **Caveat:**
-Should a browser bug allow custom HTTP headers, or not enforce preflight on non-simple content types, it could compromise your security. Although unlikely, it is prudent to consider this in your threat model. Implementing CSRF tokens adds additional layer of defence and gives developers more control over security of the application.
+> **注意：**
+如果浏览器漏洞允许自定义 HTTP 头，或者不对非简单内容类型强制执行预检，可能会危及您的安全。尽管可能性很低，但在威胁模型中考虑这一点是谨慎的。实施 CSRF 令牌可以增加额外的防御层，并给开发人员更多控制应用程序安全性的能力。
 
-### Disallowing simple content types
+### 禁止简单内容类型
 
-For a request to be deemed simple, it must have one of the following content types - `application/x-www-form-urlencoded`, `multipart/form-data` or `text/plain`.  Many modern web applications use JSON APIs so would naturally require CORS, however they may accept `text/plain` which would be vulnerable to CSRF. Therefore a simple mitigation is for the server or API to disallow these simple content types.
+对于被视为简单的请求，它必须具有以下内容类型之一 - `application/x-www-form-urlencoded`、`multipart/form-data` 或 `text/plain`。许多现代 Web 应用程序使用 JSON API，因此自然需要 CORS，但它们可能接受 `text/plain`，这将容易受到 CSRF 攻击。因此，服务器或 API 禁止这些简单内容类型是一种简单的缓解方法。
 
-### Employing Custom Request Headers for AJAX/API
+### 为 AJAX/API 使用自定义请求头
 
-Both the synchronizer token and the double-submit cookie are used to prevent forgery of form data, but they can be tricky to implement and degrade usability. Many modern web applications do not use `<form>` tags to submit data. A user-friendly defense that is particularly well suited for AJAX or API endpoints is the use of a **custom request header**. No token is needed for this approach.
+同步器令牌和双重提交 Cookie 都用于防止表单数据伪造，但它们的实现可能很棘手并且会降低可用性。许多现代 Web 应用程序不使用 `<form>` 标签提交数据。对于 AJAX 或 API 端点来说，一种用户友好且特别适合的防御是使用**自定义请求头**。这种方法不需要令牌。
 
-In this pattern, the client appends a custom header to requests that require CSRF protection. The header can be any arbitrary key-value pair, as long as it does not conflict with existing headers.
+在这种模式中，客户端将自定义头附加到需要 CSRF 保护的请求。头可以是任意键值对，只要不与现有头冲突。
 
 ```
 X-YOURSITE-CSRF-PROTECTION=1
 ```
 
-When handling the request, the API checks for the existence of this header. If the header does not exist, the backend rejects the request as potential forgery. This approach has several advantages:
+处理请求时，API 检查此头的存在。如果头不存在，后端将请求拒绝为潜在伪造。这种方法有几个优点：
 
-- UI changes are not required
-- no server state is introduced to track tokens
+- 不需要更改用户界面
+- 不引入服务器状态来跟踪令牌
 
-This defense relies on the CORS preflight mechanism which sends an `OPTIONS` request to verify CORS compliance with the destination server. All modern browsers designate requests with custom headers as "to be preflighted". When the API verifies that the custom header is there, you know that the request must have been preflighted if it came from a browser.
+这种防御依赖于 CORS 预检机制，它发送 `OPTIONS` 请求以验证与目标服务器的 CORS 合规性。所有现代浏览器都将带有自定义头的请求指定为"需要预检"。当 API 验证自定义头存在时，您就知道如果请求来自浏览器，它必须已经预检。
 
-#### Custom Headers and CORS
+#### 自定义头和 CORS
 
-Cookies are not set on cross-origin requests (CORS) by default. To enable cookies on an API, you will set `Access-Control-Allow-Credentials=true`. The browser will reject any response that includes `Access-Control-Allow-Origin=*` if credentials are allowed. To allow CORS requests, but protect against CSRF, you need to make sure the server only allows a few select origins that you definitively control via the `Access-Control-Allow-Origin` header. Any cross-origin request from an allowed domain will be able to set custom headers.
+默认情况下，Cookie 不会在跨源请求（CORS）上设置。要在 API 上启用 Cookie，您将设置 `Access-Control-Allow-Credentials=true`。如果允许凭据，浏览器将拒绝包含 `Access-Control-Allow-Origin=*` 的任何响应。要允许 CORS 请求但防止 CSRF，您需要确保服务器仅允许通过 `Access-Control-Allow-Origin` 头明确控制的少数选定源。来自允许域的任何跨源请求都将能够设置自定义头。
 
-As an example, you might configure your backend to allow CORS with cookies from `http://www.yoursite.com` and `http://mobile.yoursite.com`, so that the only possible preflight responses are:
+例如，您可以配置后端以允许来自 `http://www.yoursite.com` 和 `http://mobile.yoursite.com` 的带 Cookie 的 CORS，以便唯一可能的预检响应是：
 
 ```
 Access-Control-Allow-Origin=http://mobile.yoursite.com
 Access-Control-Allow-Credentials=true
 ```
 
-or
+或
 
 ```
 Access-Control-Allow-Origin=http://www.yoursite.com
 Access-Control-Allow-Credentials=true
 ```
 
-A less secure configuration would be to configure your backend server to allow CORS from all subdomains of your site using a regular expression. If an attacker is able to [take over a subdomain](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover) (not uncommon with cloud services) your CORS configuration would allow them to bypass the same origin policy and forge a request with your custom header.
+一个不太安全的配置是配置后端服务器使用正则表达式允许来自站点所有子域的 CORS。如果攻击者能够[接管子域](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover)（在云服务中并不罕见），您的 CORS 配置将允许他们绕过同源策略并伪造带有自定义头的请求。
 
-## Dealing with Client-Side CSRF Attacks (IMPORTANT)
+## 处理客户端 CSRF 攻击（重要）
 
-[Client-side CSRF](https://soheilkhodayari.github.io/same-site-wiki/docs/attacks/csrf.html#client-side-csrf) is a new variant of CSRF attacks where the attacker tricks the client-side JavaScript code to send a forged HTTP request to a vulnerable target site by manipulating the program’s input parameters. Client-side CSRF originates when the JavaScript program uses attacker-controlled inputs, such as the URL, for the generation of asynchronous HTTP requests.
+[客户端 CSRF](https://soheilkhodayari.github.io/same-site-wiki/docs/attacks/csrf.html#client-side-csrf) 是 CSRF 攻击的一种新变体，攻击者通过操纵程序的输入参数，诱使客户端 JavaScript 代码向易受攻击的目标站点发送伪造的 HTTP 请求。当 JavaScript 程序使用攻击者控制的输入（如 URL）生成异步 HTTP 请求时，就会发生客户端 CSRF。
 
-**Note:** These variants of CSRF are particularly important as they can bypass some of the common anti-CSRF countermeasures like [token-based mitigations](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#token-based-mitigation) and [SameSite cookies](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#samesite-cookie-attribute). For example, when [synchronizer tokens](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#synchronizer-token-pattern) or [custom HTTP request headers](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#use-of-custom-request-headers) are used, the JavaScript program will include them in the asynchronous requests. Also, web browsers will include cookies in same-site request contexts initiated by JavaScript programs, circumventing the [SameSite cookie policies](https://soheilkhodayari.github.io/same-site-wiki/docs/policies/overview.html).
+**注意：** 这些 CSRF 变体特别重要，因为它们可以绕过一些常见的反 CSRF 对策，如[基于令牌的缓解](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#token-based-mitigation)和 [SameSite Cookie](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#samesite-cookie-attribute)。例如，当使用[同步器令牌](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#synchronizer-token-pattern)或[自定义 HTTP 请求头](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#use-of-custom-request-headers)时，JavaScript 程序将在异步请求中包含它们。此外，Web 浏览器将在 JavaScript 程序发起的同站点请求上下文中包含 Cookie，从而规避 [SameSite Cookie 策略](https://soheilkhodayari.github.io/same-site-wiki/docs/policies/overview.html)。
 
-**Client-Side vs. Classical CSRF:** In the classical CSRF model, the server-side program is the most vulnerable component, because it cannot distinguish whether the incoming authenticated request was performed **intentionally**, also known as the confused deputy problem. In the client-side CSR model, the most vulnerable component is the client-side JavaScript program because an attacker can use it to generate arbitrary asynchronous requests by manipulating the request endpoint and/or its parameters. Client-side CSRF is due to an input validation problem and it reintroduces the confused deputy flaw, that is, the server-side won't, again, be able to distinguish if the request was performed intentionally or not.
+**客户端 CSRF 与经典 CSRF：** 在经典 CSRF 模型中，服务器端程序是最脆弱的组件，因为它无法区分传入的经过身份验证的请求是否是**有意**执行的，这也称为混淆代理问题。在客户端 CSR 模型中，最脆弱的组件是客户端 JavaScript 程序，因为攻击者可以通过操纵请求端点和/或其参数来生成任意异步请求。客户端 CSRF 是由于输入验证问题，并重新引入了混淆代理缺陷，即服务器端将再次无法区分请求是否是有意执行的。
 
-For more information about client-side CSRF vulnerabilities, see Sections 2 and 5 of this [paper](https://www.usenix.org/system/files/sec21-khodayari.pdf), the [CSRF chapter](https://soheilkhodayari.github.io/same-site-wiki/docs/attacks/csrf.html) of the [SameSite wiki](https://soheilkhodayari.github.io/same-site-wiki), and [this post](https://www.facebook.com/notes/facebook-bug-bounty/client-side-csrf/2056804174333798/) by the [Meta Bug Bounty Program](https://www.facebook.com/whitehat).
+有关客户端 CSRF 漏洞的更多信息，请参阅这篇[论文](https://www.usenix.org/system/files/sec21-khodayari.pdf)的第 2 和第 5 节，[SameSite wiki](https://soheilkhodayari.github.io/same-site-wiki)的 [CSRF 章节](https://soheilkhodayari.github.io/same-site-wiki/docs/attacks/csrf.html)，以及 [Meta 漏洞赏金计划](https://www.facebook.com/whitehat)的[这篇文章](https://www.facebook.com/notes/facebook-bug-bounty/client-side-csrf/2056804174333798/)。
 
-### Client-side CSRF Example
+### 客户端 CSRF 示例
 
-The following code snippet demonstrates a simple example of a client-side CSRF vulnerability.
+以下代码片段展示了一个简单的客户端 CSRF 漏洞示例。
 
 ```html
 <script type="text/javascript">
     var csrf_token = document.querySelector("meta[name='csrf-token']").getAttribute("content");
     function ajaxLoad(){
-        // process the URL hash fragment
+        // 处理 URL 哈希片段
         let hash_fragment = window.location.hash.slice(1);
 
-        // hash fragment should be of the format: /^(get|post);(.*)$/
-        // e.g., https://site.com/index/#post;/profile
+        // 哈希片段应该符合格式：/^(get|post);(.*)$/
+        // 例如：https://site.com/index/#post;/profile
         if(hash_fragment.length > 0 && hash_fragment.indexOf(';') > 0 ){
 
             let params = hash_fragment.match(/^(get|post);(.*)$/);
@@ -204,202 +204,135 @@ The following code snippet demonstrates a simple example of a client-side CSRF v
             }
         }
     }
-    // trigger the async request on page load
+    // 在页面加载时触发异步请求
     window.onload = ajaxLoad();
  </script>
 ```
 
-**Vulnerability:** In this snippet, the program invokes a function `ajaxLoad()` upon the page load, which is responsible for loading various webpage elements. The function reads the value of the [URL hash fragment](https://developer.mozilla.org/en-US/docs/Web/API/Location/hash) (line 4), and extracts two pieces of information from it (i.e., request method and endpoint) to generate an asynchronous HTTP request (lines 11-13). The vulnerability occurs in lines 15-22, when the JavaScript program uses URL fragments to obtain the server-side endpoint for the asynchronous HTTP request (line 15) and the request method. However, both inputs can be controlled by web attackers, who can pick the value of their choosing, and craft a malicious URL containing the attack payload.
+**漏洞：** 在这个代码片段中，程序在页面加载时调用 `ajaxLoad()` 函数，该函数负责加载各种网页元素。该函数读取 [URL 哈希片段](https://developer.mozilla.org/en-US/docs/Web/API/Location/hash)的值（第 4 行），并从中提取两条信息（即请求方法和端点）以生成异步 HTTP 请求（第 11-13 行）。漏洞发生在第 15-22 行，当 JavaScript 程序使用 URL 片段获取异步 HTTP 请求的服务器端端点（第 15 行）和请求方法时。然而，这两个输入都可以被 Web 攻击者控制，他们可以选择自己想要的值，并制作包含攻击有效载荷的恶意 URL。
 
-**Attack:** Usually, attackers share a malicious URL with the victim (through elements such as spear-phishing emails) and because the malicious URL appears to be from an honest, reputable (but vulnerable) website, the user often clicks on it. Alternatively, the attackers can create an attack page to abuse browser APIs (e.g., the [`window.open()`](https://developer.mozilla.org/en-US/docs/Web/API/Window/open) API) and trick the vulnerable JavaScript of the target page to send the HTTP request, which closely resembles the attack model of the classical CSRF attacks.
+**攻击：** 通常，攻击者通过（例如钓鱼邮件等）元素与受害者共享恶意 URL，因为恶意 URL 看起来来自诚实、信誉良好（但易受攻击）的网站，用户经常点击它。或者，攻击者可以创建攻击页面来滥用浏览器 API（例如 [`window.open()`](https://developer.mozilla.org/en-US/docs/Web/API/Window/open) API）并诱使目标页面的易受攻击的 JavaScript 发送 HTTP 请求，这与经典 CSRF 攻击的攻击模型非常相似。
 
-For more examples of client-side CSRF, see [this post](https://www.facebook.com/notes/facebook-bug-bounty/client-side-csrf/2056804174333798/) by the [Meta Bug Bounty Program](https://www.facebook.com/whitehat) and this USENIX Security [paper](https://www.usenix.org/system/files/sec21-khodayari.pdf).
+更多客户端 CSRF 示例，请参见 [Meta 漏洞赏金计划](https://www.facebook.com/whitehat)的[这篇文章](https://www.facebook.com/notes/facebook-bug-bounty/client-side-csrf/2056804174333798/)和这篇 USENIX Security [论文](https://www.usenix.org/system/files/sec21-khodayari.pdf)。
 
-### Client-side CSRF Mitigation Techniques
+### 客户端 CSRF 缓解技术
 
-**Independent Requests:** Client-side CSRF can be prevented when asynchronous requests cannot be generated via attacker controllable inputs, such as the [URL](https://developer.mozilla.org/en-US/docs/Web/API/Window/location), [window name](https://developer.mozilla.org/en-US/docs/Web/API/Window/name), [document referrer](https://developer.mozilla.org/en-US/docs/Web/API/Document/referrer), and [postMessages](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage), to name only a few examples.
+**独立请求：** 当无法通过攻击者可控制的输入（如 [URL](https://developer.mozilla.org/en-US/docs/Web/API/Window/location)、[窗口名称](https://developer.mozilla.org/en-US/docs/Web/API/Window/name)、[文档引用](https://developer.mozilla.org/en-US/docs/Web/API/Document/referrer)和 [postMessages](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)等）生成异步请求时，可以防止客户端 CSRF。
 
-**Input Validation:** Achieving complete isolation between inputs and request parameters may not always be possible depending on the context and functionality. In these cases, input validation checks has to be implemented. These checks should strictly assess the format and choice of the values of the request parameters and decide whether they can only be used in non-state-changing operations (e.g., only allow GET requests and endpoints starting with a predefined prefix).
+**输入验证：** 根据上下文和功能，完全隔离输入和请求参数可能并非总是可能。在这些情况下，必须实施输入验证检查。这些检查应严格评估请求参数值的格式和选择，并决定它们是否只能用于非状态更改操作（例如，仅允许 GET 请求和以预定义前缀开头的端点）。
 
-**Predefined Request Data:** Another mitigation technique is to store a list of predefined, safe request data in the JavaScript code (e.g., combinations of endpoints, request methods and other parameters that are safe to be replayed). The program can then use a switch parameter in the URL fragment to decide which entry of the list should each JavaScript function use.
+**预定义请求数据：** 另一种缓解技术是在 JavaScript 代码中存储预定义的安全请求数据列表（例如，端点、请求方法和其他参数的组合，可以安全重放）。然后程序可以使用 URL 片段中的开关参数来决定每个 JavaScript 函数应使用列表的哪个条目。
 
-## Defense In Depth Techniques
+## 深度防御技术
 
-### SameSite (Cookie Attribute)
+### SameSite（Cookie 属性）
 
-SameSite is a cookie attribute (similar to HTTPOnly, Secure etc.) which aims to mitigate CSRF attacks. It is defined in [RFC6265bis](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02#section-5.3.7). This attribute helps the browser decide whether to send cookies along with cross-site requests. Possible values for this attribute are `Lax`, `Strict`, or `None`.
+SameSite 是一个 Cookie 属性（类似于 HTTPOnly、Secure 等），旨在缓解 CSRF 攻击。它在 [RFC6265bis](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02#section-5.3.7) 中定义。此属性帮助浏览器决定是否在跨站请求中发送 Cookie。此属性的可能值为 `Lax`、`Strict` 或 `None`。
 
-The Strict value will prevent the cookie from being sent by the browser to the target site in all cross-site browsing context, even when following a regular link. For example, if a GitHub-like website uses the Strict value, a logged-in GitHub user who tries to follow a link to a private GitHub project posted on a corporate discussion forum or email, the user will not be able to access the project because GitHub will not receive a session cookie. Since a bank website would not allow any transactional pages to be linked from external sites, so the Strict flag would be most appropriate for banks.
+Strict 值将阻止浏览器在所有跨站浏览上下文中向目标站点发送 Cookie，即使是跟随常规链接也是如此。例如，如果类似 GitHub 的网站使用 Strict 值，已登录的 GitHub 用户尝试跟随在公司讨论论坛或电子邮件中发布的私有 GitHub 项目的链接，用户将无法访问该项目，因为 GitHub 不会收到会话 Cookie。由于银行网站不允许从外部站点链接任何交易页面，因此 Strict 标志最适合银行。
 
-If a website wants to maintain a user's logged-in session after the user arrives from an external link, SameSite's default Lax value provides a reasonable balance between security and usability. If the GitHub scenario above uses a Lax value instead, the session cookie would be allowed when following a regular link from an external website while blocking it in CSRF-prone request methods such as POST. Only cross-site-requests that are allowed in Lax mode have top-level navigations and use [safe](https://tools.ietf.org/html/rfc7231#section-4.2.1) HTTP methods.
+如果网站希望在用户从外部链接到达后保持用户的登录会话，SameSite 的默认 Lax 值在安全性和可用性之间提供了合理的平衡。如果上述 GitHub 场景使用 Lax 值，会话 Cookie 将在从外部网站跟随常规链接时被允许，同时阻止 POST 等容易受到 CSRF 攻击的请求方法。在 Lax 模式下允许的跨站请求只有顶级导航，并使用[安全](https://tools.ietf.org/html/rfc7231#section-4.2.1)的 HTTP 方法。
 
-For more details on the `SameSite` values, check the following [section](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02#section-5.3.7.1) from the [rfc](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02).
+有关 `SameSite` 值的更多详细信息，请查看 [rfc](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02) 中的[这一节](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02#section-5.3.7.1)。
 
-Example of cookies using this attribute:
+使用此属性的 Cookie 示例：
 
 ```text
 Set-Cookie: JSESSIONID=xxxxx; SameSite=Strict
 Set-Cookie: JSESSIONID=xxxxx; SameSite=Lax
 ```
 
-All desktop browsers and almost all mobile browsers now support the `SameSite` attribute. To track the browsers implementing it and know how the attribute is used, refer to the following [service](https://caniuse.com/#feat=same-site-cookie-attribute). Note that Chrome has [announced](https://blog.chromium.org/2019/10/developers-get-ready-for-new.html) that they will mark cookies as `SameSite=Lax` by default from Chrome 80 (due in February 2020), and Firefox and Edge are both planning to follow suit. Additionally, the `Secure` flag will be required for cookies that are marked as `SameSite=None`.
+所有桌面浏览器和几乎所有移动浏览器现在都支持 `SameSite` 属性。要跟踪实施它的浏览器并了解属性的使用方式，请参考以下[服务](https://caniuse.com/#feat=same-site-cookie-attribute)。请注意，Chrome 已[宣布](https://blog.chromium.org/2019/10/developers-get-ready-for-new.html)他们将从 Chrome 80（预计在 2020 年 2 月）开始默认将 Cookie 标记为 `SameSite=Lax`，Firefox 和 Edge 也计划跟进。此外，对于标记为 `SameSite=None` 的 Cookie，将需要 `Secure` 标志。
 
-It is important to note that this attribute should be implemented as an additional layer _defense in depth_ concept. This attribute protects the user through the browsers supporting it, and it contains as well 2 ways to bypass it as mentioned in the following [section](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02#section-5.3.7.1). This attribute should not replace a CSRF Token. Instead, it should co-exist with that token to protect  the user in a more robust way.
+需要注意的是，这个属性应作为额外的"深度防御"概念来实施。该属性通过支持它的浏览器保护用户，并且如[本节](https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02#section-5.3.7.1)中提到的，它包含两种绕过方式。这个属性不应替代 CSRF 令牌。相反，它应该与该令牌共存，以更强大的方式保护用户。
 
-### Using Standard Headers to Verify Origin
+### 使用标准头验证源
 
-There are two steps to this mitigation method, both of which examine an HTTP request header value:
+这种缓解方法有两个步骤，两者都检查 HTTP 请求头的值：
 
-1. Determine the origin that the request is coming from (source origin). Can be done via Origin or Referer headers.
-2. Determining the origin that the request is going to (target origin).
+1. 确定请求的来源（源源头）。可以通过 Origin 或 Referer 头完成。
+2. 确定请求的目标源（目标源）。
 
-At server-side, we verify if both of them match. If they do, we accept the request as legitimate (meaning it's the same origin request) and if they don't, we discard the request (meaning that the request originated from cross-domain). Reliability on these headers comes from the fact that they cannot be altered programmatically as they fall under [forbidden headers](https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name) list, meaning that only the browser can set them.
+在服务器端，我们验证它们是否匹配。如果匹配，我们接受请求为合法（意味着是同源请求），如果不匹配，我们丢弃请求（意味着请求源自跨域）。对这些头的可靠性源于它们不能以编程方式更改，因为它们属于[禁止头](https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name)列表，这意味着只有浏览器可以设置它们。
 
-#### Identifying Source Origin (via Origin/Referer Header)
+#### 识别源源头（通过 Origin/Referer 头）
 
-##### Checking the Origin Header
+##### 检查 Origin 头
 
-If the Origin header is present, verify that its value matches the target origin. Unlike the referer, the Origin header will be present in HTTP requests that originate from an HTTPS URL.
+如果存在 Origin 头，验证其值是否匹配目标源。与 Referer 不同，Origin 头将出现在源自 HTTPS URL 的 HTTP 请求中。
 
-##### Checking the Referer Header if Origin Header Is Not Present
+##### 如果 Origin 头不存在，则检查 Referer 头
 
-If the Origin header is not present, verify that the hostname in the Referer header matches the target origin. This method of CSRF mitigation is also commonly used with unauthenticated requests, such as requests made prior to establishing a session state, which is required to keep track of a synchronization token.
+如果 Origin 头不存在，验证 Referer 头中的主机名是否匹配目标源。这种 CSRF 缓解方法也常用于未经身份验证的请求，例如在建立会话状态之前发出的请求，这需要跟踪同步令牌。
 
-In both cases, make sure the target origin check is strong. For example, if your site is `example.org` make sure `example.org.attacker.com` does not pass your origin check (i.e, match through the trailing / after the origin to make sure you are matching against the entire origin).
+在这两种情况下，确保目标源检查是严格的。例如，如果您的站点是 `example.org`，请确保 `example.org.attacker.com` 无法通过您的源检查（即，通过源后的尾随 / 匹配以确保匹配整个源）。
 
-If neither of these headers are present, you can either accept or block the request. We recommend **blocking**. Alternatively, you might want to log all such instances, monitor their use cases/behavior, and then start blocking requests only after you get enough confidence.
+如果这些头都不存在，您可以接受或阻止请求。我们建议**阻止**。或者，您可能想记录所有此类实例，监控其用例/行为，然后仅在获得足够信心后开始阻止请求。
 
-#### Identifying the Target Origin
+#### 识别目标源
 
-Generally, it's not always easy to determine the target origin. You are not always able to simply grab the target origin (i.e., its hostname and port `#`) from the URL in the request, because the application server is frequently sitting behind one or more proxies. This means that the original URL can be different from the URL the app server actually receives. However, if your application server is directly accessed by its users, then using the origin in the URL is fine and you're all set.
+通常，确定目标源并不总是容易的。您并不总是能够简单地从请求中的 URL 获取目标源（即其主机名和端口 `#`），因为应用程序服务器经常位于一个或多个代理之后。这意味着原始 URL 可能与应用程序服务器实际接收的 URL 不同。但是，如果您的应用程序服务器直接被用户访问，那么使用 URL 中的源是可以的。
 
-If you are behind a proxy, there are a number of options to consider.
+如果您位于代理之后，有几个选项可以考虑。
 
-- **Configure your application to simply know its target origin:** Since it is your application, you can find its target origin and set that value in some server configuration entry. This would be the most secure approach as its defined server side, so it is a trusted value. However, this might be problematic to maintain if your application is deployed in many places, e.g., dev, test, QA, production, and possibly multiple production instances. Setting the correct value for each of these situations might be difficult, but if you can do it via some central configuration and provide your instances the ability to grab the value from it, that's great! (**Note:** Make sure the centralized configuration store is maintained securely because major part of your CSRF defense depends on it.)
-- **Use the Host header value:** If you want your application to find its own target so it doesn't have to be configured for each deployed instance, we recommend using the Host family of headers. The Host header is meant to contain the target origin of the request. But, if your app server is sitting behind a proxy, the Host header value is most likely changed by the proxy to the target origin of the URL behind the proxy, which is different than the original URL. This modified Host header origin won't match the source origin in the original Origin or Referer headers.
-- **Use the X-Forwarded-Host header value:** To avoid the possibility that the proxy will alter the host header, you can use another header called X-Forwarded-Host to contain the original Host header value the proxy received. Most proxies will pass along the original Host header value in the X-Forwarded-Host header. So the value in X-Forwarded-Host is likely to be the target origin value that you need to compare to the source origin in the Origin or Referer header.
+- **配置应用程序以简单地知道其目标源：** 由于这是您的应用程序，您可以找到其目标源并在某些服务器配置条目中设置该值。这将是最安全的方法，因为它在服务器端定义，所以是可信的值。但是，如果您的应用程序部署在多个地方（如开发、测试、QA、生产，可能还有多个生产实例），这可能难以维护。为每个情况设置正确的值可能很困难，但如果您可以通过某种中央配置并为实例提供获取值的能力，那就太好了！（**注意：**确保集中配置存储是安全的，因为您的 CSRF 防御的主要部分取决于它。）
+- **使用 Host 头值：** 如果您希望应用程序找到自己的目标，而不必为每个部署实例配置，我们建议使用 Host 系列头。Host 头旨在包含请求的目标源。但是，如果您的应用程序服务器位于代理之后，Host 头值很可能被代理更改为代理后面 URL 的目标源，这与原始 URL 不同。这个修改后的 Host 头源将与原始 Origin 或 Referer 头中的源源头不匹配。
+- **使用 X-Forwarded-Host 头值：** 为避免代理更改主机头的可能性，您可以使用另一个名为 X-Forwarded-Host 的头来包含代理收到的原始 Host 头值。大多数代理会在 X-Forwarded-Host 头中传递原始 Host 头值。因此，X-Forwarded-Host 中的值很可能是您需要与 Origin 或 Referer 头中的源源头比较的目标源值。
 
-Using this header value for mitigation will work properly when origin or referrer headers are present in the requests. Though these headers are included the **majority** of the time, there are few use cases where they are not included (most of them are for legitimate reasons to safeguard users privacy/to tune to browsers ecosystem).
+当请求中存在源或引用头时，使用此头值进行缓解将正常工作。尽管这些头大多数时候都包含在内，但有一些用例不包含这些头（大多数是出于保护用户隐私/调整浏览器生态系统的正当理由）。
 
-**Use cases where X-Forward-Host is not employed:**
+**X-Forward-Host 未使用的用例：**
 
-- In an instance following a [302 redirect cross-origin](https://stackoverflow.com/questions/22397072/are-there-any-browsers-that-set-the-origin-header-to-null-for-privacy-sensitiv), Origin is not included in the redirected request because that may be considered sensitive information that should not be sent to the other origin.
-- There are some [privacy contexts](https://wiki.mozilla.org/Security/Origin#Privacy-Sensitive_Contexts) where Origin is set to "null" For example, see the following [here](https://www.google.com/search?q=origin+header+sent+null+value+site%3Astackoverflow.com&oq=origin+header+sent+null+value+site%3Astackoverflow.com).
-- Origin header is included for all cross origin requests but for same origin requests, in most browsers it is only included in POST/DELETE/PUT **Note:** Although it is not ideal, many developers use GET requests to do state changing operations.
-- Referer header is no exception. There are multiple use cases where referrer header is omitted as well ([1](https://stackoverflow.com/questions/6880659/in-what-cases-will-http-referer-be-empty), [2](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referer), [3](https://en.wikipedia.org/wiki/HTTP_referer#Referer_hiding), [4](https://seclab.stanford.edu/websec/csrf/csrf.pdf) and [5](https://www.google.com/search?q=referrer+header+sent+null+value+site:stackoverflow.com)). Load balancers, proxies and embedded network devices are also well known to strip the referrer header due to privacy reasons in logging them.
+- 在[跨源 302 重定向](https://stackoverflow.com/questions/22397072/are-there-any-browsers-that-set-the-origin-header-to-null-for-privacy-sensitiv)后，由于可能被视为不应发送到其他源的敏感信息，重定向请求中不包含 Origin。
+- 在某些[隐私上下文](https://wiki.mozilla.org/Security/Origin#Privacy-Sensitive_Contexts)中，Origin 设置为"null"。例如，请参见[此处](https://www.google.com/search?q=origin+header+sent+null+value+site%3Astackoverflow.com&oq=origin+header+sent+null+value+site%3Astackoverflow.com)。
+- Origin 头包含在所有跨源请求中，但对于同源请求，在大多数浏览器中仅在 POST/DELETE/PUT 中包含 **注意：** 尽管不理想，但许多开发人员使用 GET 请求执行状态更改操作。
+- Referer 头也不例外。有多个用例省略了引用头（[1](https://stackoverflow.com/questions/6880659/in-what-cases-will-http-referer-be-empty)，[2](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referer)，[3](https://en.wikipedia.org/wiki/HTTP_referer#Referer_hiding)，[4](https://seclab.stanford.edu/websec/csrf/csrf.pdf) 和 [5](https://www.google.com/search?q=referrer+header+sent+null+value+site:stackoverflow.com)）。负载均衡器、代理和嵌入式网络设备也以记录隐私为由众所周知地剥离引用头。
 
-Usually, a minor percentage of traffic does fall under above categories ([1-2%](http://homakov.blogspot.com/2012/04/playing-with-referer-origin-disquscom.html)) and no enterprise would want to lose this traffic. One of the popular technique used across the Internet to make this technique more usable is to accept the request if the Origin/referrer matches your configured list of domains "OR" a null value (Examples [here](http://homakov.blogspot.com/2012/04/playing-with-referer-origin-disquscom.html). The null value is to cover the edge cases mentioned above where these headers are not sent). Please note that, attackers can exploit this but people prefer to use this technique as a defense in depth measure because of the minor effort involved in deploying it.
+通常，很小一部分流量（[1-2%](http://homakov.blogspot.com/2012/04/playing-with-referer-origin-disquscom.html)）属于上述类别，没有企业希望丢失这些流量。在互联网上广泛使用的一种技术是，如果 Origin/引用头与您配置的域名列表"或"空值匹配，则接受请求（[示例在此](http://homakov.blogspot.com/2012/04/playing-with-referer-origin-disquscom.html)。空值是为了涵盖上述未发送这些头的边缘情况）。请注意，攻击者可以利用这一点，但人们倾向于将其作为深度防御措施，因为部署它只需很少的工作。
 
-#### Using Cookies with Host Prefixes to Identify Origins
+#### 使用带有主机前缀的 Cookie 识别源
 
-While the `SameSite` and `Secure` attributes mentioned earlier restrict the sending of already set cookies
-and `HttpOnly` restricts the reading of a set cookie,
-an attacker may still try to inject or overwrite otherwise secured cookies
-(cf. [session fixation attacks](http://www.acrossecurity.com/papers/session_fixation.pdf)).
-Using `Cookie Prefixes` for cookies with CSRF tokens extends security protections against this kind of attacks as well.
-If cookies have `__Host-` prefixes e.g. `Set-Cookie: __Host-token=RANDOM; path=/; Secure` then each cookie:
+虽然前面提到的 `SameSite` 和 `Secure` 属性限制了已设置 Cookie 的发送，`HttpOnly` 限制了对已设置 Cookie 的读取，但攻击者仍可能尝试注入或覆盖otherwise安全的 Cookie（参见[会话固定攻击](http://www.acrossecurity.com/papers/session_fixation.pdf)）。对于带有 CSRF 令牌的 Cookie 使用 `Cookie 前缀` 可以扩展针对此类攻击的安全保护。如果 Cookie 具有 `__Host-` 前缀，例如 `Set-Cookie: __Host-token=RANDOM; path=/; Secure`，则每个 Cookie：
 
-- Cannot be (over)written from another subdomain and
-- cannot have a `Domain` attribute.
-- Must have the path of `/`.
-- Must be marked as Secure (i.e, cannot be sent over unencrypted HTTP).
+- 不能从另一个子域（over）写入
+- 不能有 `Domain` 属性
+- 必须具有 `/` 路径
+- 必须标记为 Secure（即不能通过未加密的 HTTP 发送）
 
-In addition to the `__Host-` prefix, the weaker `__Secure-` prefix is also supported by browser vendors.
-It relaxes the restrictions on domain overwrites, i.e., they
+除了 `__Host-` 前缀外，浏览器供应商还支持较弱的 `__Secure-` 前缀。它放宽了域覆盖的限制，即它们：
 
-- Can have `Domain` attributes and
-- can be overwritten by subdomains.
-- Can have a `Path` other than `/`.
+- 可以有 `Domain` 属性
+- 可以被子域覆盖
+- 可以有除 `/` 之外的 `Path`
 
-This relaxed variant can be used as an alternative to the "domain locked" `__Host-` prefix,
-if authenticated users would need to visit different (sub-)domains.
-In all other cases, using the `__Host-` prefix in addition to the `SameSite` attribute is recommended.
+如果经过身份验证的用户需要访问不同的（子）域，这种放宽的变体可以作为"域锁定" `__Host-` 前缀的替代。在所有其他情况下，建议除了 `SameSite` 属性外还使用 `__Host-` 前缀。
 
-As of July 2020 cookie prefixes [are supported by all major browsers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Browser_compatibility).
+截至 2020 年 7 月，[所有主要浏览器都支持 Cookie 前缀](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Browser_compatibility)。
 
-See the [Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Directives) and [IETF Draft](https://tools.ietf.org/html/draft-west-cookie-prefixes-05) for further information about cookie prefixes.
+有关 Cookie 前缀的更多信息，请参见 [Mozilla 开发者网络](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Directives)和 [IETF 草案](https://tools.ietf.org/html/draft-west-cookie-prefixes-05)。
 
-### User Interaction-Based CSRF Defense
+### 基于用户交互的 CSRF 防御
 
-While all the techniques referenced here do not require any user interaction, sometimes it's easier or more appropriate to involve the user in the transaction to prevent unauthorized operations (forged via CSRF or otherwise). The following are some examples of techniques that can act as strong CSRF defense when implemented correctly.
+虽然这里引用的所有技术都不需要用户交互，但有时涉及用户参与事务以防止未经授权的操作（通过 CSRF 或其他方式伪造）会更容易或更合适。以下是一些可以作为强大 CSRF 防御的技术示例（如果正确实施）。
 
-- Re-Authentication mechanisms
-- One-time Tokens
+- 重新认证机制
+- 一次性令牌
 
-Do NOT use CAPTCHA because it is specifically designed to protect against bots. It is possible, and still valid in some implementations of CAPTCHA, to obtain proof of human interaction/presence from a different user session. Although this makes the CSRF exploit more complex, it does not protect against it.
+不要使用 CAPTCHA，因为它专门设计用于防止机器人。在某些 CAPTCHA 实现中，从不同的用户会话获取人机交互/存在的证明是可能的。尽管这使 CSRF 漏洞利用更加复杂，但它并不能防止 CSRF。
 
-While these are very strong CSRF defenses, it can create a significant impact on the user experience. As such, they would generally only be used for security critical operations (such as password changes, money transfers, etc.), alongside the other defences discussed in this cheat sheet.
+虽然这些是非常强大的 CSRF 防御，但可能会对用户体验产生重大影响。因此，它们通常仅用于安全关键操作（如更改密码、资金转账等），并与本速查表中讨论的其他防御措施一起使用。
 
-## Possible CSRF Vulnerabilities in Login Forms
+## 登录表单中可能的 CSRF 漏洞
 
-Most developers tend to ignore CSRF vulnerabilities on login forms as they assume that CSRF would not be applicable on login forms because user is not authenticated at that stage, however this assumption is not always true. CSRF vulnerabilities can still occur on login forms where the user is not authenticated, but the impact and risk is different.
+大多数开发人员倾向于忽略登录表单上的 CSRF 漏洞，因为他们假设 CSRF 在用户尚未通过身份验证的阶段不适用，但这种假设并不总是正确。即使在用户未经身份验证的情况下，登录表单仍可能发生 CSRF 漏洞，但影响和风险是不同的。
 
-For example, if an attacker uses CSRF to assume an authenticated identity of a target victim on a shopping website using the attacker's account, and the victim then enters their credit card information, an attacker may be able to purchase items using the victim's stored card details. For more information about login CSRF and other risks, see section 3 of [this](https://seclab.stanford.edu/websec/csrf/csrf.pdf) paper.
+例如，如果攻击者使用 CSRF 在购物网站上假冒目标受害者的已验证身份，使用攻击者的账户，然后受害者输入其信用卡信息，攻击者可能能够使用受害者存储的卡详细信息购买商品。有关登录 CSRF 和其他风险的更多信息，请参见[此论文](https://seclab.stanford.edu/websec/csrf/csrf.pdf)的第 3 节。
 
-Login CSRF can be mitigated by creating pre-sessions (sessions before a user is authenticated) and including tokens in login form. You can use any of the techniques mentioned above to generate tokens. Remember that pre-sessions cannot be transitioned to real sessions once the user is authenticated - the session should be destroyed and a new one should be made to avoid [session fixation attacks](http://www.acrossecurity.com/papers/session_fixation.pdf). This technique is described in [Robust Defenses for Cross-Site Request Forgery section 4.1](https://seclab.stanford.edu/websec/csrf/csrf.pdf). Login CSRF can also be mitigated by including a custom request headers in AJAX request as described [above](#employing-custom-request-headers-for-ajaxapi).
-
-## REFERENCE: Sample JEE Filter Demonstrating CSRF Protection
-
-The following [JEE web filter](https://github.com/righettod/poc-csrf/blob/master/src/main/java/eu/righettod/poccsrf/filter/CSRFValidationFilter.java) provides an example reference for some of the concepts described in this cheatsheet. It implements the following stateless mitigations ([OWASP CSRFGuard](https://github.com/aramrami/OWASP-CSRFGuard), cover a stateful approach).
-
-- Verifying same origin with standard headers
-- Double submit cookie
-- SameSite cookie attribute
-
-**Please note** that this is only a reference sample and is not complete (for example: it doesn't have a block to direct the control flow when origin and referrer header check succeeds nor it has a port/host/protocol level validation for referrer header). Developers are recommended to build their complete mitigation on top of this reference sample. Developers should also implement authentication and authorization mechanisms before checking for CSRF is considered effective.
-
-Full source is located [here](https://github.com/righettod/poc-csrf) and provides a runnable POC.
-
-## JavaScript: Automatically Including CSRF Tokens as an AJAX Request Header
-
-The following guidance for JavaScript by default considers **GET**, **HEAD** and **OPTIONS** methods as safe operations. Therefore **GET**, **HEAD**, and **OPTIONS** method AJAX calls need not be appended with a CSRF token header. However, if the verbs are used to perform state changing operations, they will also require a CSRF token header (although this is a bad practice, and should be avoided).
-
-The **POST**, **PUT**, **PATCH**, and **DELETE** methods, being state changing verbs, should have a CSRF token attached to the request. The following guidance will demonstrate how to create overrides in JavaScript libraries to have CSRF tokens included automatically with every AJAX request for the state changing methods mentioned above.
-
-### Storing the CSRF Token Value in the DOM
-
-A CSRF token can be included in the `<meta>` tag as shown below. All subsequent calls in the page can extract the CSRF token from this `<meta>` tag. It can also be stored in a JavaScript variable or anywhere on the DOM. However, it is not recommended to store the CSRF token in cookies or browser local storage.
-
-The following code snippet can be used to include a CSRF token as a `<meta>` tag:
-
-```html
-<meta name="csrf-token" content="{{ csrf_token() }}">
-```
-
-The exact syntax of populating the content attribute would depend on your web application's backend programming language.
-
-### Overriding Defaults to Set Custom Header
-
-Several JavaScript libraries allow you to overriding default settings to have a header added automatically to all AJAX requests.
-
-#### XMLHttpRequest (Native JavaScript)
-
-XMLHttpRequest's open() method can be overridden to set the `anti-csrf-token` header whenever the `open()` method is invoked next. The function `csrfSafeMethod()` defined below will filter out the safe HTTP methods and only add the header to unsafe HTTP methods.
-
-This can be done as demonstrated in the following code snippet:
-
-```html
-<script type="text/javascript">
-    var csrf_token = document.querySelector("meta[name='csrf-token']").getAttribute("content");
-    function csrfSafeMethod(method) {
-        // these HTTP methods do not require CSRF protection
-        return (/^(GET|HEAD|OPTIONS)$/.test(method));
-    }
-    var o = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(){
-        var res = o.apply(this, arguments);
-        var err = new Error();
-        if (!csrfSafeMethod(arguments[0])) {
-            this.setRequestHeader('anti-csrf-token', csrf_token);
-        }
-        return res;
-    };
- </script>
-```
+通过创建预会话（用户通过身份验证之前的会话）并在登录表单中包含令牌，可以缓解登录 CSRF。您可以使用上面提到的任何技术生成令牌。请记住，预会话不能在用户通过身份验证后转换为真实会话 - 应销毁会话并创建新会话，以避免[会话固定攻击](http://www.acrossecurity.com/papers/session_fixation.pdf)。这种技术在[《Robust Defenses for Cross-Site Request Forgery》第 4.1 节](https://seclab.stanford.edu/websec/csrf/csrf.pdf)中有描述。登录 CSRF 还可以通过在 AJAX 请求中包含自定义请求头来缓解，如[上文](#employing-custom-request-headers-for-ajaxapi)所述。
 
 #### AngularJS
 
-AngularJS allows for setting default headers for HTTP operations. Further documentation can be found at AngularJS's documentation for [$httpProvider](https://docs.angularjs.org/api/ng/provider/$httpProvider#defaults).
+AngularJS 允许为 HTTP 操作设置默认头。更多文档可以在 AngularJS 的 [$httpProvider](https://docs.angularjs.org/api/ng/provider/$httpProvider#defaults) 文档中找到。
 
 ```html
 <script>
@@ -411,7 +344,7 @@ AngularJS allows for setting default headers for HTTP operations. Further docume
         $httpProvider.defaults.headers.post["anti-csrf-token"] = csrf_token;
         $httpProvider.defaults.headers.put["anti-csrf-token"] = csrf_token;
         $httpProvider.defaults.headers.patch["anti-csrf-token"] = csrf_token;
-        // AngularJS does not create an object for DELETE and TRACE methods by default, and has to be manually created.
+        // AngularJS 默认不为 DELETE 和 TRACE 方法创建对象，必须手动创建。
         $httpProvider.defaults.headers.delete = {
             "Content-Type" : "application/json;charset=utf-8",
             "anti-csrf-token" : csrf_token
@@ -424,11 +357,11 @@ AngularJS allows for setting default headers for HTTP operations. Further docume
  </script>
 ```
 
-This code snippet has been tested with AngularJS version 1.7.7.
+此代码片段已在 AngularJS 版本 1.7.7 上测试。
 
 #### Axios
 
-[Axios](https://github.com/axios/axios) allows us to set default headers for the POST, PUT, DELETE and PATCH actions.
+[Axios](https://github.com/axios/axios) 允许我们为 POST、PUT、DELETE 和 PATCH 操作设置默认头。
 
 ```html
 <script type="text/javascript">
@@ -439,26 +372,26 @@ This code snippet has been tested with AngularJS version 1.7.7.
     axios.defaults.headers.delete['anti-csrf-token'] = csrf_token;
     axios.defaults.headers.patch['anti-csrf-token'] = csrf_token;
 
-    // Axios does not create an object for TRACE method by default, and has to be created manually.
+    // Axios 默认不为 TRACE 方法创建对象，必须手动创建。
     axios.defaults.headers.trace = {}
     axios.defaults.headers.trace['anti-csrf-token'] = csrf_token
 </script>
 ```
 
-This code snippet has been tested with Axios version 0.18.0.
+此代码片段已在 Axios 版本 0.18.0 上测试。
 
 #### JQuery
 
-JQuery exposes an API called `$.ajaxSetup()` which can be used to add the `anti-csrf-token` header to the AJAX request. API documentation for `$.ajaxSetup()` can be found here. The function `csrfSafeMethod()` defined below will filter out the safe HTTP methods and only add the header to unsafe HTTP methods.
+JQuery 提供了一个名为 `$.ajaxSetup()` 的 API，可用于向 AJAX 请求添加 `anti-csrf-token` 头。`$.ajaxSetup()` 的 API 文档可以在此处找到。下面定义的函数 `csrfSafeMethod()` 将过滤出安全的 HTTP 方法，并仅对不安全的 HTTP 方法添加头。
 
-You can configure jQuery to automatically add the token to all request headers by adopting the following code snippet. This provides a simple and convenient CSRF protection for your AJAX based applications:
+通过采用以下代码片段，您可以配置 jQuery 自动将令牌添加到所有请求头。这为基于 AJAX 的应用程序提供了简单方便的 CSRF 保护：
 
 ```html
 <script type="text/javascript">
     var csrf_token = $('meta[name="csrf-token"]').attr('content');
 
     function csrfSafeMethod(method) {
-        // these HTTP methods do not require CSRF protection
+        // 这些 HTTP 方法不需要 CSRF 保护
         return (/^(GET|HEAD|OPTIONS)$/.test(method));
     }
 
@@ -472,17 +405,17 @@ You can configure jQuery to automatically add the token to all request headers b
 </script>
 ```
 
-This code snippet has been tested with jQuery version 3.3.1.
+此代码片段已在 jQuery 版本 3.3.1 上测试。
 
-## References in Related Cheat Sheets
+## 相关速查表中的参考文献
 
 ### CSRF
 
-- [OWASP Cross-Site Request Forgery (CSRF)](https://owasp.org/www-community/attacks/csrf)
-- [PortSwigger Web Security Academy](https://portswigger.net/web-security/csrf)
-- [Mozilla Web Security Cheat Sheet](https://infosec.mozilla.org/guidelines/web_security#csrf-prevention)
-- [Common CSRF Prevention Misconceptions](https://medium.com/keylogged/common-csrf-prevention-misconceptions-67fd026d94a8)
-- [Robust Defenses for Cross-Site Request Forgery](https://seclab.stanford.edu/websec/csrf/csrf.pdf)
-- For Java: OWASP [CSRF Guard](https://owasp.org/www-project-csrfguard/) or [Spring Security](https://docs.spring.io/spring-security/site/docs/5.5.x-SNAPSHOT/reference/html5/#csrf)
-- For PHP and Apache: [CSRFProtector Project](https://github.com/OWASP/www-project-csrfprotector )
-- For AngularJS: [Cross-Site Request Forgery (XSRF) Protection](https://docs.angularjs.org/api/ng/service/$http#cross-site-request-forgery-xsrf-protection)
+- [OWASP 跨站请求伪造（CSRF）](https://owasp.org/www-community/attacks/csrf)
+- [PortSwigger Web 安全学院](https://portswigger.net/web-security/csrf)
+- [Mozilla Web 安全速查表](https://infosec.mozilla.org/guidelines/web_security#csrf-prevention)
+- [常见 CSRF 预防误解](https://medium.com/keylogged/common-csrf-prevention-misconceptions-67fd026d94a8)
+- [跨站请求伪造的强健防御](https://seclab.stanford.edu/websec/csrf/csrf.pdf)
+- 对于 Java：OWASP [CSRF Guard](https://owasp.org/www-project-csrfguard/) 或 [Spring Security](https://docs.spring.io/spring-security/site/docs/5.5.x-SNAPSHOT/reference/html5/#csrf)
+- 对于 PHP 和 Apache：[CSRFProtector 项目](https://github.com/OWASP/www-project-csrfprotector)
+- 对于 AngularJS: [Cross-Site Request Forgery (XSRF) Protection](https://docs.angularjs.org/api/ng/service/$http#cross-site-request-forgery-xsrf-protection)
