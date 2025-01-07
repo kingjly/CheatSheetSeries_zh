@@ -1,143 +1,143 @@
-# Credential Stuffing Prevention Cheat Sheet
+# 凭据填充防御备忘录
 
-## Introduction
+## 引言
 
-This cheatsheet covers defences against two common types of authentication-related attacks: credential stuffing and password spraying. Although these are separate, distinct attacks, in many cases the defences that would be implemented to protect against them are the same, and they would also be effective at protecting against brute-force attacks.  A summary of these different attacks is listed below:
+本备忘录涵盖了针对两种常见的身份验证相关攻击的防御措施：凭据填充和密码喷洒。尽管这些是不同的、独立的攻击，但在许多情况下，为防御它们而实施的防御措施是相同的，这些措施也能有效防御暴力破解攻击。下面列出了这些不同攻击的摘要：
 
-| Attack Type | Description |
+| 攻击类型 | 描述 |
 |-------------|-------------|
-| Brute Force | Testing multiple passwords from dictionary or other source against a single account. |
-| Credential Stuffing | Testing username/password pairs obtained from the breach of another site. |
-| Password Spraying | Testing a single weak password against a large number of different accounts.|
+| 暴力破解 | 针对单个账户测试来自字典或其他来源的多个密码。 |
+| 凭据填充 | 测试从另一个网站泄露的用户名/密码组合。 |
+| 密码喷洒 | 使用单个弱密码针对大量不同账户进行测试。|
 
-## Multi-Factor Authentication
+## 多因素认证
 
-[Multi-factor authentication (MFA)](Multifactor_Authentication_Cheat_Sheet.md) is by far the best defense against the majority of password-related attacks, including credential stuffing and password spraying, with analysis by Microsoft suggesting that it would have stopped [99.9% of account compromises](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984). As such, it should be implemented wherever possible. Historically, depending on the audience of the application, it may not have been practical or feasible to enforce the use of MFA, however with modern browsers and mobile devices now supporting FIDO2 Passkeys and other forms of MFA, it is attainable for most use cases.
+[多因素认证（MFA）](Multifactor_Authentication_Cheat_Sheet.md)是防御大多数与密码相关的攻击（包括凭据填充和密码喷洒）的最佳防御方法，微软的分析表明，它可以阻止[99.9%的账户入侵](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984)。因此，应尽可能实施多因素认证。从历史上看，根据应用程序的用户群，强制使用MFA可能并不实际或可行，但随着现代浏览器和移动设备现在支持FIDO2通行证和其他MFA形式，对于大多数使用场景来说，这是可实现的。
 
-In order to balance security and usability, multi-factor authentication can be combined with other techniques to require the 2nd factor only in specific circumstances where there is reason to suspect that the login attempt may not be legitimate, such as a login from:
+为了平衡安全性和可用性，多因素认证可以与其他技术相结合，仅在特定情况下需要第二因素，这些情况是登录尝试可能不合法的原因，例如来自：
 
-- A new browser/device or IP address.
-- An unusual country or location.
-- Specific countries that are considered untrusted or typically do not contain users of a service.
-- An IP address that appears on known denylists or is associated with anonymization services, such as proxy or VPN services.
-- An IP address that has tried to login to multiple accounts.
-- A login attempt that appears to be scripted or from a bot rather than a human (i.e. large login volume sourced from a single IP or subnet).
+- 新的浏览器/设备或IP地址。
+- 不寻常的国家或位置。
+- 被认为不可信或通常不包含服务用户的特定国家。
+- 出现在已知黑名单上或与匿名服务（如代理或VPN服务）相关的IP地址。
+- 尝试登录多个账户的IP地址。
+- 看起来像脚本或机器人而非人类的登录尝试（即来自单个IP或子网的大量登录）。
 
-Or an organization may choose to require MFA in the form of a "step-up" authentication for the above scenarios during a session combined with a request for a high risk activity such as:
+或者，组织可以选择在以下情况下以"步进"认证的形式要求MFA：
 
-- Large currency transactions
-- Privileged or Administrative configuration changes
+- 大额货币交易
+- 特权或管理配置更改
 
-Additionally, for enterprise applications, known trusted IP ranges could be added to an allowlist so that MFA is not required when users connect from these ranges.
+此外，对于企业应用程序，可以将已知的可信IP范围添加到白名单，以便在用户从这些范围连接时不需要MFA。
 
-## Alternative Defenses
+## 替代防御措施
 
-Where it is not possible to implement MFA, there are many alternative defenses that can be used to protect against credential stuffing and password spraying. In isolation none of these are as effective as MFA, however multiple, layered defenses can provide a reasonable degree of protection. In many cases, these mechanisms will also protect against brute-force or password spraying attacks.
+在无法实施MFA的情况下，有许多替代防御措施可用于防御凭据填充和密码喷洒。单独使用这些措施不如MFA有效，但多层防御可以提供合理的保护。在许多情况下，这些机制还可以防御暴力破解或密码喷洒攻击。
 
-Where an application has multiple user roles, it may be appropriate to implement different defenses for different roles. For example, it may not be feasible to enforce MFA for all users, but it should be possible to require that all administrators use it.
+对于具有多个用户角色的应用程序，为不同角色实施不同的防御措施可能是适当的。例如，对所有用户强制执行MFA可能不可行，但应该可以要求所有管理员使用它。
 
-## Defense in Depth & Metrics
+## 纵深防御与指标
 
-While not a specific technique, it is important to implement defenses that consider the impact of individual defenses being defeated or otherwise failing.  As an example, client-side defenses, such as device fingerprinting or JavaScript challenges, may be spoofed or bypassed and other layers of defense should be implemented to account for this.
+虽然这不是一种具体技术，但实施考虑到单个防御措施被攻破或失败影响的防御措施很重要。例如，客户端防御（如设备指纹或JavaScript挑战）可能被欺骗或绕过，因此应实施其他防御层来应对这种情况。
 
-Additionally, each defense should generate volume metrics for use as a detective mechanism. Ideally the metrics will include both detected and mitigated attack volume and allow for filtering on fields such as IP address.  Monitoring and reporting on these metrics may identify defense failures or the presence of unidentified attacks, as well as the impact of new or improved defenses.
+此外，每种防御措施都应生成用作检测机制的数量指标。理想情况下，指标将包括检测到和缓解的攻击量，并允许按IP地址等字段进行过滤。监控和报告这些指标可能识别防御失败、未识别攻击的存在，以及新的或改进的防御措施的影响。
 
-Finally, when administration of different defenses is performed by multiple teams, care should be taken to ensure there is communication and coordination when separate teams are performing maintenance, deployment or otherwise modifying individual defenses.
+最后，当多个团队管理不同的防御措施时，应注意确保在单独的团队执行维护、部署或以其他方式修改单个防御措施时进行沟通和协调。
 
-### Secondary Passwords, PINs and Security Questions
+### 辅助密码、PIN和安全问题
 
-As well as requiring a user to enter their password when authenticating, users can also be prompted to provide additional security information such as:
+除了要求用户在身份验证时输入密码外，还可以提示用户提供额外的安全信息，例如：
 
-- A PIN
-- Specific characters from a secondary passwords or memorable word
-- Answers to [security questions](Choosing_and_Using_Security_Questions_Cheat_Sheet.md)
+- PIN码
+- 辅助密码或记忆单词的特定字符
+- [安全问题](Choosing_and_Using_Security_Questions_Cheat_Sheet.md)的答案
 
-It must be emphasised that this **does not** constitute multi-factor authentication (as both factors are the same - something you know). However, it can still provide a useful layer of protection against both credential stuffing and password spraying where proper MFA can't be implemented.
+必须强调的是，这**并不**构成多因素认证（因为两个因素都是"知道的内容"）。但是，在无法实施正确的MFA的情况下，这仍可以提供针对凭据填充和密码喷洒的有用防御层。
 
-### CAPTCHA
+### 验证码（CAPTCHA）
 
-Requiring a user to solve a "Completely Automated Public Turing test to tell Computers and Humans Apart" (CAPTCHA) or similar puzzle for each login attempt can help to identify automated/bot attacks and help prevent automated login attempts, and may slow down credential stuffing or password spraying attacks.  However, CAPTCHAs are not perfect, and in many cases tools or services exist that can be used to break them with a reasonably high success rate.  Monitoring CAPTCHA solve rates may help identify impact to good users, as well as automated CAPTCHA breaking technology, possibly indicated by abnormally high solve rates.
+要求用户为每次登录尝试解决"全自动区分计算机和人类的公共图灵测试"（CAPTCHA）或类似谜题，可以帮助识别自动/机器人攻击，并有助于防止自动登录尝试，可能会减缓凭据填充或密码喷洒攻击。然而，验证码并非完美，在许多情况下，存在可以以相当高的成功率破解它们的工具或服务。监控验证码解决率可能有助于识别对良好用户的影响，以及自动验证码破解技术，可能通过异常高的解决率来指示。
 
-To improve usability, it may be desirable to only require the user solve a CAPTCHA when the login request is considered suspicious or high risk, using the same criteria discussed in the MFA section.
+为了提高可用性，可能希望仅在登录请求被认为可疑或高风险时要求用户解决验证码，使用与MFA部分讨论的相同标准。
 
-### IP Mitigation and Intelligence
+### IP缓解和情报
 
-Blocking IP addresses may be sufficent to stop less sophisticated attacks, but should not be used as the primary defense due to the ease in circumvention.  It is more effective to have a graduated response to abuse that leverages multiple defensive measures depending on different factors of the attack.
+仅仅阻止IP地址可能足以阻止不太复杂的攻击，但不应作为主要防御手段，因为绕过它们很容易。更有效的方法是对滥用采取分级响应，根据攻击的不同因素利用多种防御措施。
 
-Any process or decision to mitigate (including blocking and CAPTCHA) credential stuffing traffic from an IP address should consider a multitude of abuse scenarios, and not rely on a single predictable volume limit.  Short (i.e. burst) and long time periods should be considered, as well as high request volume and instances where one IP address, likely in concert with _many_ other IP addresses, generates low but consistent volumes of traffic.  Additionally, mitigation decisions should consider factors such as IP address classification (ex: residential vs hosting) and geolocation.  These factors may be leveraged to raise or lower mitigation thresholds in order to reduce potential impact on legitimate users or more aggresively mitigate abuse originating from abnormal sources.  Mitigations, especially blocking an IP address, should be temporary and processes should be in place to remove an IP address from a mitigated state as abuse declines or stops.
+任何缓解（包括阻止和验证码）凭据填充流量的过程或决策都应考虑多种滥用场景，而不是依赖单一可预测的数量限制。应考虑短期（即突发）和长期时间段，以及高请求量和一个IP地址（可能与许多其他IP地址协同）产生低但持续的流量的情况。此外，缓解决策应考虑诸如IP地址分类（如住宅与托管）和地理位置等因素。这些因素可用于提高或降低缓解阈值，以减少对合法用户的潜在影响，或更积极地缓解来自异常来源的滥用。缓解措施，尤其是阻止IP地址，应是临时的，并且应建立流程以在滥用减少或停止时将IP地址从缓解状态中移除。
 
-Many credential stuffing toolkits, such as [Sentry MBA](https://federalnewsnetwork.com/wp-content/uploads/2020/06/Shape-Threat-Research-Automating-Cybercrime-with-SentryMBA.pdf), offer built-in use of proxy networks to distribute requests across a large volume of unique IP addressess.  This may defeat both IP block-lists and rate limiting, as per IP request volume may remain relatively low, even on high volume attacks.  Correlating authentication traffic with proxy and similar IP address intelligence, as well as hosting provider IP address ranges can help identify highly distributed credential stuffing attacks, as well as serve as a mitigation trigger.  For example, every request originating from a hosting provider could be required to solve CAPTCHA.
+许多凭据填充工具包，如[Sentry MBA](https://federalnewsnetwork.com/wp-content/uploads/2020/06/Shape-Threat-Research-Automating-Cybercrime-with-SentryMBA.pdf)，提供内置的代理网络使用，以在大量唯一IP地址间分配请求。这可能会击败IP黑名单和速率限制，因为每个IP的请求量可能保持相对较低，即使在高容量攻击中。关联身份验证流量与代理和类似的IP地址情报，以及托管提供商的IP地址范围，可以帮助识别高度分布式的凭据填充攻击，并作为缓解触发器。例如，每个来自托管提供商的请求都可能被要求解决验证码。
 
-There are both public and commercial sources of IP address intelligence and classification that may be leveraged as data sources for this purpose.  Additionally, some hosting providers publish their own IP address space, such as [AWS](https://docs.aws.amazon.com/vpc/latest/userguide/aws-ip-ranges.html).
+有公开和商业的IP地址情报和分类来源可用于此目的。此外，一些托管提供商发布自己的IP地址空间，如[AWS](https://docs.aws.amazon.com/vpc/latest/userguide/aws-ip-ranges.html)。
 
-Separate from blocking network connections, consider storing an account's IP address authentication history.  In case a recent IP address is added to a block or mitigation list, it may be appropriate to lock the account and notify the user.
+除了阻止网络连接外，还要考虑存储账户的IP地址身份验证历史。如果最近的IP地址被添加到阻止或缓解列表，可能需要锁定账户并通知用户。
 
-### Device Fingerprinting
+### 设备指纹
 
-Aside from the IP address, there are a number of different factors that can be used to attempt to fingerprint a device. Some of these can be obtained passively by the server from the HTTP headers (particularly the "User-Agent" header), including:
+除了IP地址，还有许多不同的因素可用于尝试对设备进行指纹识别。其中一些可以通过HTTP头（特别是"User-Agent"头）被服务器被动获取，包括：
 
-- Operating system & version
-- Browser & version
-- Language
+- 操作系统和版本
+- 浏览器和版本
+- 语言
 
-Using JavaScript it is possible to access far more information, such as:
+使用JavaScript，可以访问更多信息，例如：
 
-- Screen resolution
-- Installed fonts
-- Installed browser plugins
+- 屏幕分辨率
+- 已安装字体
+- 已安装的浏览器插件
 
-Using these various attributes, it is possible to create a fingerprint of the device. This fingerprint can then be matched against any browser attempting to login to the account, and if it doesn't match then the user can be prompted for additional authentication. Many users will have multiple devices or browsers that they use, so it is not practical to simply block attempts that do not match the existing fingerprints, however it is common to define a process for users or customers to view their device history and manage their remembered devices.  Also these attributes can be used to detect anomalous activity such as a device appearing to be running an older version of OS or Browser.
+使用这些各种属性，可以创建设备指纹。然后可以将此指纹与尝试登录账户的任何浏览器进行匹配，如果不匹配，则可以提示用户进行额外的身份验证。许多用户会使用多个设备或浏览器，因此简单地阻止不匹配现有指纹的尝试是不切实际的，但是让用户或客户查看其设备历史并管理记住的设备是很常见的。这些属性还可用于检测异常活动，如设备似乎运行较旧版本的操作系统或浏览器。
 
-The [fingerprintjs2](https://github.com/Valve/fingerprintjs2) JavaScript library can be used to carry out client-side fingerprinting.
+[JavaScript库 fingerprintjs2](https://github.com/Valve/fingerprintjs2)可用于执行客户端指纹识别。
 
-It should be noted that as all this information is provided by the client, it can potentially be spoofed by an attacker. In some cases spoofing these attributes is trivial (such as the "User-Agent") header, but in other cases it may be more difficult to modify these attributes.
+应注意，由于所有这些信息都由客户端提供，因此攻击者可能会伪造。在某些情况下，伪造这些属性是微不足道的（如"User-Agent"头），但在其他情况下，修改这些属性可能更加困难。
 
-### Connection Fingerprinting
+### 连接指纹
 
-Similar to device fingerprinting, there are numerous fingerprinting techniques available for network connections.  Some examples include [JA3](https://github.com/salesforce/ja3), HTTP/2 fingerprinting and HTTP header order.  As these techniques typically focus on how a connection is made, connection fingerprinting may provide more accurate results than other defenses that rely on an indicator, such as an IP address, or request data, such as user agent string.
+与设备指纹类似，网络连接有许多可用的指纹识别技术。一些示例包括[JA3](https://github.com/salesforce/ja3)、HTTP/2指纹识别和HTTP头顺序。由于这些技术通常关注连接的建立方式，连接指纹可能比依赖IP地址等指示器或用户代理字符串等请求数据的其他防御提供更准确的结果。
 
-Connection fingerprinting may also be used in conjunction with other defenses to ascertain the truthfulness of an authentication request.  For example, if the user agent header and device fingerprint indicates a mobile device, but the connection fingerprint indicates a Python script, the request is likely suspect.
+连接指纹可以与其他防御措施结合使用，以确定身份验证请求的真实性。例如，如果用户代理头和设备指纹表明是移动设备，但连接指纹显示是Python脚本，则该请求很可能值得怀疑。
 
-### Require Unpredictable Usernames
+### 要求不可预测的用户名
 
-Credential stuffing attacks rely on not just the re-use of passwords between multiple sites, but also the re-use of usernames. A significant number of websites use the email address as the username, and as most users will have a single email address they use for all their accounts, this makes the combination of an email address and password very effective for credential stuffing attacks.
+凭据填充攻击不仅依赖于在多个站点重复使用密码，还依赖于用户名的重复使用。大量网站使用电子邮件地址作为用户名，由于大多数用户对所有账户使用同一个电子邮件地址，这使得电子邮件地址和密码组合对凭据填充攻击非常有效。
 
-Requiring users to create their own username when registering on the website makes it harder for an attacker to obtain valid username and password pairs for credential stuffing, as many of the available credential lists only include email addresses. Providing the user with a generated username can provide a higher degree of protection (as users are likely to choose the same username on most websites), but is user unfriendly. Additionally, care needs to be taken to ensure that the generated username is not predictable (such as being based on the user's full name, or sequential numeric IDs), as this could make enumerating valid usernames for a password spraying attack easier.
+要求用户在注册网站时创建自己的用户名，可以使攻击者更难获得用于凭据填充的有效用户名和密码对，因为许多可用的凭据列表仅包含电子邮件地址。为用户提供生成的用户名可以提供更高程度的保护（因为用户可能在大多数网站上选择相同的用户名），但这对用户不友好。此外，需要注意确保生成的用户名不可预测（例如不基于用户的全名或连续数字ID），否则可能使密码喷洒攻击更容易枚举有效用户名。
 
-### Multi-Step Login Processes
+### 多步骤登录流程
 
-The majority of off-the-shelf tools are designed for a single step login process, where the credentials are POSTed to the server, and the response indicates whether or not the login attempt was successful. By adding additional steps to this process, such as requiring the username and password to be entered sequentially, or requiring that the user first obtains a random [CSRF Token](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md) before they can login, this makes the attack slightly more difficult to perform, and doubles the number of requests that the attacker must make.
+大多数现成的工具都设计用于单步登录过程，凭据通过POST提交到服务器，响应指示登录尝试是否成功。通过为此过程添加额外步骤，如要求用户名和密码依次输入，或要求用户先获取随机[CSRF令牌](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md)后才能登录，这使得攻击稍微更难执行，并使攻击者必须发出的请求数量加倍。
 
-Multi-step login processes, however, should be mindful that they do not faciliate [user enumeration](Authentication_Cheat_Sheet.md).  Enumerating users prior to a credential stuffing attack may result in a harder to identify, lower request volume attack.
+然而，多步骤登录流程必须注意不要促进[用户枚举](Authentication_Cheat_Sheet.md)。在凭据填充攻击之前枚举用户可能导致更难识别、请求量更低的攻击。
 
-### Require JavaScript and Block Headless Browsers
+### 要求JavaScript并阻止无头浏览器
 
-Most tools used for these types of attacks will make direct POST requests to the server and read the responses, but will not download or execute JavaScript that was contained in them. By requiring the attacker to evaluate JavaScript in the response (for example to generate a valid token that must be submitted with the request), this forces the attacker to either use a real browser with an automation framework like Selenium or Headless Chrome, or to implement JavaScript parsing with another tool such as PhantomJS. Additionally, there are a number of techniques that can be used to identify [Headless Chrome](https://antoinevastel.com/bot%20detection/2018/01/17/detect-chrome-headless-v2.html) or [PhantomJS](https://blog.shapesecurity.com/2015/01/22/detecting-phantomjs-based-visitors/).
+大多数用于这类攻击的工具将直接向服务器发出POST请求并读取响应，但不会下载或执行响应中包含的JavaScript。通过要求攻击者评估响应中的JavaScript（例如生成必须与请求一起提交的有效令牌），这迫使攻击者要么使用带有Selenium或无头Chrome等自动化框架的真实浏览器，要么使用PhantomJS等工具实现JavaScript解析。此外，还有一些技术可用于识别[无头Chrome](https://antoinevastel.com/bot%20detection/2018/01/17/detect-chrome-headless-v2.html)或[PhantomJS](https://blog.shapesecurity.com/2015/01/22/detecting-phantomjs-based-visitors/)。
 
-Please note that blocking visitors who have JavaScript disabled will reduce the accessibility of the website, especially to visitors who use screen readers. In certain jurisdictions this may be in breach of equalities legislation.
+请注意，阻止禁用JavaScript的访问者将降低网站的可访问性，特别是对使用屏幕阅读器的访问者。在某些司法管辖区，这可能违反平等立法。
 
-### Degredation
+### 性能降级
 
-A more aggresive defense against credential stuffing is to implement measures that increase the amount of time the attack takes to complete.  This may include incrementally increasing the complexity of the JavaScript that must be evaluated, introducing long wait periods before responding to requests, returning overly large HTML assets or returning randomized error messages.
+对凭据填充的一种更激进的防御是实施措施，增加攻击完成的时间。这可能包括逐步增加必须评估的JavaScript复杂性、在响应请求之前引入长等待期、返回过大的HTML资源或返回随机化的错误消息。
 
-Due to their potential negative impact on legitimate users, great care must be taken with this type of defense, though it may be needed in order to mitigate more sophisticated credential stuffing attacks.
+由于对合法用户的潜在负面影响，必须谨慎使用这类防御，尽管为了缓解更复杂的凭据填充攻击，这可能是必要的。
 
-### Identifying Leaked Passwords
+### 识别泄露的密码
 
-[ASVS v4.0 Password Security Requirements](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x11-V2-Authentication.md#v21-password-security-requirements) provision (2.1.7) on verifying new passwords presence in breached password datasets should be implemented.
+应实施[ASVS v4.0密码安全要求](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x11-V2-Authentication.md#v21-password-security-requirements)中关于验证新密码是否存在于泄露密码数据集中的规定（2.1.7）。
 
-There are both commercial and free services that may be of use for validating passwords presence in prior breaches.  A well known free service for this is [Pwned Passwords](https://haveibeenpwned.com/Passwords). You can host a copy of the application yourself, or use the [API](https://haveibeenpwned.com/API/v2#PwnedPasswords).
+对于验证密码是否出现在先前的泄露中，有商业和免费服务可用。一个众所周知的免费服务是[Pwned Passwords](https://haveibeenpwned.com/Passwords)。您可以自行托管应用程序，或使用[API](https://haveibeenpwned.com/API/v2#PwnedPasswords)。
 
-### Notify users about unusual security events
+### 通知用户异常安全事件
 
-When suspicious or unusual activity is detected, it may be appropriate to notify or warn the user. However, care should be taken that the user does not get overwhelmed with a large number of notifications that are not important to them, or they will just start to ignore or delete them.  Additionally, due to frequent reuse of passwords across multiple sites, the possibility that the users email account has also been compromised should be considered.
+当检测到可疑或异常活动时，通知或警告用户可能是适当的。但是，应注意不要用大量对用户不重要的通知淹没用户，否则他们会开始忽略或删除这些通知。此外，考虑到密码在多个站点频繁重复使用，还应考虑用户的电子邮件账户是否也已被入侵。
 
-For example, it would generally not be appropriate to notify a user that there had been an attempt to login to their account with an incorrect password. However, if there had been a login with the correct password, but which had then failed the subsequent MFA check, the user should be notified so that they can change their password.  Subsequently, should the user request multiple password resets from different devices or IP addresses, it may be appropriate to prevent further access to the account pending further user verification processes.
+例如，通常不适合通知用户有人使用不正确的密码尝试登录其账户。但是，如果有人使用正确的密码登录，然后未通过后续的MFA检查，则应通知用户以便他们可以更改密码。随后，如果用户从不同设备或IP地址请求多个密码重置，可能需要在进一步的用户验证流程之前阻止对账户的访问。
 
-Details related to current or recent logins should also be made visible to the user. For example, when they login to the application, the date, time and location of their previous login attempt could be displayed to them. Additionally, if the application supports concurrent sessions, the user should be able to view a list of all active sessions, and to terminate any other sessions that are not legitimate.
+应向用户显示当前或最近登录的详细信息。例如，当他们登录应用程序时，可以向他们显示上一次登录尝试的日期、时间和位置。此外，如果应用程序支持并发会话，用户应能查看所有活动会话的列表，并终止任何不合法的其他会话。
 
-## References
+## 参考文献
 
-- [OWASP Credential Stuffing Article](https://owasp.org/www-community/attacks/Credential_stuffing)
-- [OWASP Automated Threats to Web Applications](https://owasp.org/www-project-automated-threats-to-web-applications/)
-- Project: [OAT-008 Credential Stuffing](https://owasp.org/www-community/attacks/Credential_stuffing), which is one of 20 defined threats in the [OWASP Automated Threat Handbook](https://owasp.org/www-pdf-archive/Automated-threat-handbook.pdf) this project produced.
+- [OWASP凭据填充文章](https://owasp.org/www-community/attacks/Credential_stuffing)
+- [OWASP Web应用程序自动化威胁](https://owasp.org/www-project-automated-threats-to-web-applications/)
+- 项目：[OAT-008 凭据填充](https://owasp.org/www-community/attacks/Credential_stuffing)，这是[OWASP自动化威胁手册](https://owasp.org/www-pdf-archive/Automated-threat-handbook.pdf)中定义的20个威胁之一
