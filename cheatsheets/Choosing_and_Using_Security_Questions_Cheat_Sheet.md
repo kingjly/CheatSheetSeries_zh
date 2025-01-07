@@ -1,148 +1,150 @@
-# Choosing and Using Security Questions Cheat Sheet
+# 选择和使用安全问题备忘录
 
-## Introduction
+## 引言
 
-**WARNING: Security questions are no longer recognized as an acceptable authentication factor per [NIST SP 800-63](https://pages.nist.gov/800-63-3/sp800-63b.html). Account recovery is just an alternate way to authenticate so it should be no weaker than regular authentication. See [SP 800-63B sec 5.1.1.2 paragraph 4](https://pages.nist.gov/800-63-3/sp800-63b.html#sec5): *Verifiers SHALL NOT prompt subscribers to use specific types of information (e.g., “What was the name of your first pet?”) when choosing memorized secrets*.**
+**警告：根据[NIST SP 800-63](https://pages.nist.gov/800-63-3/sp800-63b.html)的规定，安全问题是不再被认可为可接受的身份验证因素。账户恢复只是另一种身份验证方式，因此它的安全性不应低于常规身份验证。参见[NIST SP 800-63B 第5.1.1.2段第4点](https://pages.nist.gov/800-63-3/sp800-63b.html#sec5)：*验证者在选择记忆秘密时，不得提示用户使用特定类型的信息（例如，“你第一只宠物的名字是什么？”）*。**
 
-If you are curious, please have a look at this [study](https://www.microsoft.com/en-us/research/publication/its-no-secret-measuring-the-security-and-reliability-of-authentication-via-secret-questions/) by Microsoft Research in 2009 and this [study](https://research.google/pubs/pub43783/) performed at Google in 2015. The accompanying [Security blog](https://security.googleblog.com/2015/05/new-research-some-tough-questions-for.html) update includes an infographic on the issues identified with security questions.
+如果您感兴趣，请参阅2009年微软研究的[这项研究](https://www.microsoft.com/en-us/research/publication/its-no-secret-measuring-the-security-and-reliability-of-authentication-via-secret-questions/)和2015年谷歌进行的一项[研究](https://research.google/pubs/pub43783/)。伴随而来的[安全博客更新](https://security.googleblog.com/2015/05/new-research-some-tough-questions-for.html)中包括了关于安全问题所面临的问题的图表。
 
-**Please Note:** While there are no acceptable uses of security questions in secure software, this cheat sheet provides guidance on how to choose strong security questions for legacy purposes.
+**请注意：尽管在安全软件中没有可接受的安全问题使用方式，但本快捷指南提供了如何为遗留用途选择强安全问题的指导。**
 
-## Choosing Security Questions
+## 选择安全问题
 
-### Desired Characteristics
+### 希望具备的特点
 
-Any security questions presented to users to reset forgotten passwords must meet the following characteristics:
+任何被用户用来重置丢失密码的安全问题必须满足以下特点：
 
-| Characteristic | Explanation |
+| 特性 | 解释 |
 |----------------|-------------|
-| Memorable | The user must be able to recall the answer to the question, potentially years after creating their account. |
-| Consistent | The answer to the question must not change over time. |
-| Applicable | The user must be able to answer the question.
-| Confidential | The answer to the question must be hard for an attacker to obtain. |
-| Specific | The answer should be clear to the user. |
+| 易记 | 用户必须能够回忆起答案，即使是在创建账户多年后。 |
+| 一致 | 答案不应随时间改变。 |
+| 适用 | 用户必须能够回答该问题。 |
+| 保密 | 答案对于攻击者来说应难以获取。 |
+| 具体 | 答案对用户来说应该是明确的。 |
 
-### Types of Security Questions
+### 安全问题类型
 
-Security questions fall into two main types. With *user defined* security questions, the user must choose a question from a list, and provide an answer to the question. Common examples are "What is your favourite colour?" or "What was your first car?"
+安全问题大致分为两类：*用户定义的安全问题*和*系统定义的安全问题*。
 
-These are easy for applications to implement, as the additional information required is provided by the user when they first create their account. However, users will often choose weak or easily discovered answers to these questions.
+在*用户定义的安全问题*中，用户必须从列表中选择一个问题并提供答案。常见的例子包括“你最喜欢的颜色是什么？”或“你的第一辆车是什么？”
 
-*System defined* security questions are based on information that is already known about the user. This approach avoids having to ask the user to provide specific security questions and answers, and also prevents them from being able to choose weak details. However it relies on sufficient information already being stored about the user, and on this information being hard for an attacker to obtain.
+这类问题对于应用程序来说实现起来非常简单，因为所需的信息是在用户创建账户时提供的。然而，用户往往会选择弱或容易被发现的答案。
 
-### User Defined Security Questions
+在*系统定义的安全问题*中，基于已知的用户信息来构建这些问题。这种方法避免了需要向用户提供特定的问题和答案，并防止他们选择弱细节。但是，它依赖于存储在用户身上的足够多的信息，并且这些信息对于攻击者来说是难以获取的。
 
-#### Bad Questions
+### 用户定义的安全问题
 
-Any questions that do not have all of the characteristics discussed above should be avoided. The table below gives some examples of bad security questions:
+#### 不好的安全问题
 
-| Question | Problem |
+任何不符合上述所有特点的问题都应避免使用。以下是一些示例：
+
+| 问题 | 问题 |
 |----------|---------|
-| When is your date of birth? | Easy for an attacker to discover. |
-| What is your memorable date? | Most users will just enter their birthday. |
-| What is your favourite movie? | Likely to change over time. |
-| What is your favourite cricket team? | Not applicable to most users. |
-| What is the make and model of your first car? | Fairly small range of likely answers. |
-| What is your nickname? | This could be guessed by glancing through social media posts. |
+| 你的生日是什么时候？ | 攻击者很容易找到答案。 |
+| 你有什么纪念日吗？ | 大多数用户会直接输入他们的出生日期。 |
+| 你最喜欢的一部电影是什么？ | 很可能随时间而改变。 |
+| 你最喜欢的板球队是哪个？ | 对大多数用户来说不适用。 |
+| 你的第一辆汽车的品牌和型号是什么？ | 潜在答案范围较小。 |
+| 你的昵称是什么？ | 这个可以从社交媒体帖子中猜测出来。 |
 
-Additionally, the context of the application must be considered when deciding whether questions are good or bad. For example, a question such as "What was your maths teacher's surname in your 8th year of school?" would be very easy to guess if it was using in a virtual learning environment for your school (as other students probably know this information), but would be much stronger for an online gaming website.
+此外，应用程序的上下文也需要考虑以确定问题的好坏。例如，在一个学校虚拟学习环境中，“你在第八年级时数学老师的姓氏是什么？”这个问题在这种情况下很容易被猜到（因为其他学生可能知道这些信息），但在在线游戏网站上则要强得多。
 
-#### Good Questions
+#### 好的安全问题
 
-Many good security questions are not applicable to all users, so the best approach is to give the user a list of security questions that they can choose from. This allows you to have more specific questions (with more secure answers), while still providing every user with questions that they can answer.
+许多好的安全问题对所有用户都不适用，因此最好的方法是提供给用户一个可以从中选择的问题列表。这允许你拥有更具体的问题（答案也更安全），同时仍然为每位用户提供他们能够回答的问题。
 
-The following list provides some examples of good questions:
+以下是一些示例：
 
-- What is the name of a college you applied to but didn’t attend?
-- What was the name of the first school you remember attending?
-- Where was the destination of your most memorable school field trip?
-- What was your maths teacher's surname in your 8th year of school?
-- What was the name of your first stuffed toy?
-- What was your driving instructor's first name?
+- 你申请但未就读的大学名称是什么？
+- 你还记得第一次上学的第一所学校的名字吗？
+- 你最难忘的一次学校实地考察的目的地在哪里？
+- 你在第八年级时数学老师的姓氏是什么？
+- 你第一个毛绒玩具的名字是什么？
+- 你的驾驶教练叫什么名字？
 
-Much like passwords, there is a risk that users will re-use recovery questions between different sites, which could expose the users if the other site is compromised. As such, there are benefits to having unique security questions that are unlikely to be shared between sites. An easy way to achieve this is to create more targeted questions based on the type of application. For example, on a share dealing platform, financial related questions such as "What is the first company you owned shares in?" could be used.
+与密码类似，用户可能会在不同网站之间重复使用恢复问题，这可能导致如果其他站点被攻破而暴露用户的个人信息。因此，拥有独特且不太可能与其他网站共享的安全问题是很有益的。一种实现这一目标的方法是基于应用类型创建更具体的问题。例如，在股票交易平台中，“你第一次购买股份的是哪家公司？”这样的财务相关问题可能会用到。
 
-#### Allowing Users to Write Their Own Questions
+#### 允许用户自定义安全问题
 
-Allowing users to write their own security questions can result in them choosing very strong and unique questions that would be very hard for an attacker to guess. However, there is also a significant risk that users will choose weak questions. In some cases, users might even set a recovery question to a reminder of what their password is - allowing anyone guessing their email address to compromise their account.
+允许用户自定义安全问题可以让他们选择非常强大且独特的难以猜测的问题。然而，这也存在用户选择弱问题的风险。在某些情况下，用户甚至可能将恢复问题设置为他们密码的提示——这使得任何猜出其电子邮件地址的人都能攻破他们的账户。
 
-As such, it is generally best not to allow users to write their own questions.
+因此，通常最好不让用户自己编写问题。
 
-#### Restricting Answers
+#### 限制答案
 
-Enforcing a minimum length for answers can prevent users from entering strings such as "a" or "123" for their answers. However, depending on the questions asked, it could also prevent users from being able to correctly answer the question. For example, asking for a first name or surname could result in a two letter answer such as "Li", and a colour-based question could be four letters such as "blue".
+强制答案具有最小长度可以防止用户输入诸如“a”或“123”这样的短字符串。然而，取决于所问的问题，这也可能阻止用户正确回答问题。例如，要求提供名字或姓氏可能会导致两个字母的答案（如“Li”），而基于颜色的问题可能是四个字母（如“blue”）。
 
-Answers should also be checked against a denylist, including:
+答案还应与禁止列表进行检查，包括：
 
-- The username or email address.
-- The user's current password.
-- Common strings such as "123" or "password".
+- 用户名或电子邮件地址。
+- 当前密码。
+- 常见字符串，如“123”或“password”。
 
-#### Renewing Security Questions
+#### 重新选择安全问题
 
-If the security questions are not used as part of the main authentication process, then consider periodically (such as when they are changing their passwords after expiration) prompting the user to review their security questions and verify that they still know the answers. This should give them a chance to update any answers that may have changed (although ideally this shouldn't happen with good questions), and increases the likelihood that they will remember them if they ever need to recover their account.
+如果安全问题是作为主要身份验证过程的一部分，则考虑在用户更改密码时定期（例如）提示他们审查并验证自己是否还记得答案。这将给他们机会更新任何可能已改变的答案（尽管理想情况下不应该发生这种情况），从而提高他们在需要恢复账户时记住它们的可能性。
 
-### System Defined Security Questions
+### 系统定义的安全问题
 
-System defined security questions are based on information that is already known about the user. The users' personal details are often used, including the full name, address and date of birth. However these can easily be obtained by an attacker from social media, and as such provide a very weak level of authentication.
+系统定义的安全问题是基于对用户的已知信息构建的，包括全名、地址和出生日期等个人信息。然而，这些信息很容易被攻击者通过社交媒体获取，因此提供的认证水平非常弱。
 
-The questions that can be used will vary hugely depending on the application, and how much information is already held about the user. When deciding which bits of information may be usable for security questions, the following areas should be considered:
+可以使用的具体问题将根据应用程序以及已经存储在用户身上的信息量而有很大差异。在决定哪些信息可能用于安全问题时，应考虑以下方面：
 
-- Will the user be able to remember the answer to the question?
-- Could an attacker easily obtain this information from social media or other sources?
-- Is the answer likely to be the same for a large number of users, or easily guessable?
+- 用户是否能够记住答案？
+- 攻击者能否轻易从社交媒体或其它渠道获得这些信息？
+- 答案是否可能是大量用户的共通点，或者容易被猜到？
 
-## Using Security Questions
+## 使用安全问题
 
-### When to Use Security Questions
+### 何时使用安全问题
 
-Applications should generally use a password along with a second authentication factor (such as an OTP code) to authenticate users. The combination of a password and security questions **does not constitute MFA**, as both factors as the same (i.e. something you know)..
+应用程序通常应该结合密码和第二种身份验证因素（如一次性口令）来认证用户。**使用密码加上安全问题是不构成MFA的**，因为两种因素都是基于“你知道”的信息。
 
-**Security questions should never be relied upon as the sole mechanism to authenticate a user**. However, they can provide a useful additional layer of security when other stronger factors are not available. Common cases where they would be used include:
+**绝对不应依赖单一的安全问题作为唯一机制来验证用户的身份**。然而，在其他更强的因素不可用时，它们可以提供有用的额外层安全保护。常见的应用场景包括：
 
-- Logging in.
-- Resetting a forgotten password.
-- Resetting a lost MFA token.
+- 登录。
+- 重置丢失或遗忘的密码。
+- 重置丢失的一次性口令令牌。
 
-#### Authentication Flow
+#### 认证流程
 
-Security questions may be used as part of the main authentication flow to supplement passwords where MFA is not available. A typical authentication flow would be:
+在没有MFA的情况下，安全问题可以在主要认证流程中作为补充来使用。典型的认证流程如下：
 
-- The user enters their username and password.
-- If the username and password are correct, the user is presented with the security question(s).
-- If the answers are correct, the user is logged in.
+1. 用户输入用户名和密码。
+2. 如果用户名和密码正确，则用户将被提示回答安全问题。
+3. 如果答案正确，则用户登录成功。
 
-If the answers to the security questions are incorrect, then this should be counted as a failed login attempt, and the account lockout counter should be incremented for the user.
+如果安全问题的答案不正确，则应将其计为一次失败的登录尝试，并增加用户的账户锁定计数器。
 
-#### Forgotten Password or Lost MFA Token Flow
+#### 丢失或忘记密码或一次性口令令牌流程
 
-Forgotten password functionality often provides a mechanism for attackers to enumerate user accounts if it is not correctly implemented. The following flow avoids this issue by only displaying the security questions once the user has proved ownership of the email address:
+通常用于重置丢失或遗忘密码的功能可能会在未正确实现时被攻击者用来枚举用户账号。以下流程避免了这个问题，因为它只在用户证明自己拥有电子邮件地址后才显示安全问题：
 
-- The user enters email address (and solves a CAPTCHA).
-- The application displays a generic message such as "If the email address was correct, an email will be sent to it".
-- An email with a randomly generated, single-use link is sent to the user.
-- The user clicks the link.
-- The user is presented with the security question(s).
-- If the answer is correct, the user can enter a new password.
+1. 用户输入电子邮件地址（并解决验证码）。
+2. 应用程序显示一条通用消息：“如果该电子邮件地址是正确的，则会发送一封电子邮件到您的邮箱”。
+3. 发送一封包含随机生成、一次性使用的链接的电子邮件给用户。
+4. 用户点击链接。
+5. 用户被提示回答安全问题。
+6. 如果答案正确，用户可以输入新密码。
 
-### How to Use Security Questions
+### 如何使用安全问题
 
-#### Storing Answers
+#### 存储答案
 
-The answers to security questions may contain personal information about the user, and may also be re-used by the user between different applications. As such, they should be treated in the same way as passwords, and stored using a secure hashing algorithm such as Bcrypt. The [password storage cheat sheet](Password_Storage_Cheat_Sheet.md) contains further guidance on this.
+安全问题的答案可能包含用户的个人信息，并且可能会在不同应用程序之间重复使用。因此，它们应像密码一样处理并存储使用安全散列算法（如Bcrypt）。[密码存储快捷指南](Password_Storage_Cheat_Sheet.md)中提供了更多详细信息。
 
-#### Comparing Answers
+#### 比较答案
 
-Comparing the answers provided by the user with the stored answer in a case insensitive manner makes it much easier for the user. The simplest way to do this is to convert the answer to lowercase before hashing the answer to store it, and then lowercase the user-provided answer before comparing them.
+以不区分大小写的方式比较用户提供的答案与存储的答案可以使用户的体验更加友好。最简单的方法是在存储答案之前将答案转换为小写字母，并在比较时也将用户提供答案转换为小写字母进行比较。
 
-It is also beneficial to give the user some indication of the format that they should use to enter answers. This could be done through input validation, or simply by recommending that the user enters their details in a specific format. For example, when asking for a date, indicating that the format should be "DD/MM/YYYY" will mean that the user doesn't have to try and guess what format they entered when registering.
+此外，给用户一些关于他们应如何输入答案的指示也是有益的。这可以通过输入验证或仅建议使用特定格式来实现。例如，在要求提供日期时，指出格式应该是“DD/MM/YYYY”将使用户不必猜测他们在注册时使用的格式。
 
-#### Updating Answers
+#### 更新答案
 
-When the user updates the answers to their security questions, this should be treated as a sensitive operation within the application. As such, the user should be required to re-authenticate themselves by entering their password (or ideally using MFA), in order to prevent an attacker updating the questions if they gain temporary access to the user's account.
+当用户更新他们的安全问题答案时，这应该被视为应用程序中的敏感操作。因此，用户应通过重新输入密码（或理想情况下使用MFA）进行身份验证，以防止攻击者在暂时获得用户账户访问权限的情况下更改这些问题。
 
-#### Multiple Security Questions
+#### 多个安全问题
 
-When security questions are used, the user can either be asked a single question, or can be asked multiple questions at the same time. This provides a greater level of assurance, especially if the questions are diverse, as an attacker would need to obtain more information about the target user. A mixture of user-defined and system-defined questions can be very effective for this.
+当使用安全问题时，用户可以被要求回答单个问题或同时回答多个问题。这提供了更高的保障，特别是如果问题是多样化的，则需要获取更多关于目标用户的信息。混合使用用户定义和系统定义的问题对于这一点非常有效。
 
-If the user is asked a single question out of a bank of possible questions, then this question **should not** be changed until the user has answered it correctly. If the attacker is allowed to try answering all of the different security questions, this greatly increases the chance that they will be able to guess or obtain the answer to one of them.
+如果从一组可能的问题中随机选择一个给用户回答，则该问题 **不应** 在用户正确回答之前改变。如果允许攻击者尝试所有不同的安全问题，这大大增加了他们能够猜到或获得其中一个答案的机会。
