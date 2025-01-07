@@ -1,80 +1,76 @@
-# Authorization Testing Automation Cheat Sheet
+# 授权测试自动化备忘录
 
-## Introduction
+## 介绍
 
-**When you are implementing protection measures for an application, one of the most important parts of the process is defining and implementing the application's authorizations.** Despite all of the checks and security audits conducted during the creation phase, most of the problems with authorizations occur because features are added/modified in updated releases without determining their effect on the application's authorizations (usually because of cost or time issue reasons).
+**在实现应用程序的安全保护措施时，定义和实施授权是最重要的部分之一。尽管在创建阶段进行了各种检查和安全审计，大多数授权问题通常发生在功能在更新版本中被添加或修改而未确定其对应用授权的影响（通常是由于成本或时间的原因）。**
 
-To deal with this problem, we recommend that developers automate the evaluation of the authorizations and perform a test when a new release is created. This ensures that the team knows if changes to the application will conflict with an authorization's definition and/or implementation.
+为了解决这个问题，我们建议开发人员自动化授权矩阵的评估，并在每次新发布时进行测试。这可以确保团队知道应用程序中的更改是否与授权定义和/或实现冲突。
 
-## Context
+## 上下文
 
-An authorization usually contains two elements (also named dimensions): The **Feature** and the **Logical Role** that accesses it. Sometimes a third dimension named **Data** is added in order to define access that includes a filtering at business data level.
+授权通常包含两个元素（也称为维度）：**功能** 和 **逻辑角色**。有时还会添加第三个维度“数据”，以定义基于业务数据级别的访问权限。
 
-Generally, the two dimensions of each authorization should be listed in a spreadsheet that is called an **authorization matrix**. When authorizations are tested, the logical roles are sometimes called a **Point Of View**.
+一般而言，每个授权的这两个维度应该在电子表格中列出，该电子表格被称为**授权矩阵**。当进行授权测试时，逻辑角色有时会被称作**视角**。
 
-## Objective
+## 目标
 
-This cheat sheet is designed to help you generate your own approaches to automating authorization tests in an authorization matrix. Since developers will need to design their own approach to automating authorization tests, **this cheat sheet will show a possible approach to automating authorization tests for one possible implementation of an application that exposes REST Services.**
+此速查表旨在帮助您生成自动化授权测试的方法，在授权矩阵上进行操作。由于开发人员需要设计自己的授权测试自动化方法，因此此速查表将展示一种可能的实现方式，即为暴露REST服务的应用程序提供授权测试自动化的方法。
 
-## Proposition
+## 提议
 
-### Preparing to automate the authorization matrix
+### 准备自动化的授权矩阵
 
-Before we start to automate a test of the authorization matrix, we will need to do the following:
+在开始自动化授权矩阵测试之前，我们需要完成以下步骤：
 
-1. **Formalize the authorization matrix in a pivot format file, which will allow you to:**
-    1. Easily process the matrix by a program.
-    2. Allow a human to read and update when you need to follow up on the authorization combinations.
-    3. Set up a hierarchy of the authorizations, which will allow you to easily create different combinations.
-    4. Create the maximum possible of independence from the technology and design used to implement the applications.
+1. **以透视格式文件的形式正式化授权矩阵，这将允许您：**
+    1. 轻松通过程序处理矩阵。
+    2. 当需要跟进授权组合时，让人类能够阅读和更新。
+    3. 设置授权的层次结构，从而可以轻松创建不同的组合。
+    4. 尽可能减少对实现应用所使用的技术和设计的依赖。
 
-2. **Create a set of integration tests that fully use the authorization matrix pivot file as an input source, which will allow you to evaluate the different combinations with the following advantages:**
-    1. The minimum possible of maintenance when the authorization matrix pivot file is updated.
-    2. A clear indication, in case of failed test, of the source authorization combination that does not respect the authorization matrix.
+2. **创建一套集成测试，这些测试完全使用授权矩阵透视文件作为输入源，这将允许您评估不同组合，并具有以下优点：**
+    1. 当授权矩阵透视文件更新时，维护量降至最低。
+    2. 在测试失败的情况下，可以清楚地指出不符合授权矩阵的授权组合。
 
-### Create the authorization matrix pivot file
+### 创建授权矩阵透视文件
 
-**In this example, we use an XML format to formalize the authorization matrix.**
+**在本示例中，我们使用XML格式来正式化授权矩阵。**
 
-This XML structure has three main sections (or nodes):
+此XML结构有三个主要部分（或节点）：
 
-- Node **roles**: Describes the possible logical roles used in the system, provides a list of the roles, and explains the different roles (authorization level).
-- Node **services**: Provides a list of the available services exposed by the system, provides a description of those services, and defines the associated logical role(s) that can call them.
-- Node **services-testing**: Provides a test payload for each service if the service uses input data other than the one coming from URL or path.
+- 节点 **roles**：描述系统中可能使用的逻辑角色，提供角色列表，并解释不同角色（权限级别）。
+- 节点 **services**：提供由系统暴露的服务的列表，以及这些服务的描述及其关联的可以调用它们的逻辑角色。
+- 节点 **services-testing**：如果服务使用除URL或路径之外的数据作为输入，则为每个服务提供测试负载。
 
-**This sample demonstrates how an authorization could be defined with XML**:
+**以下示例展示了如何使用XML定义一个授权：**
 
-> Placeholders (values between {}) are used to mark location where test value must be placed by the integration tests if needed
+> 占位符（值在{}之间）用于标记需要通过集成测试放置测试值的位置
 
-``` xml
+```xml
   <?xml version="1.0" encoding="UTF-8"?>
   <!--
-      This file materializes the authorization matrix for the different
-      services exposed by the system:
+      此文件表示系统暴露的不同服务的授权矩阵：
 
-      The tests will use this as a input source for the different test cases by:
-      1) Defining legitimate access and the correct implementation
-      2) Identifing illegitimate access (authorization definition issue
-      on service implementation)
+      测试将使用此文件作为不同测试用例的输入源，以便：
+      1) 定义合法访问和正确的实现
+      2) 确定非法访问（服务实现中的授权定义问题）
 
-      The "name" attribute is used to uniquely identify a SERVICE or a ROLE.
+      "name" 属性用于唯一标识一个SERVICE或一个ROLE。
   -->
   <authorization-matrix>
 
-      <!-- Describe the possible logical roles used in the system, is used here to
-      provide a list+explanation
-      of the different roles (authorization level) -->
+      <!-- 描述系统中可能使用的逻辑角色，这里用来提供不同角色的列表+解释
+      （权限级别） -->
       <roles>
           <role name="ANONYMOUS"
-          description="Indicate that no authorization is needed"/>
+          description="表示无需授权"/>
           <role name="BASIC"
-          description="Role affecting a standard user (lowest access right just above anonymous)"/>
+          description="影响普通用户的角色（最低访问权限，仅高于匿名用户）"/>
           <role name="ADMIN"
-          description="Role affecting an administrator user (highest access right)"/>
+          description="影响管理员的角色（最高访问权限）"/>
       </roles>
 
-      <!-- List and describe the available services exposed by the system and the associated
-      logical role(s) that can call them -->
+      <!-- 列出并描述系统暴露的服务及其关联的可以调用它们的逻辑角色 -->
       <services>
           <service name="ReadSingleMessage" uri="/{messageId}" http-method="GET"
           http-response-code-for-access-allowed="200" http-response-code-for-access-denied="403">
@@ -99,7 +95,7 @@ This XML structure has three main sections (or nodes):
           </service>
       </services>
 
-      <!-- Provide a test payload for each service if needed -->
+      <!-- 如果需要，为每个服务提供测试负载 -->
       <services-testing>
           <service name="ReadSingleMessage">
               <payload/>
@@ -120,16 +116,22 @@ This XML structure has three main sections (or nodes):
   </authorization-matrix>
 ```
 
-### Implementing an integration test
+### 实现集成测试
 
-**To create an integration test, you should use a maximum of factorized code and one test case by Point Of View (POV) so the verifications can be profiled by access level (logical role). This will facilitate the rendering/identification of the errors.**
+**要创建一个集成测试，应尽量使用最少的代码并为每个视角（POV）实现一个测试用例，以便按访问级别（逻辑角色）对验证进行分类。这将有助于错误的呈现/识别。**
 
-In this integration test, we have implemented parsing, object mapping and access to the authorization matrix by marshalling XML into a Java object and unmarshalling the object back into XML These features are used to implement the tests (JAXB here) and limit the code to the developer in charge of performing the tests.
+在该集成测试中，我们实现了解析、对象映射和访问授权矩阵的功能，通过将XML转换为Java对象再反向转换回XML这些功能来实施测试（这里使用了JAXB）。这些特性用于实现测试并限制代码量仅限于负责执行测试的开发人员。
 
-**Here is a sample implementation of an integration test case class:**
+**以下是一个集成测试用例类的示例实现：**
+
+
+
+
+
+
 
 ``` java
-  import org.owasp.pocauthztesting.enumeration.SecurityRole;
+    import org.owasp.pocauthztesting.enumeration.SecurityRole;
   import org.owasp.pocauthztesting.service.AuthService;
   import org.owasp.pocauthztesting.vo.AuthorizationMatrix;
   import org.apache.http.client.methods.CloseableHttpResponse;
@@ -155,24 +157,21 @@ In this integration test, we have implemented parsing, object mapping and access
   import java.util.Optional;
 
   /**
-   * Integration test cases validate the correct implementation of the authorization matrix.
-   * They create a test case by logical role that will test access on all services exposed by the system.
-   * This implementation focuses on readability
+   * 集成测试用例验证授权矩阵的正确实现。它们通过逻辑角色创建一个测试案例，该测试案例将测试系统暴露的所有服务的访问权限。此实现侧重于可读性。
    */
   public class AuthorizationMatrixIT {
 
       /**
-       * Object representation of the authorization matrix
+       * 授权矩阵的对象表示
        */
       private static AuthorizationMatrix AUTHZ_MATRIX;
 
       private static final String BASE_URL = "http://localhost:8080";
 
-
       /**
-       * Load the authorization matrix in objects tree
+       * 加载授权矩阵到对象树中
        *
-       * @throws Exception If any error occurs
+       * @throws Exception 如果发生任何错误
        */
       @BeforeClass
       public static void globalInit() throws Exception {
@@ -188,71 +187,71 @@ In this integration test, we have implemented parsing, object mapping and access
       }
 
       /**
-       * Test access to the services from a anonymous user.
+       * 通过匿名用户测试服务的访问权限。
        *
        * @throws Exception
        */
       @Test
       public void testAccessUsingAnonymousUserPointOfView() throws Exception {
-          //Run the tests - No access token here
+          // 运行测试 - 没有访问令牌
           List<String> errors = executeTestWithPointOfView(SecurityRole.ANONYMOUS, null);
-          //Verify the test results
-          Assert.assertEquals("Access issues detected using the ANONYMOUS USER point of view:\n" + formatErrorsList(errors), 0, errors.size());
+          // 验证测试结果
+          Assert.assertEquals("使用匿名用户视角检测到的访问问题：\n" + formatErrorsList(errors), 0, errors.size());
       }
 
       /**
-       * Test access to the services from a basic user.
+       * 通过基本用户测试服务的访问权限。
        *
        * @throws Exception
        */
       @Test
       public void testAccessUsingBasicUserPointOfView() throws Exception {
-          //Get access token representing the authorization for the associated point of view
+          // 获取表示关联视角授权的访问令牌
           String accessToken = generateTestCaseAccessToken("basic", SecurityRole.BASIC);
-          //Run the tests
+          // 运行测试
           List<String> errors = executeTestWithPointOfView(SecurityRole.BASIC, accessToken);
-          //Verify the test results
-          Assert.assertEquals("Access issues detected using the BASIC USER point of view:\n " + formatErrorsList(errors), 0, errors.size());
+          // 验证测试结果
+          Assert.assertEquals("使用基本用户视角检测到的访问问题：\n " + formatErrorsList(errors), 0, errors.size());
       }
 
       /**
-       * Test access to the services from a user with administrator access.
+       * 通过管理员用户测试服务的访问权限。
        *
        * @throws Exception
        */
       @Test
       public void testAccessUsingAdministratorUserPointOfView() throws Exception {
-          //Get access token representing the authorization for the associated point of view
+          // 获取表示关联视角授权的访问令牌
           String accessToken = generateTestCaseAccessToken("admin", SecurityRole.ADMIN);
-          //Run the tests
+          // 运行测试
           List<String> errors = executeTestWithPointOfView(SecurityRole.ADMIN, accessToken);
-          //Verify the test results
-          Assert.assertEquals("Access issues detected using the ADMIN USER point of view:\n" + formatErrorsList(errors), 0, errors.size());
+          // 验证测试结果
+          Assert.assertEquals("使用管理员用户视角检测到的访问问题：\n" + formatErrorsList(errors), 0, errors.size());
       }
 
       /**
-       * Evaluate the access to all service using the specified point of view (POV).
+       * 使用指定的视角（POV）评估所有服务的访问权限。
        *
-       * @param pointOfView Point of view to use
-       * @param accessToken Access token that is linked to the point of view in terms of authorization.
-       * @return List of errors detected
-       * @throws Exception If any error occurs
+       * @param pointOfView 要使用的视角
+       * @param accessToken 与视角相关的授权访问令牌。
+       * @return 检测到的错误列表
+       * @throws Exception 如果发生任何错误
        */
       private List<String> executeTestWithPointOfView(SecurityRole pointOfView, String accessToken) throws Exception {
           List<String> errors = new ArrayList<>();
-          String errorMessageTplForUnexpectedReturnCode = "The service '%s' when called with POV '%s' return a response code %s that is not the expected one in allowed or denied case.";
-          String errorMessageTplForIncorrectReturnCode = "The service '%s' when called with POV '%s' return a response code %s that is not the expected one (%s expected).";
-          String fatalErrorMessageTpl = "The service '%s' when called with POV %s meet the error: %s";
+          String errorMessageTplForUnexpectedReturnCode = "调用视角 '%s' 时，服务 '%s' 返回响应码 %s，这与允许或拒绝情况下预期的响应码不符。";
+          String errorMessageTplForIncorrectReturnCode = "调用视角 '%s' 时，服务 '%s' 返回响应码 %s，这与预期的响应码不符（%s 预期）。";
+          String fatalErrorMessageTpl = "调用视角 '%s' 时，服务 '%s' 出现错误：%s";
 
-          //Get the list of services to call
+          // 获取要调用的服务列表
           List<AuthorizationMatrix.Services.Service> services = AUTHZ_MATRIX.getServices().getService();
 
-          //Get the list of services test payload to use
+          // 获取用于测试的服务负载列表
           List<AuthorizationMatrix.ServicesTesting.Service> servicesTestPayload = AUTHZ_MATRIX.getServicesTesting().getService();
 
-          //Call all services sequentially (no special focus on performance here)
+          // 顺序调用所有服务（此处不特别关注性能）
           services.forEach(service -> {
-              //Get the service test payload for the current service
+              // 获取当前服务的测试负载
               String payload = null;
               String payloadContentType = null;
               Optional<AuthorizationMatrix.ServicesTesting.Service> serviceTesting = servicesTestPayload.stream().filter(srvPld -> srvPld.getName().equals(service.getName())).findFirst();
@@ -260,22 +259,22 @@ In this integration test, we have implemented parsing, object mapping and access
                   payload = serviceTesting.get().getPayload().getValue();
                   payloadContentType = serviceTesting.get().getPayload().getContentType();
               }
-              //Call the service and verify if the response is consistent
+              // 调用服务并验证响应是否一致
               try {
-                  //Call the service
+                  // 调用服务
                   int serviceResponseCode = callService(service.getUri(), payload, payloadContentType, service.getHttpMethod(), accessToken);
-                  //Check if the role represented by the specified point of view is defined for the current service
+                  // 检查表示指定视角的角色是否定义在当前服务中
                   Optional<AuthorizationMatrix.Services.Service.Role> role = service.getRole().stream().filter(r -> r.getName().equals(pointOfView.name())).findFirst();
                   boolean accessIsGrantedInAuthorizationMatrix = role.isPresent();
-                  //Verify behavior consistency according to the response code returned and the authorization configured in the matrix
+                  // 根据返回的响应码和矩阵中配置的授权验证行为是否一致
                   if (serviceResponseCode == service.getHttpResponseCodeForAccessAllowed()) {
-                      //Roles is not in the list of role allowed to access to the service so it's an error
+                      // 角色不在允许访问服务的角色列表中，因此这是一个错误
                       if (!accessIsGrantedInAuthorizationMatrix) {
                           errors.add(String.format(errorMessageTplForIncorrectReturnCode, service.getName(), pointOfView.name(), serviceResponseCode,
                            service.getHttpResponseCodeForAccessDenied()));
                       }
                   } else if (serviceResponseCode == service.getHttpResponseCodeForAccessDenied()) {
-                      //Roles is in the list of role allowed to access to the service so it's an error
+                      // 角色在允许访问服务的角色列表中，因此这是一个错误
                       if (accessIsGrantedInAuthorizationMatrix) {
                           errors.add(String.format(errorMessageTplForIncorrectReturnCode, service.getName(), pointOfView.name(), serviceResponseCode,
                            service.getHttpResponseCodeForAccessAllowed()));
@@ -287,28 +286,27 @@ In this integration test, we have implemented parsing, object mapping and access
                   errors.add(String.format(fatalErrorMessageTpl, service.getName(), pointOfView.name(), e.getMessage()));
               }
 
-
           });
 
           return errors;
       }
 
       /**
-       * Call a service with a specific payload and return the HTTP response code that was received.
-       * This step was delegated in order to made the test cases more easy to maintain.
+       * 以特定负载调用服务并返回接收到的HTTP响应码。
+       * 此步骤被委托，以便使测试案例更容易维护。
        *
-       * @param uri                URI of the target service
-       * @param payloadContentType Content type of the payload to send
-       * @param payload            Payload to send
-       * @param httpMethod         HTTP method to use
-       * @param accessToken        Access token to specify to represent the identity of the caller
-       * @return The HTTP response code received
-       * @throws Exception If any error occurs
+       * @param uri                要调用的服务URI
+       * @param payloadContentType 要发送的负载内容类型
+       * @param payload            要发送的负载
+       * @param httpMethod         使用的HTTP方法
+       * @param accessToken        用于表示调用者身份的访问令牌
+       * @return 接收到的HTTP响应码
+       * @throws Exception 如果发生任何错误
        */
       private int callService(String uri, String payload, String payloadContentType, String httpMethod, String accessToken) throws Exception {
           int rc;
 
-          //Build the request - Use Apache HTTP Client in order to be more flexible in the combination.
+          // 构建请求 - 为了组合更灵活，使用Apache HTTP Client。
           HttpRequestBase request;
           String url = (BASE_URL + uri).replaceAll("\\{messageId\\}", "1");
           switch (httpMethod) {
@@ -326,15 +324,14 @@ In this integration test, we have implemented parsing, object mapping and access
                   }
                   break;
               default:
-                  throw new UnsupportedOperationException(httpMethod + " not supported !");
+                  throw new UnsupportedOperationException(httpMethod + " 不支持！");
           }
           request.setHeader("Authorization", (accessToken != null) ? accessToken : "");
 
-
-          //Send the request and get the HTTP response code.
+          // 发送请求并获取HTTP响应码。
           try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
               try (CloseableHttpResponse httpResponse = httpClient.execute(request)) {
-                  //Don't care here about the response content...
+                  // 不关心响应内容...
                   rc = httpResponse.getStatusLine().getStatusCode();
               }
           }
@@ -343,23 +340,22 @@ In this integration test, we have implemented parsing, object mapping and access
       }
 
       /**
-       * Generate a JWT token for the specified user and role.
+       * 为指定的用户和角色生成JWT访问令牌。
        *
-       * @param login User login
-       * @param role  Authorization logical role
-       * @return The JWT token
-       * @throws Exception If any error occurs during the creation
+       * @param login 用户登录名
+       * @param role   授权逻辑角色
+       * @return JWT访问令牌
+       * @throws Exception 如果在创建过程中发生任何错误
        */
       private String generateTestCaseAccessToken(String login, SecurityRole role) throws Exception {
           return new AuthService().issueAccessToken(login, role);
       }
 
-
       /**
-       * Format a list of errors to a printable string.
+       * 将错误列表格式化为可打印的字符串。
        *
-       * @param errors Error list
-       * @return Printable string
+       * @param errors 错误列表
+       * @return 可打印的字符串
        */
       private String formatErrorsList(List<String> errors) {
           StringBuilder buffer = new StringBuilder();
@@ -369,32 +365,29 @@ In this integration test, we have implemented parsing, object mapping and access
   }
 ```
 
-If an authorization issue is detected (or issues are detected), the output is the following:
+如果检测到授权问题（或多个问题），输出如下：
 
 ```java
 testAccessUsingAnonymousUserPointOfView(org.owasp.pocauthztesting.AuthorizationMatrixIT)
-Time elapsed: 1.009 s  ### FAILURE
+Time elapsed: 1.009 s  ### 失败
 java.lang.AssertionError:
-Access issues detected using the ANONYMOUS USER point of view:
-    The service 'DeleteMessage' when called with POV 'ANONYMOUS' return
-    a response code 200 that is not the expected one (403 expected).
-
-    The service 'CreateMessage' when called with POV 'ANONYMOUS' return
-    a response code 200 that is not the expected one (403 expected).
+使用匿名用户视角检测到的访问问题：
+    调用视角 'ANONYMOUS' 时，服务 'DeleteMessage' 返回响应码 200，这与预期的响应码（403）不符。
+    
+    调用视角 'ANONYMOUS' 时，服务 'CreateMessage' 返回响应码 200，这与预期的响应码（403）不符。
 
 testAccessUsingBasicUserPointOfView(org.owasp.pocauthztesting.AuthorizationMatrixIT)
-Time elapsed: 0.05 s  ### FAILURE!
+Time elapsed: 0.05 s  ### 失败
 java.lang.AssertionError:
-Access issues detected using the BASIC USER point of view:
-    The service 'DeleteMessage' when called with POV 'BASIC' return
-    a response code 200 that is not the expected one (403 expected).
+使用基本用户视角检测到的访问问题：
+    调用视角 'BASIC' 时，服务 'DeleteMessage' 返回响应码 200，这与预期的响应码（403）不符。
 ```
 
-## Rendering the authorization matrix for an audit / review
+## 授权矩阵用于审计/审查的呈现
 
-Even if the authorization matrix is stored in a human-readable format (XML), you might want to show an on-the-fly rendered representation of the XML file to spot potential inconsistencies and facilitate the review, audit and discussion about the authorization matrix.
+即使授权矩阵以人类可读格式存储（XML），您可能仍然希望展示一个实时渲染的XML文件表示形式，以便发现潜在不一致并简化审查、审计和讨论。
 
-To achieve this task, you could use the following XSL stylesheet:
+要实现此任务，您可以使用以下XSL样式表：
 
 ``` xslt
 <?xml version="1.0" encoding="UTF-8"?>
@@ -402,55 +395,46 @@ To achieve this task, you could use the following XSL stylesheet:
   <xsl:template match="/">
     <html>
       <head>
-        <title>Authorization Matrix</title>
+        <title>授权矩阵</title>
         <link rel="stylesheet"
-        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css"
-        integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ"
-        crossorigin="anonymous" />
+              href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css"
+              integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ"
+              crossorigin="anonymous" />
       </head>
       <body>
-        <h3>Roles</h3>
+        <h3>角色</h3>
         <ul>
           <xsl:for-each select="authorization-matrix/roles/role">
             <xsl:choose>
               <xsl:when test="@name = 'ADMIN'">
                 <div class="alert alert-warning" role="alert">
-                  <strong>
-                    <xsl:value-of select="@name" />
-                  </strong>
-                  :
+                  <strong><xsl:value-of select="@name" /></strong> :
                   <xsl:value-of select="@description" />
                 </div>
               </xsl:when>
               <xsl:when test="@name = 'BASIC'">
                 <div class="alert alert-info" role="alert">
-                  <strong>
-                    <xsl:value-of select="@name" />
-                  </strong>
-                  :
+                  <strong><xsl:value-of select="@name" /></strong> :
                   <xsl:value-of select="@description" />
                 </div>
               </xsl:when>
               <xsl:otherwise>
                 <div class="alert alert-danger" role="alert">
-                  <strong>
-                    <xsl:value-of select="@name" />
-                  </strong>
-                  :
+                  <strong><xsl:value-of select="@name" /></strong> :
                   <xsl:value-of select="@description" />
                 </div>
               </xsl:otherwise>
             </xsl:choose>
           </xsl:for-each>
         </ul>
-        <h3>Authorizations</h3>
+        <h3>授权</h3>
         <table class="table table-hover table-sm">
           <thead class="thead-inverse">
             <tr>
-              <th>Service</th>
+              <th>服务</th>
               <th>URI</th>
-              <th>Method</th>
-              <th>Role</th>
+              <th>方法</th>
+              <th>角色</th>
             </tr>
           </thead>
           <tbody>
@@ -460,32 +444,20 @@ To achieve this task, you could use the following XSL stylesheet:
               <xsl:variable name="service-method" select="@http-method" />
               <xsl:for-each select="role">
                 <tr>
-                  <td scope="row">
-                    <xsl:value-of select="$service-name" />
-                  </td>
-                  <td>
-                    <xsl:value-of select="$service-uri" />
-                  </td>
-                  <td>
-                    <xsl:value-of select="$service-method" />
-                  </td>
+                  <td scope="row"><xsl:value-of select="$service-name" /></td>
+                  <td><xsl:value-of select="$service-uri" /></td>
+                  <td><xsl:value-of select="$service-method" /></td>
                   <td>
                     <xsl:variable name="service-role-name" select="@name" />
                     <xsl:choose>
                       <xsl:when test="@name = 'ADMIN'">
-                        <div class="alert alert-warning" role="alert">
-                          <xsl:value-of select="@name" />
-                        </div>
+                        <div class="alert alert-warning" role="alert"><xsl:value-of select="@name" /></div>
                       </xsl:when>
                       <xsl:when test="@name = 'BASIC'">
-                        <div class="alert alert-info" role="alert">
-                          <xsl:value-of select="@name" />
-                        </div>
+                        <div class="alert alert-info" role="alert"><xsl:value-of select="@name" /></div>
                       </xsl:when>
                       <xsl:otherwise>
-                        <div class="alert alert-danger" role="alert">
-                          <xsl:value-of select="@name" />
-                        </div>
+                        <div class="alert alert-danger" role="alert"><xsl:value-of select="@name" /></div>
                       </xsl:otherwise>
                     </xsl:choose>
                   </td>
@@ -500,10 +472,10 @@ To achieve this task, you could use the following XSL stylesheet:
 </xsl:stylesheet>
 ```
 
-Example of the rendering:
+示例的渲染结果：
 
 ![RenderingExample](../assets/Authorization_Testing_Automation_AutomationRendering.png)
 
-## Sources of the prototype
+## 源代码
 
-[GitHub repository](https://github.com/righettod/poc-authz-testing)
+[GitHub 仓库](https://github.com/righettod/poc-authz-testing)
