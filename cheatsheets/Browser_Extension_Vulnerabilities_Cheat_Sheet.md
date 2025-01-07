@@ -1,43 +1,43 @@
-# Browser Extension Security Vulnerabilities
+# 浏览器扩展安全漏洞备忘录
 
-This document outlines common security vulnerabilities found in browser extensions and provides examples of how attackers can exploit these vulnerabilities.
+本文档概述了浏览器扩展中常见的安全漏洞，并提供了攻击者如何利用这些漏洞的示例。
 
-## 1. Permissions Overreach
+## 1. 权限过度
 
-An extension with broad permissions can access all tabs and browsing data. If the extension is compromised, an attacker can capture sensitive information from any website the user visits, including passwords and personal data.
+具有广泛权限的扩展可以访问所有标签页和浏览数据。如果扩展被入侵，攻击者可以捕获用户访问的任何网站的敏感信息，包括密码和个人数据。
 
-## 2. Data Leakage
+## 2. 数据泄露
 
-An extension sending the URLs of all visited pages to a remote server can inadvertently leak sensitive information, especially if users visit banking or personal sites.
+将所有访问页面的 URL 发送到远程服务器的扩展可能会无意中泄露敏感信息，尤其是在用户访问银行或个人网站时。
 
-## 3. Cross-Site Scripting (XSS)
+## 3. 跨站脚本（XSS）
 
-User inputs can execute scripts in the page's context. An attacker could inject scripts that steal cookies, session tokens, or sensitive data.
+用户输入可以在页面上下文中执行脚本。攻击者可以注入脚本来窃取 Cookie、会话令牌或敏感数据。
 
-## 4. Insecure Communication
+## 4. 不安全的通信
 
-Data sent over insecure HTTP can be intercepted by attackers on the same network, allowing them to capture sensitive information, such as tokens or personal data.
+通过不安全的 HTTP 发送的数据可以被同一网络上的攻击者拦截，使他们能够捕获敏感信息，如令牌或个人数据。
 
-## 5. Code Injection
+## 5. 代码注入
 
-If an attacker controls the script URL, they can inject malicious code into the page, leading to data theft or manipulation of the page’s functionality.
+如果攻击者控制脚本 URL，他们可以将恶意代码注入页面，导致数据盗窃或操纵页面功能。
 
-## 6. Malicious Updates
+## 6. 恶意更新
 
-If the update mechanism is compromised, attackers can push malicious code to users without their knowledge, potentially gaining control over their browsers.
+如果更新机制被入侵，攻击者可以在用户不知情的情况下推送恶意代码，潜在地获取对浏览器的控制权。
 
-## 7. Third-Party Dependencies
+## 7. 第三方依赖
 
-An extension relying on outdated third-party libraries may become vulnerable if those libraries have known security flaws that attackers can exploit.
+依赖过时的第三方库的扩展可能会变得易受攻击，如果这些库存在已知的安全缺陷，攻击者可以加以利用。
 
-## 8. Lack of Content Security Policy (CSP)
+## 8. 缺少内容安全策略（CSP）
 
-Without a strong CSP, attackers can inject untrusted content, increasing the risk of XSS and other attacks that manipulate the extension’s behavior.
+没有强大的 CSP，攻击者可以注入不可信的内容，增加 XSS 和其他操纵扩展行为的攻击风险。
 
-## 9. Insecure Storage
+## 9. 不安全的存储
 
-If an attacker gains access to the local storage, they can easily retrieve sensitive information, such as tokens or user credentials, leading to unauthorized access.
+如果攻击者获得本地存储的访问权，他们可以轻松检索敏感信息，如令牌或用户凭据，从而导致未经授权的访问。
 
-## 10. Insufficient Privacy Controls
+## 10. 隐私控制不足
 
-Users may be unaware of how their data is being collected or used, leading to potential abuse of their information without consent or awareness.
+用户可能不知道他们的数据是如何被收集或使用的，这可能导致未经同意或未经意识的信息滥用。
