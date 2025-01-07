@@ -131,7 +131,7 @@
 
 
 ``` java
-    import org.owasp.pocauthztesting.enumeration.SecurityRole;
+  import org.owasp.pocauthztesting.enumeration.SecurityRole;
   import org.owasp.pocauthztesting.service.AuthService;
   import org.owasp.pocauthztesting.vo.AuthorizationMatrix;
   import org.apache.http.client.methods.CloseableHttpResponse;
