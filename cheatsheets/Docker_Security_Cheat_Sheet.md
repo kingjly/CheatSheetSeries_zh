@@ -1,57 +1,57 @@
-# Docker Security Cheat Sheet
+# Docker 安全备忘录
 
-## Introduction
+## 简介
 
-Docker is the most popular containerization technology. When used correctly, it can enhance security compared to running applications directly on the host system. However, certain misconfigurations can reduce security levels or introduce new vulnerabilities.
+Docker 是最流行的容器化技术。当正确使用时，与直接在主机系统上运行应用程序相比，它可以增强安全性。然而，某些错误配置可能会降低安全级别或引入新的漏洞。
 
-The aim of this cheat sheet is to provide a straightforward list of common security errors and best practices to assist in securing your Docker containers.
+本备忘录旨在提供一个简单明了的常见安全错误和最佳实践列表，以帮助保护 Docker 容器的安全。
 
-## Rules
+## 规则
 
-### RULE \#0 - Keep Host and Docker up to date
+### 规则 \#0 - 保持主机和 Docker 为最新
 
-To protect against known container escape vulnerabilities like [Leaky Vessels](https://snyk.io/blog/cve-2024-21626-runc-process-cwd-container-breakout/), which typically result in the attacker gaining root access to the host, it's vital to keep both the host and Docker up to date. This includes regularly updating the host kernel as well as the Docker Engine.
+为了防止已知的容器逃逸漏洞（如 [Leaky Vessels](https://snyk.io/blog/cve-2024-21626-runc-process-cwd-container-breakout/)，通常会导致攻击者获得主机的 root 访问权限），保持主机和 Docker 为最新状态至关重要。这包括定期更新主机内核和 Docker 引擎。
 
-This is due to the fact that containers share the host's kernel. If the host's kernel is vulnerable, the containers are also vulnerable. For example, the kernel privilege escalation exploit [Dirty COW](https://github.com/scumjr/dirtycow-vdso) executed inside a well-insulated container would still result in root access on a vulnerable host.
+这是因为容器共享主机的内核。如果主机的内核存在漏洞，容器也会受到影响。例如，在一个隔离良好的容器内执行内核权限提升漏洞 [Dirty COW](https://github.com/scumjr/dirtycow-vdso) 仍然会在易受攻击的主机上获得 root 访问权限。
 
-### RULE \#1 - Do not expose the Docker daemon socket (even to the containers)
+### 规则 \#1 - 不要暴露 Docker 守护进程套接字（即使对容器也是如此）
 
-Docker socket */var/run/docker.sock* is the UNIX socket that Docker is listening to. This is the primary entry point for the Docker API. The owner of this socket is root. Giving someone access to it is equivalent to giving unrestricted root access to your host.
+Docker 套接字 */var/run/docker.sock* 是 Docker 监听的 UNIX 套接字。这是 Docker API 的主要入口点。该套接字的所有者是 root。给某人访问它相当于给予对主机的无限制 root 访问权限。
 
-**Do not enable *tcp* Docker daemon socket.** If you are running docker daemon with `-H tcp://0.0.0.0:XXX` or similar you are exposing un-encrypted and unauthenticated direct access to the Docker daemon, if the host is internet connected this means the docker daemon on your computer can be used by anyone from the public internet.
-If you really, **really** have to do this, you should secure it. Check how to do this [following Docker official documentation](https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-socket-option).
+**不要启用 *tcp* Docker 守护进程套接字。** 如果你使用 `-H tcp://0.0.0.0:XXX` 或类似命令运行 docker 守护进程，你就暴露了未加密和未经身份验证的对 Docker 守护进程的直接访问。如果主机连接到互联网，这意味着你计算机上的 docker 守护进程可以被公共互联网上的任何人使用。
+如果你真的、**真的**必须这样做，你应该保护它。请查看 [Docker 官方文档](https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-socket-option)了解如何操作。
 
-**Do not expose */var/run/docker.sock* to other containers**. If you are running your docker image with `-v /var/run/docker.sock://var/run/docker.sock` or similar, you should change it. Remember that mounting the socket read-only is not a solution but only makes it harder to exploit. Equivalent in the docker compose file is something like this:
+**不要将 */var/run/docker.sock* 暴露给其他容器**。如果你使用 `-v /var/run/docker.sock://var/run/docker.sock` 或类似命令运行 docker 镜像，你应该更改它。请记住，以只读方式挂载套接字不是解决方案，只是使其更难利用。在 docker compose 文件中，类似的内容如下：
 
 ```yaml
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
 ```
 
-### RULE \#2 - Set a user
+### 规则 \#2 - 设置用户
 
-Configuring the container to use an unprivileged user is the best way to prevent privilege escalation attacks. This can be accomplished in three different ways as follows:
+配置容器使用非特权用户是防止权限提升攻击的最佳方法。这可以通过以下三种方式实现：
 
-1. During runtime using `-u` option of `docker run` command e.g.:
+1. 在运行时使用 `docker run` 命令的 `-u` 选项，例如：
 
 ```bash
 docker run -u 4000 alpine
 ```
 
-2. During build time. Simply add user in Dockerfile and use it. For example:
+2. 在构建时。在 Dockerfile 中简单地添加用户并使用它。例如：
 
 ```dockerfile
 FROM alpine
 RUN groupadd -r myuser && useradd -r -g myuser myuser
-#    <HERE DO WHAT YOU HAVE TO DO AS A ROOT USER LIKE INSTALLING PACKAGES ETC.>
+#    <在这里以 ROOT 用户身份执行必要的操作，如安装软件包等>
 USER myuser
 ```
 
-3. Enable user namespace support (`--userns-remap=default`) in [Docker daemon](https://docs.docker.com/engine/security/userns-remap/#enable-userns-remap-on-the-daemon)
+3. 在 [Docker 守护进程](https://docs.docker.com/engine/security/userns-remap/#enable-userns-remap-on-the-daemon)中启用用户命名空间支持（`--userns-remap=default`）
 
-More information about this topic can be found at [Docker official documentation](https://docs.docker.com/engine/security/userns-remap/). For additional security, you can also run in rootless mode, which is discussed in [Rule \#11](#rule-11---run-docker-in-rootless-mode).
+关于此主题的更多信息可以在 [Docker 官方文档](https://docs.docker.com/engine/security/userns-remap/)中找到。为了额外的安全性，你还可以以无根模式运行，这在[规则 \#11](#规则-11---以无根模式运行-docker) 中讨论。
 
-In Kubernetes, this can be configured in [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) using the `runAsUser` field with the user ID e.g:
+在 Kubernetes 中，这可以在[安全上下文](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)中使用 `runAsUser` 字段配置，例如：
 
 ```yaml
 apiVersion: v1
@@ -63,26 +63,26 @@ spec:
   - name: example
     image: gcr.io/google-samples/node-hello:1.0
     securityContext:
-      runAsUser: 4000 # <-- This is the pod user ID
+      runAsUser: 4000 # <-- 这是 pod 用户 ID
 ```
 
-As a Kubernetes cluster administrator, you can configure a hardened default using the [`Restricted` level](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted) with built-in [Pod Security admission controller](https://kubernetes.io/docs/concepts/security/pod-security-admission/), if greater customization is desired consider using [Admission Webhooks](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#what-are-admission-webhooks) or a [third party alternative](https://kubernetes.io/docs/concepts/security/pod-security-standards/#alternatives).
+作为 Kubernetes 集群管理员，你可以使用内置的[Pod 安全准入控制器](https://kubernetes.io/docs/concepts/security/pod-security-admission/)配置 [`Restricted` 级别](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted)的强化默认设置，如果需要更大的自定义性，可以考虑使用[准入 Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#what-are-admission-webhooks) 或[第三方替代方案](https://kubernetes.io/docs/concepts/security/pod-security-standards/#alternatives)。
 
-### RULE \#3 - Limit capabilities (Grant only specific capabilities, needed by a container)
+### 规则 \#3 - 限制权能（仅授予容器所需的特定权能）
 
-[Linux kernel capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html) are a set of privileges that can be used by privileged. Docker, by default, runs with only a  subset of capabilities.
-You can change it and drop some capabilities (using `--cap-drop`) to harden your docker containers, or add some capabilities (using `--cap-add`) if needed.
-Remember not to run containers with the `--privileged` flag - this will add ALL Linux kernel capabilities to the container.
+[Linux 内核权能](http://man7.org/linux/man-pages/man7/capabilities.7.html)是一组可由特权用户使用的权限。Docker 默认情况下仅运行一部分权能。
+你可以更改它，通过使用 `--cap-drop` 删除一些权能来加强 docker 容器，或者在需要时使用 `--cap-add` 添加一些权能。
+请记住不要使用 `--privileged` 标志运行容器 - 这将为容器添加所有 Linux 内核权能。
 
-The most secure setup is to drop all capabilities `--cap-drop all` and then add only required ones. For example:
+最安全的设置是删除所有权能 `--cap-drop all`，然后仅添加所需的权能。例如：
 
 ```bash
 docker run --cap-drop all --cap-add CHOWN alpine
 ```
 
-**And remember: Do not run containers with the *--privileged* flag!!!**
+**并且记住：不要使用 *--privileged* 标志运行容器！**
 
-In Kubernetes this can be configured in [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) using `capabilities` field e.g:
+在 Kubernetes 中，这可以在[安全上下文](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)中使用 `capabilities` 字段配置，例如：
 
 ```yaml
 apiVersion: v1
@@ -100,13 +100,13 @@ spec:
             add: ["CHOWN"]
 ```
 
-As a Kubernetes cluster administrator, you can configure a hardened default using the [`Restricted` level](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted) with built-in [Pod Security admission controller](https://kubernetes.io/docs/concepts/security/pod-security-admission/), if greater customization is desired consider using [Admission Webhooks](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#what-are-admission-webhooks) or a [third party alternative](https://kubernetes.io/docs/concepts/security/pod-security-standards/#alternatives).
+作为 Kubernetes 集群管理员，你可以使用内置的[Pod 安全准入控制器](https://kubernetes.io/docs/concepts/security/pod-security-admission/)配置 [`Restricted` 级别](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted)的强化默认设置，如果需要更大的自定义性，可以考虑使用[准入 Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#what-are-admission-webhooks) 或[第三方替代方案](https://kubernetes.io/docs/concepts/security/pod-security-standards/#alternatives)。
 
-### RULE \#4 - Prevent in-container privilege escalation
+### 规则 \#4 - 防止容器内权限提升
 
-Always run your docker images with `--security-opt=no-new-privileges` in order to prevent privilege escalation. This will prevent the container from gaining new privileges via `setuid` or `setgid` binaries.
+始终使用 `--security-opt=no-new-privileges` 运行 docker 镜像，以防止权限提升。这将阻止容器通过 `setuid` 或 `setgid` 二进制文件获得新的权限。
 
-In Kubernetes, this can be configured in [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) using `allowPrivilegeEscalation` field e.g.:
+在 Kubernetes 中，这可以在[安全上下文](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)中使用 `allowPrivilegeEscalation` 字段配置，例如：
 
 ```yaml
 apiVersion: v1
@@ -121,47 +121,47 @@ spec:
       allowPrivilegeEscalation: false
 ```
 
-As a Kubernetes cluster administrator, you can configure a hardened default using the [`Restricted` level](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted) with built-in [Pod Security admission controller](https://kubernetes.io/docs/concepts/security/pod-security-admission/), if greater customization is desired consider using [Admission Webhooks](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#what-are-admission-webhooks) or a [third party alternative](https://kubernetes.io/docs/concepts/security/pod-security-standards/#alternatives).
+作为 Kubernetes 集群管理员，你可以使用内置的[Pod 安全准入控制器](https://kubernetes.io/docs/concepts/security/pod-security-admission/)配置 [`Restricted` 级别](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted)的强化默认设置，如果需要更大的自定义性，可以考虑使用[准入 Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#what-are-admission-webhooks) 或[第三方替代方案](https://kubernetes.io/docs/concepts/security/pod-security-standards/#alternatives)。
 
-### RULE \#5 - Be mindful of Inter-Container Connectivity
+### 规则 \#5 - 注意容器间连接
 
-Inter-Container Connectivity (icc) is enabled by default, allowing all containers to communicate with each other through the [`docker0` bridged network](https://docs.docker.com/network/drivers/bridge/). Instead of using the `--icc=false` flag with the Docker daemon, which completely disables inter-container communication, consider defining specific network configurations. This can be achieved by creating custom Docker networks and specifying which containers should be attached to them. This method provides more granular control over container communication.
+默认情况下启用容器间连接（icc），允许所有容器通过 [`docker0` 桥接网络](https://docs.docker.com/network/drivers/bridge/)相互通信。与使用 Docker 守护进程的 `--icc=false` 标志完全禁用容器间通信不同，考虑定义特定的网络配置。这可以通过创建自定义 Docker 网络并指定应附加哪些容器来实现。这种方法提供了对容器通信更细粒度的控制。
 
-For detailed guidance on configuring Docker networks for container communication, refer to the [Docker Documentation](https://docs.docker.com/network/#communication-between-containers).
+有关配置 Docker 网络以进行容器通信的详细指导，请参考 [Docker 文档](https://docs.docker.com/network/#communication-between-containers)。
 
-In Kubernetes environments, [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) can be used to define rules that regulate pod interactions within the cluster. These policies provide a robust framework to control how pods communicate with each other and with other network endpoints. Additionally, [Network Policy Editor](https://networkpolicy.io/) simplifies the creation and management of network policies, making it more accessible to define complex networking rules through a user-friendly interface.
+在 Kubernetes 环境中，可以使用[网络策略](https://kubernetes.io/docs/concepts/services-networking/network-policies/)来定义规则，以调节集群内 pod 的交互。这些策略提供了一个强大的框架，用于控制 pod 如何相互通信以及与其他网络端点通信。此外，[网络策略编辑器](https://networkpolicy.io/)简化了网络策略的创建和管理，通过用户友好的界面使定义复杂的网络规则变得更加容易。
 
-### RULE \#6 - Use Linux Security Module (seccomp, AppArmor, or SELinux)
+### 规则 \#6 - 使用 Linux 安全模块（seccomp、AppArmor 或 SELinux）
 
-**First of all, do not disable default security profile!**
+**首先，不要禁用默认安全配置文件！**
 
-Consider using security profile like [seccomp](https://docs.docker.com/engine/security/seccomp/) or [AppArmor](https://docs.docker.com/engine/security/apparmor/).
+考虑使用 [seccomp](https://docs.docker.com/engine/security/seccomp/) 或 [AppArmor](https://docs.docker.com/engine/security/apparmor/) 等安全配置文件。
 
-Instructions how to do this inside Kubernetes can be found at [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tutorials/security/seccomp/).
+在 Kubernetes 中如何执行此操作的说明可以在[为 Pod 或容器配置安全上下文](https://kubernetes.io/docs/tutorials/security/seccomp/)中找到。
 
-### RULE \#7 - Limit resources (memory, CPU, file descriptors, processes, restarts)
+### 规则 \#7 - 限制资源（内存、CPU、文件描述符、进程、重启）
 
-The best way to avoid DoS attacks is by limiting resources. You can limit [memory](https://docs.docker.com/config/containers/resource_constraints/#memory), [CPU](https://docs.docker.com/config/containers/resource_constraints/#cpu), maximum number of restarts (`--restart=on-failure:<number_of_restarts>`), maximum number of file descriptors (`--ulimit nofile=<number>`) and maximum number of processes (`--ulimit nproc=<number>`).
+避免 DoS 攻击的最佳方法是限制资源。你可以限制[内存](https://docs.docker.com/config/containers/resource_constraints/#memory)、[CPU](https://docs.docker.com/config/containers/resource_constraints/#cpu)、最大重启次数（`--restart=on-failure:<number_of_restarts>`）、最大文件描述符数量（`--ulimit nofile=<number>`）和最大进程数量（`--ulimit nproc=<number>`）。
 
-[Check documentation for more details about ulimits](https://docs.docker.com/engine/reference/commandline/run/#set-ulimits-in-container---ulimit)
+[查看有关 ulimits 的更多详细信息](https://docs.docker.com/engine/reference/commandline/run/#set-ulimits-in-container---ulimit)
 
-You can also do this for Kubernetes: [Assign Memory Resources to Containers and Pods](https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/), [Assign CPU Resources to Containers and Pods](https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/) and [Assign Extended Resources to a Container](https://kubernetes.io/docs/tasks/configure-pod-container/extended-resource/)
+你也可以在 Kubernetes 中执行此操作：[为容器和 Pod 分配内存资源](https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/)、[为容器和 Pod 分配 CPU 资源](https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/) 和 [为容器分配扩展资源](https://kubernetes.io/docs/tasks/configure-pod-container/extended-resource/)
 
-### RULE \#8 - Set filesystem and volumes to read-only
+### 规则 \#8 - 将文件系统和卷设置为只读
 
-**Run containers with a read-only filesystem** using `--read-only` flag. For example:
+**使用 `--read-only` 标志运行只读文件系统的容器**。例如：
 
 ```bash
 docker run --read-only alpine sh -c 'echo "whatever" > /tmp'
 ```
 
-If an application inside a container has to save something temporarily, combine `--read-only` flag with `--tmpfs` like this:
+如果容器内的应用程序需要临时保存内容，可以将 `--read-only` 标志与 `--tmpfs` 结合使用：
 
 ```bash
 docker run --read-only --tmpfs /tmp alpine sh -c 'echo "whatever" > /tmp/file'
 ```
 
-The Docker Compose `compose.yml` equivalent would be:
+Docker Compose 的 `compose.yml` 等效写法：
 
 ```yaml
 version: "3"
@@ -171,7 +171,7 @@ services:
     read_only: true
 ```
 
-Equivalent in Kubernetes in [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/):
+在 Kubernetes 的[安全上下文](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)中的等效写法：
 
 ```yaml
 apiVersion: v1
@@ -186,101 +186,101 @@ spec:
       readOnlyRootFilesystem: true
 ```
 
-In addition, if the volume is mounted only for reading **mount them as a read-only**
-It can be done by appending `:ro` to the `-v` like this:
+另外，如果卷仅用于读取，**请将其挂载为只读**
+可以通过在 `-v` 后附加 `:ro` 来实现：
 
 ```bash
 docker run -v volume-name:/path/in/container:ro alpine
 ```
 
-Or by using `--mount` option:
+或使用 `--mount` 选项：
 
 ```bash
 docker run --mount source=volume-name,destination=/path/in/container,readonly alpine
 ```
 
-### RULE \#9 - Integrate container scanning tools into your CI/CD pipeline
+### 规则 \#9 - 将容器扫描工具集成到 CI/CD 流水线中
 
-[CI/CD pipelines](CI_CD_Security_Cheat_Sheet.md) are a crucial part of the software development lifecycle and should include various security checks such as lint checks, static code analysis, and container scanning.
+[CI/CD 流水线](CI_CD_Security_Cheat_Sheet.md)是软件开发生命周期的关键部分，应包括各种安全检查，如代码风格检查、静态代码分析和容器扫描。
 
-Many issues can be prevented by following some best practices when writing the Dockerfile. However, adding a security linter as a step in the build pipeline can go a long way in avoiding further headaches. Some issues that are commonly checked are:
+在编写 Dockerfile 时遵循一些最佳实践可以防止许多问题。但是，在构建流水线中添加安全代码风格检查可以帮助避免更多麻烦。常见检查的问题包括：
 
-- Ensure a `USER` directive is specified
-- Ensure the base image version is pinned
-- Ensure the OS packages versions are pinned
-- Avoid the use of `ADD` in favor of `COPY`
-- Avoid curl bashing in `RUN` directives
+- 确保指定了 `USER` 指令
+- 确保固定基础镜像版本
+- 确保固定操作系统软件包版本
+- 避免使用 `ADD`，改用 `COPY`
+- 避免在 `RUN` 指令中使用 curl 管道
 
-References:
+参考资料：
 
-- [Docker Baselines on DevSec](https://dev-sec.io/baselines/docker/)
-- [Use the Docker command line](https://docs.docker.com/engine/reference/commandline/cli/)
-- [Overview of Docker Compose v2 CLI](https://docs.docker.com/compose/reference/overview/)
-- [Configuring Logging Drivers](https://docs.docker.com/config/containers/logging/configure/)
-- [View logs for a container or service](https://docs.docker.com/config/containers/logging/)
-- [Dockerfile Security Best Practices](https://cloudberry.engineering/article/dockerfile-security-best-practices/)
+- [DevSec 上的 Docker 基线](https://dev-sec.io/baselines/docker/)
+- [使用 Docker 命令行](https://docs.docker.com/engine/reference/commandline/cli/)
+- [Docker Compose v2 CLI 概述](https://docs.docker.com/compose/reference/overview/)
+- [配置日志驱动程序](https://docs.docker.com/config/containers/logging/configure/)
+- [查看容器或服务的日志](https://docs.docker.com/config/containers/logging/)
+- [Dockerfile 安全最佳实践](https://cloudberry.engineering/article/dockerfile-security-best-practices/)
 
- Container scanning tools are especially important as part of a successful security strategy. They can detect known vulnerabilities, secrets and misconfigurations in container images and provide a report of the findings with recommendations on how to fix them. Some examples of popular container scanning tools are:
+作为成功安全策略的重要组成部分，容器扫描工具尤其重要。它们可以检测容器镜像中已知的漏洞、秘密和错误配置，并提供发现报告和修复建议。一些流行的容器扫描工具包括：
 
-- Free
+- 免费工具
     - [Clair](https://github.com/coreos/clair)
     - [ThreatMapper](https://github.com/deepfence/ThreatMapper)
     - [Trivy](https://github.com/aquasecurity/trivy)
-- Commercial
-    - [Snyk](https://snyk.io/) **(open source and free option available)**
-    - [Anchore](https://github.com/anchore/grype/) **(open source and free option available)**
-    - [Docker Scout](https://www.docker.com/products/docker-scout/) **(open source and free option available)**
+- 商业工具
+    - [Snyk](https://snyk.io/) **(有开源和免费选项)**
+    - [Anchore](https://github.com/anchore/grype/) **(有开源和免费选项)**
+    - [Docker Scout](https://www.docker.com/products/docker-scout/) **(有开源和免费选项)**
     - [JFrog XRay](https://jfrog.com/xray/)
     - [Qualys](https://www.qualys.com/apps/container-security/)
 
-To detect secrets in images:
+用于检测镜像中的秘密：
 
-- [ggshield](https://github.com/GitGuardian/ggshield) **(open source and free option available)**
-- [SecretScanner](https://github.com/deepfence/SecretScanner) **(open source)**
+- [ggshield](https://github.com/GitGuardian/ggshield) **(有开源和免费选项)**
+- [SecretScanner](https://github.com/deepfence/SecretScanner) **(开源)**
 
-To detect misconfigurations in Kubernetes:
+用于检测 Kubernetes 中的错误配置：
 
 - [kubeaudit](https://github.com/Shopify/kubeaudit)
 - [kubesec.io](https://kubesec.io/)
 - [kube-bench](https://github.com/aquasecurity/kube-bench)
 
-To detect misconfigurations in Docker:
+用于检测 Docker 中的错误配置：
 
 - [inspec.io](https://www.inspec.io/docs/reference/resources/docker/)
 - [dev-sec.io](https://dev-sec.io/baselines/docker/)
-- [Docker Bench for Security](https://github.com/docker/docker-bench-security)
+- [Docker 安全基准](https://github.com/docker/docker-bench-security)
 
-### RULE \#10 - Keep the Docker daemon logging level at `info`
+### 规则 \#10 - 将 Docker 守护进程日志级别保持为 `info`
 
-By default, the Docker daemon is configured to have a base logging level of `info`. This can be verified by checking the daemon configuration file `/etc/docker/daemon.json` for the`log-level` key. If the key is not present, the default logging level is `info`. Additionally, if the docker daemon is started with the `--log-level` option, the value of the `log-level` key in the configuration file will be overridden. To check if the Docker daemon is running with a different log level, you can use the following command:
+默认情况下，Docker 守护进程配置的基本日志级别为 `info`。可以通过检查守护进程配置文件 `/etc/docker/daemon.json` 中的 `log-level` 键来验证。如果该键不存在，默认日志级别为 `info`。此外，如果使用 `--log-level` 选项启动 docker 守护进程，则配置文件中 `log-level` 键的值将被覆盖。要检查 Docker 守护进程是否以不同的日志级别运行，可以使用以下命令：
 
 ```bash
 ps aux | grep '[d]ockerd.*--log-level' | awk '{for(i=1;i<=NF;i++) if ($i ~ /--log-level/) print $i}'
 ```
 
-Setting an appropriate log level, configures the Docker daemon to log events that you would want to review later. A base log level of 'info' and above would capture all logs except the debug logs. Until and unless required, you should not run docker daemon at the 'debug' log level.
+设置适当的日志级别，可以配置 Docker 守护进程记录稍后要审查的事件。基本日志级别 'info' 及以上将捕获除调试日志之外的所有日志。除非必要，否则不应在 'debug' 日志级别运行 docker 守护进程。
 
-### Rule \#11 - Run Docker in rootless mode
+### 规则 \#11 - 以无根模式运行 Docker
 
-Rootless mode ensures that the Docker daemon and containers are running as an unprivileged user, which means that even if an attacker breaks out of the container, they will not have root privileges on the host, which in turn substantially limits the attack surface. This is different to [userns-remap](#rule-2---set-a-user) mode, where the daemon still operates with root privileges.
+无根模式确保 Docker 守护进程和容器以非特权用户身份运行，这意味着即使攻击者突破容器，他们也不会在主机上拥有 root 权限，从而大大限制了攻击面。这与[用户命名空间重映射](#规则-2---设置用户)模式不同，后者的守护进程仍以 root 权限运行。
 
-Evaluate the [specific requirements](Attack_Surface_Analysis_Cheat_Sheet.md) and [security posture](Threat_Modeling_Cheat_Sheet.md) of your environment to determine if rootless mode is the best choice for you. For environments where security is a paramount concern and the [limitations of rootless mode](https://docs.docker.com/engine/security/rootless/#known-limitations) do not interfere with operational requirements, it is a strongly recommended configuration. Alternatively consider using [Podman](#podman-as-an-alternative-to-docker) as an alternative to Docker.
+评估环境的[特定要求](Attack_Surface_Analysis_Cheat_Sheet.md)和[安全态势](Threat_Modeling_Cheat_Sheet.md)，以确定无根模式是否是最佳选择。对于安全性至关重要且[无根模式的限制](https://docs.docker.com/engine/security/rootless/#known-limitations)不会干扰操作需求的环境，这是强烈推荐的配置。或者考虑使用 [Podman](#作为-docker-替代品的-podman) 作为 Docker 的替代品。
 
-> Rootless mode allows running the Docker daemon and containers as a non-root user to mitigate potential vulnerabilities in the daemon and the container runtime.
-> Rootless mode does not require root privileges even during the installation of the Docker daemon, as long as the [prerequisites](https://docs.docker.com/engine/security/rootless/#prerequisites) are met.
+> 无根模式允许以非 root 用户运行 Docker 守护进程和容器，以减轻守护进程和容器运行时中的潜在漏洞。
+> 只要满足[先决条件](https://docs.docker.com/engine/security/rootless/#prerequisites)，无根模式在安装 Docker 守护进程期间不需要 root 权限。
 
-Read more about rootless mode and its limitations, installation and usage instructions on [Docker documentation](https://docs.docker.com/engine/security/rootless/) page.
+在 [Docker 文档](https://docs.docker.com/engine/security/rootless/)页面上阅读有关无根模式及其限制、安装和使用说明的更多信息。
 
-### RULE \#12 - Utilize Docker Secrets for Sensitive Data Management
+### 规则 \#12 - 利用 Docker Secrets 管理敏感数据
 
-Docker Secrets provide a secure way to store and manage sensitive data such as passwords, tokens, and SSH keys. Using Docker Secrets helps in avoiding the exposure of sensitive data in container images or in runtime commands.
+Docker Secrets 提供了一种安全的方式来存储和管理敏感数据，如密码、令牌和 SSH 密钥。使用 Docker Secrets 有助于避免在容器镜像或运行时命令中暴露敏感数据。
 
 ```bash
 docker secret create my_secret /path/to/super-secret-data.txt
 docker service create --name web --secret my_secret nginx:latest
 ```
 
-Or for Docker Compose:
+或对于 Docker Compose：
 
 ```yaml
   version: "3.8"
@@ -294,27 +294,27 @@ Or for Docker Compose:
         - my_secret
 ```
 
-While Docker Secrets generally provide a secure way to manage sensitive data in Docker environments, this approach is not recommended for Kubernetes, where secrets are stored in plaintext by default. In Kubernetes, consider using additional security measures such as etcd encryption, or third-party tools. Refer to the [Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md) for more information.
+虽然 Docker Secrets 通常为 Docker 环境中的敏感数据管理提供了一种安全的方式，但不建议在 Kubernetes 中使用这种方法，因为默认情况下秘密以明文存储。在 Kubernetes 中，考虑使用额外的安全措施，如 etcd 加密或第三方工具。请参考[秘密管理备忘录](Secrets_Management_Cheat_Sheet.md)获取更多信息。
 
-### RULE \#13 - Enhance Supply Chain Security
+### 规则 \#13 - 增强供应链安全
 
-Building on the principles in [Rule \#9](#rule-9---integrate-container-scanning-tools-into-your-cicd-pipeline), enhancing supply chain security involves implementing additional measures to secure the entire lifecycle of container images from creation to deployment. Some of the key practices include:
+基于[规则 \#9](#规则-9---将容器扫描工具集成到-cicd-流水线中)的原则，增强供应链安全涉及实施额外措施，以保护从创建到部署的容器镜像整个生命周期的安全。一些关键实践包括：
 
-- [Image Provenance](https://slsa.dev/spec/v1.0/provenance): Document the origin and history of container images to ensure traceability and integrity.
-- [SBOM Generation](https://cyclonedx.org/guides/CycloneDX%20One%20Pager.pdf): Create a Software Bill of Materials (SBOM) for each image, detailing all components, libraries, and dependencies for transparency and vulnerability management.
-- [Image Signing](https://github.com/notaryproject/notary): Digitally sign images to verify their integrity and authenticity, establishing trust in their security.
-- [Trusted Registry](https://snyk.io/learn/container-security/container-registry-security/): Store the documented, signed images with their SBOMs in a secure registry that enforces strict [access controls](Access_Control_Cheat_Sheet.md) and supports metadata management.
-- [Secure Deployment](https://www.openpolicyagent.org/docs/latest/#overview): Implement secure deployment polices, such as image validation, runtime security, and continuous monitoring, to ensure the security of the deployed images.
+- [镜像出处](https://slsa.dev/spec/v1.0/provenance)：记录容器镜像的来源和历史，以确保可追溯性和完整性。
+- [SBOM 生成](https://cyclonedx.org/guides/CycloneDX%20One%20Pager.pdf)：为每个镜像创建软件物料清单（SBOM），详细列出所有组件、库和依赖项，以实现透明度和漏洞管理。
+- [镜像签名](https://github.com/notaryproject/notary)：对镜像进行数字签名，以验证其完整性和真实性，建立对其安全性的信任。
+- [可信注册表](https://snyk.io/learn/container-security/container-registry-security/)：将带有文档、签名的镜像及其 SBOM 存储在强制执行严格[访问控制](Access_Control_Cheat_Sheet.md)并支持元数据管理的安全注册表中。
+- [安全部署](https://www.openpolicyagent.org/docs/latest/#overview)：实施安全部署策略，如镜像验证、运行时安全和持续监控，以确保已部署镜像的安全性。
 
-## Podman as an alternative to Docker
+## 作为 Docker 替代品的 Podman
 
-[Podman](https://podman.io/) is an OCI-compliant, open-source container management tool developed by [Red Hat](https://www.redhat.com/en) that provides a Docker-compatible command-line interface and a desktop application for managing containers. It is designed to be a more secure and lightweight alternative to Docker, especially for environments where secure defaults are preferred. Some of the security benefits of Podman include:
+[Podman](https://podman.io/) 是一个符合 OCI 标准的开源容器管理工具，由 [Red Hat](https://www.redhat.com/en) 开发，提供与 Docker 兼容的命令行界面和用于管理容器的桌面应用程序。它旨在成为 Docker 的更安全、更轻量的替代品，特别是在偏好安全默认设置的环境中。Podman 的一些安全优势包括：
 
-1. Daemonless Architecture: Unlike Docker, which requires a central daemon (dockerd) to create, run, and manage containers, Podman directly employs the fork-exec model. When a user requests to start a container, Podman forks from the current process, then the child process execs into the container's runtime.
-2. Rootless Containers: The fork-exec model facilitates Podman's ability to run containers without requiring root privileges. When a non-root user initiates a container start, Podman forks and execs under the user's permissions.
-3. SELinux Integration: Podman is built to work with SELinux, which provides an additional layer of security by enforcing mandatory access controls on containers and their interactions with the host system.
+1. 无守护进程架构：与需要中央守护进程（dockerd）来创建、运行和管理容器的 Docker 不同，Podman 直接采用 fork-exec 模型。当用户请求启动容器时，Podman 从当前进程分叉，然后子进程执行容器的运行时。
+2. 无根容器：fork-exec 模型使 Podman 能够在不需要 root 权限的情况下运行容器。当非 root 用户启动容器时，Podman 在用户的权限下分叉和执行。
+3. SELinux 集成：Podman 专为与 SELinux 协同工作而构建，通过对容器及其与主机系统交互的强制访问控制，提供额外的安全层。
 
-## References and Further Reading
+## 参考资料和进一步阅读
 
 [OWASP Docker Top 10](https://github.com/OWASP/Docker-Security)
 [Docker Security Best Practices](https://docs.docker.com/develop/security-best-practices/)
