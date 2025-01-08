@@ -1,44 +1,44 @@
-# Django REST Framework (DRF) Cheat Sheet
+# Django REST Framework (DRF) 安全备忘录
 
-## Introduction
+## 简介
 
-This cheat sheet provides Django REST Framework security advice for developers. It is a basic set of guidelines for Django REST developers who need to secure fundamental aspects of an application.
+本备忘录为 Django REST Framework 开发者提供安全建议。这是一套针对需要保护应用程序基本安全方面的 Django REST 开发者的基本指南。
 
-## What is a view in Django?
+## Django 中的视图是什么？
 
-A view in Django is a Python class or a function that returns a web response after it receives a web request. That response can be in simple HTTP, an HTML template, or an HTTP redirect request that redirects a user to another page.
+Django 中的视图是一个 Python 类或函数，在接收 Web 请求后返回 Web 响应。该响应可以是简单的 HTTP、HTML 模板，或将用户重定向到另一个页面的 HTTP 重定向请求。
 
-## Settings
+## 设置
 
-To configure the Django REST Framework (DRF), you will need to access the namespace REST_FRAMEWORK. Normally, you will find this namespace in the settings.py file. From a security perspective, the most relevant items are:
+要配置 Django REST Framework (DRF)，您需要访问 REST_FRAMEWORK 命名空间。通常，您可以在 settings.py 文件中找到此命名空间。从安全角度来看，最相关的项目是：
 
 ### DEFAULT_AUTHENTICATION_CLASSES
 
-A list of authentication classes that are used by default to identify which user is authenticated by accessing the request.user or request.auth properties. These classes are 'rest_framework.authentication.SessionAuthentication' (session authentication) and 'rest_framework.authentication.BasicAuthentication' (basic authentication).
+默认用于通过访问 `request.user` 或 `request.auth` 属性识别已认证用户的认证类列表。这些类包括 'rest_framework.authentication.SessionAuthentication'（会话认证）和 'rest_framework.authentication.BasicAuthentication'（基本认证）。
 
 ### DEFAULT_PERMISSION_CLASSES
 
-A list of permission classes that defines the default set of permissions that Django checks before a view can be accessed. Since the default is 'rest_framework.permissions.AllowAny', that means **unless the default permission class is changed, everybody can access every view by default.**
+定义 Django 在可以访问视图之前检查的默认权限集的权限类列表。由于默认值是 'rest_framework.permissions.AllowAny'，这意味着**除非更改默认权限类，否则默认情况下每个人都可以访问每个视图。**
 
 ### DEFAULT_THROTTLE_CLASSES
 
-A list of throttle classes that determines the default set of throttles checked at the start of a view. **By default, there is no throttling in place since the default class is empty.**
+确定在视图开始时检查的默认限流类列表。**由于默认类为空，因此默认情况下没有限流。**
 
 ### DEFAULT_PAGINATION_CLASS
 
-The default class to use for queryset pagination. **In Django, pagination is disabled by default.** Without proper pagination, Denial of Service (DoS) problems or attacks could occur if there’s a lot of data.
+用于查询集分页的默认类。**在 Django 中，分页默认是禁用的。**如果数据量很大，没有适当的分页可能会导致拒绝服务（DoS）问题或攻击。
 
-## OWASP API Security Top 10 (2019)
+## OWASP API 安全 Top 10（2019）
 
-The [OWASP API Security Top 10](https://owasp.org/www-project-api-security/) is a list of the most critical security risks for APIs that was developed by the [Open Web Application Security Project (OWASP)](https://owasp.org/). It is designed to help organizations identify and prioritize the most significant risks to their APIs so that they can implement appropriate controls to mitigate those risks.
+[OWASP API 安全 Top 10](https://owasp.org/www-project-api-security/) 是由[开放 Web 应用程序安全项目（OWASP）](https://owasp.org/)开发的 API 最关键安全风险列表。它旨在帮助组织识别和优先处理其 API 的最重大风险，以便实施适当的控制措施来缓解这些风险。
 
-This section uses the 2019 version of the API Security Top 10. The best approach to securing your web API is to start at the top threat (A1 below) and work your way down. This will ensure that any time spent on security will be spent most effectively because you will cover the top threats first. After you look at the Top 10, it is generally advisable to assess for other threats or get a professional penetration test.
+本节使用 2019 年版本的 API 安全 Top 10。保护 Web API 的最佳方法是从顶部威胁（下面的 A1）开始，逐步向下。这将确保在安全方面花费的任何时间都是最有效的，因为您将首先涵盖最重要的威胁。查看 Top 10 后，通常建议评估其他威胁或进行专业渗透测试。
 
-### API1:2019 Broken Object Level Authorization
+### API1:2019 对象级授权被破坏
 
-When using object-level permissions, you should make sure that the object can be accessed by the user using the method `.check_object_permissions(request, obj)`.
+使用对象级权限时，应确保使用 `.check_object_permissions(request, obj)` 方法检查用户是否可以访问对象。
 
-Example:
+示例：
 
 ```python
 def get_object(self):
@@ -47,116 +47,116 @@ def get_object(self):
     return obj
 ```
 
-DO NOT override the method `get_object()` without checking if the request should have access to that object.
+不要在不检查请求是否应该访问该对象的情况下重写 `get_object()` 方法。
 
-### API2:2019 Broken User Authentication
+### API2:2019 用户认证被破坏
 
-To prevent broken user authentication, use the setting value DEFAULT_AUTHENTICATION_CLASSES with the correct classes for your project and have authentication on every non-public API endpoint. Do not overwrite the authentication class on a class-based (variable `authentication_classes`) or function-based (decorator `authentication_classes`) view unless you are confident about the change and understand the impact.
+为防止用户认证被破坏，请使用具有项目正确类的 DEFAULT_AUTHENTICATION_CLASSES 设置，并在每个非公共 API 端点上进行认证。除非您对更改有信心并了解其影响，否则不要在基于类（变量 `authentication_classes`）或基于函数（装饰器 `authentication_classes`）的视图上重写认证类。
 
-### API3:2019 Excessive Data Exposure
+### API3:2019 过度数据暴露
 
-To prevent this problem, only display the minimum amount of required information. Make sure you review the serializer and the information you are displaying. If the serializer is inheriting from ModelSerializer, DO NOT use the exclude Meta property.
+为防止此问题，仅显示所需的最少信息。确保检查序列化程序和要显示的信息。如果序列化程序继承自 ModelSerializer，请不要使用 exclude Meta 属性。
 
-### API4:2019 Lack of Resources & Rate Limiting
+### API4:2019 缺乏资源和速率限制
 
-To prevent this problem, configure the setting DEFAULT_THROTTLE_CLASSES and DO NOT overwrite the throttle class on a class-based (variable `throttle_classes`) or function-based (decorator `throttle_classes`) view, unless you are confident about the change and understand the impact.
+为防止此问题，配置 DEFAULT_THROTTLE_CLASSES 设置，并且除非您对更改有信心并了解其影响，否则不要在基于类（变量 `throttle_classes`）或基于函数（装饰器 `throttle_classes`）的视图上重写限流类。
 
-EXTRA: If possible, do rate limiting with a WAF or similar. DRF should be the last layer of rate limiting.
+额外提示：如果可能，使用 WAF 或类似工具进行速率限制。DRF 应该是最后一层速率限制。
 
-### API5:2019 Broken Function Level Authorization
+### API5:2019 功能级授权被破坏
 
-To stop this problem, change the default value (`'rest_framework.permissions.AllowAny'`) of DEFAULT_PERMISSION_CLASSES. Use the setting value DEFAULT_PERMISSION_CLASSES with the correct classes for your project.
+要解决此问题，请更改 DEFAULT_PERMISSION_CLASSES 的默认值（`'rest_framework.permissions.AllowAny'`）。使用具有项目正确类的 DEFAULT_PERMISSION_CLASSES 设置。
 
-DO NOT use `rest_framework.permissions.AllowAny` except for public API endpoints and DO NOT overwrite the authorization class on a class-based (variable `permission_classes`) or function-based (decorator `permission_classes`) view unless you are confident about the change and understand the impact.
+除公共 API 端点外，不要使用 `rest_framework.permissions.AllowAny`，并且除非您对更改有信心并了解其影响，否则不要在基于类（变量 `permission_classes`）或基于函数（装饰器 `permission_classes`）的视图上重写授权类。
 
-### API6:2019 Mass Assignment
+### API6:2019 大规模赋值
 
-To prevent this problem, use Meta.fields (allowlist approach) when using ModelForms. DO NOT use Meta.exclude (denylist approach) or `ModelForms.Meta.fields = "__all__"`
+为防止此问题，使用 ModelForms 时使用 Meta.fields（允许列表方法）。不要使用 Meta.exclude（拒绝列表方法）或 `ModelForms.Meta.fields = "__all__"`
 
-### API7:2019 Security Misconfiguration
+### API7:2019 安全配置错误
 
-To stop this problem, you must have a repeatable hardening process leading to fast and easy deployment of a properly locked down environment. Have an automated process to continuously assess the effectiveness of the configuration and settings in all environments.
+要解决此问题，您必须有一个可重复的强化过程，以快速轻松地部署正确锁定的环境。拥有一个持续评估所有环境中配置和设置有效性的自动化流程。
 
-**DO NOT use default passwords. Set the Django settings `DEBUG` and `DEBUG_PROPAGATE_EXCEPTIONS` to False. Ensure API can only be accessed by the specified HTTP verbs. All other HTTP verbs should be disabled. Set `SECRET_KEY` to a random value and NEVER hardcode secrets.**
+**不要使用默认密码。将 Django 设置 `DEBUG` 和 `DEBUG_PROPAGATE_EXCEPTIONS` 设置为 False。确保 API 只能通过指定的 HTTP 动词访问。所有其他 HTTP 动词都应禁用。将 `SECRET_KEY` 设置为随机值，并且永远不要对密钥进行硬编码。**
 
-**DO validate, filter, and sanitize all client-provided data, or other data coming from integrated systems.**
+**确实要验证、过滤和清理所有客户端提供的数据或来自集成系统的其他数据。**
 
-### API8:2019 Injection
+### API8:2019 注入
 
-#### SQLi
+#### SQL 注入
 
-**To prevent this problem, use parametrized queries.** Be careful when using dangerous methods like `raw()`, `extra()` and custom SQL (via `cursor.execute()`). DO NOT add user input to dangerous methods (`raw()`, `extra()`, `cursor.execute()`).
+**要防止此问题，请使用参数化查询。**使用 `raw()`、`extra()` 和自定义 SQL（通过 `cursor.execute()`）等危险方法时要小心。不要将用户输入添加到危险方法（`raw()`、`extra()`、`cursor.execute()`）中。
 
-#### RCE
+#### 远程代码执行（RCE）
 
-To stop this problem, use the `Loader=yaml.SafeLoader` for YAML files. DO NOT load user-controlled YAML files using the method `load()`.
+要解决此问题，对 YAML 文件使用 `Loader=yaml.SafeLoader`。不要使用 `load()` 方法加载用户控制的 YAML 文件。
 
-Also, DO NOT add user input to dangerous methods (`eval()`, `exec()` and `execfile()`) and DO NOT load user-controlled pickle files, which includes the pandas method `pandas.read_pickle()`.
+另外，不要将用户输入添加到危险方法（`eval()`、`exec()` 和 `execfile()`）中，并且不要加载用户控制的 pickle 文件，包括 pandas 方法 `pandas.read_pickle()`。
 
-### API9:2019 Improper Assets Management
+### API9:2019 不当资产管理
 
-To prevent this problem, create an inventory of all API hosts. In this inventory, document the important aspects of each host. Focus on the API version and the API environment (e.g., production, staging, test, development) and determine who should have network access to the host (e.g., public, internal, partners). Make sure you document all aspects of your API such as authentication, errors, redirects, rate limiting, cross-origin resource sharing (CORS) policy and endpoints, including their parameters, requests, and responses.
+为防止此问题，创建所有 API 主机的清单。在此清单中，记录每个主机的重要方面。重点关注 API 版本和 API 环境（例如，生产、暂存、测试、开发），并确定谁应该有权访问主机（例如，公共、内部、合作伙伴）。确保记录 API 的所有方面，如认证、错误、重定向、速率限制、跨域资源共享（CORS）策略和端点，包括其参数、请求和响应。
 
-### API10:2019 Insufficient Logging & Monitoring
+### API10:2019 日志和监控不足
 
-For proper logging and monitoring capabilities, do the following:
+为了具备适当的日志和监控功能，请执行以下操作：
 
---Log all failed authentication attempts, denied access, and input validation errors with sufficient user context to identify suspicious or malicious accounts.
+--记录所有失败的认证尝试、拒绝访问和输入验证错误，并提供足够的用户上下文以识别可疑或恶意账户。
 
---Create logs in a format suited to be consumed by a log management solution and include enough detail to identify the malicious actor.
+--以适合日志管理解决方案使用的格式创建日志，并包含足够的详细信息以识别恶意行为者。
 
---Handle logs as sensitive data, and their integrity should be guaranteed at rest and transit.
+--将日志视为敏感数据，并保证其在静态和传输过程中的完整性。
 
---Configure a monitoring system to continuously monitor the infrastructure, network, and the API functioning.
+--配置监控系统以持续监控基础设施、网络和 API 功能。
 
---Use a Security Information and Event Management (SIEM) system to aggregate and manage logs from all components of the API stack and hosts.
+--使用安全信息和事件管理（SIEM）系统聚合和管理 API 堆栈和主机的所有组件的日志。
 
---Configure custom dashboards and alerts, enabling suspicious activities to be detected and responded to earlier.
+--配置自定义仪表板和警报，使可疑活动能够更早地被检测和响应。
 
---Establish effective monitoring and alerting so suspicious activities are detected and responded to in a timely fashion.
+--建立有效的监控和警报机制，以便及时检测和响应可疑活动。
 
-DO NOT:
+不要：
 
---Log generic error messages such as: Log.Error("Error was thrown"); rather log the stack trace, error message and user ID who caused the error.
+--记录通用错误消息，如：Log.Error("发生了错误")；而是记录堆栈跟踪、错误消息和导致错误的用户 ID。
 
---Log sensitive data such as user's passwords, API Tokens or PII.
+--记录敏感数据，如用户密码、API 令牌或个人身份信息（PII）。
 
-## Other Security Risks
+## 其他安全风险
 
-Below is a list of security risks for APIs not discussed in the OWASP API Security Top 10.
+以下是 OWASP API 安全 Top 10 中未讨论的 API 安全风险列表。
 
-### Business Logic Bugs
+### 业务逻辑漏洞
 
-Be aware of possible business logic errors that result in security bugs. Since business logic bugs are difficult to impossible to detect using automated tools, the best ways to prevent business logic security bugs are use threat models, do security design reviews, do code reviews, pair programs and write unit tests.
+注意可能导致安全漏洞的业务逻辑错误。由于业务逻辑漏洞难以或不可能使用自动化工具检测，防止业务逻辑安全漏洞的最佳方法是使用威胁模型、进行安全设计审查、代码审查、结对编程和编写单元测试。
 
-### Secret Management
+### 秘密管理
 
-**Secrets should never be hardcoded. The best practice is to use a Secret Manager.** For more information review OWASP [Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
+**秘密不应硬编码。最佳实践是使用秘密管理器。**有关更多信息，请查看 OWASP [秘密管理备忘录](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
 
-## Updating Django and DRF and Having a Process for Updating Dependencies
+## 更新 Django 和 DRF 并制定更新依赖项的流程
 
-All applications have dependencies and those dependencies can have vulnerabilities. One good practice is to audit the dependencies your project is using. In general, it is important to have a process for updating dependencies. A sample process might define three mechanisms for triggering an update of response:
+所有应用程序都有依赖项，这些依赖项可能存在漏洞。一个好的做法是审核项目正在使用的依赖项。通常，制定更新依赖项的流程很重要。示例流程可能定义三种触发更新响应的机制：
 
---Every month/quarter dependencies in general are updated.
---Every week important security vulnerabilities are considered and potentially trigger an update.
---In EXCEPTIONAL conditions, emergency updates may need to be applied.
+--每月/季度更新依赖项。
+--每周考虑重要的安全漏洞并可能触发更新。
+--在特殊情况下，可能需要应用紧急更新。
 
-The Django Security team has information on [How Django discloses security issues](https://docs.djangoproject.com/en/4.1/internals/security/#how-django-discloses-security-issues).
+Django 安全团队提供了有关 [Django 如何披露安全问题](https://docs.djangoproject.com/en/4.1/internals/security/#how-django-discloses-security-issues)的信息。
 
-When a library is under consideration, consider the "Security Health" of the library. How often it's updated? Does it have known vulnerabilities? Does it have an active community? etc. Some tools can help with this task (E.g. [Snyk Advisor](https://snyk.io/advisor/python))
+在考虑库时，考虑库的"安全健康"。更新频率如何？是否有已知漏洞？是否有活跃的社区？等等。一些工具可以帮助完成此任务（例如 [Snyk Advisor](https://snyk.io/advisor/python)）。
 
-## SAST Tools
+## SAST 工具
 
-There are several excellent open-source static analysis security tools for Python that are worth considering, including:
+对于 Python，有几个出色的开源静态分析安全工具值得考虑，包括：
 
-Bandit – [Bandit](https://bandit.readthedocs.io/en/latest/) is a tool designed to find common security issues in Python. Bandit processes each file, builds an Abstract Syntax Tree (AST) from it, and runs appropriate plugins against the AST nodes. Once Bandit has finished scanning all the files it generates a report. Bandit was originally developed within the OpenStack Security Project and later rehomed to PyCQA.
+Bandit – [Bandit](https://bandit.readthedocs.io/en/latest/) 是一个旨在发现 Python 常见安全问题的工具。Bandit 处理每个文件，从中构建抽象语法树（AST），并针对 AST 节点运行适当的插件。Bandit 扫描完所有文件后生成报告。Bandit 最初是在 OpenStack 安全项目中开发的，后来转移到 PyCQA。
 
-Semgrep – [Semgrep](https://semgrep.dev/) is a fast, open-source, static analysis engine for finding bugs, detecting vulnerabilities in third-party dependencies, and enforcing code standards. Developed by “Return To Corporation” (usually referred to as r2c) and open-source contributors. It works based on rules, which can focus on security, language best practices, or something else. Creating a rule is easy and semgrep is very powerful. For Django there are 29 rules.
+Semgrep – [Semgrep](https://semgrep.dev/) 是一个快速、开源的静态分析引擎，用于查找错误、检测第三方依赖项中的漏洞并执行代码标准。由"Return To Corporation"（通常称为 r2c）和开源贡献者开发。它基于规则工作，可以关注安全、语言最佳实践或其他内容。创建规则很容易，semgrep 非常强大。对于 Django，有 29 个规则。
 
-PyCharm Security – [Pycharm-security](https://pycharm-security.readthedocs.io/en/latest/index.html) is a plugin for PyCharm, or JetBrains IDEs with the Python plugin. The plugin looks at Python code for common security vulnerabilities and suggests fixes. It can also be executed from a Docker container. It has about 40 checks and some are Django specific.
+PyCharm 安全 – [Pycharm-security](https://pycharm-security.readthedocs.io/en/latest/index.html) 是 PyCharm 或带有 Python 插件的 JetBrains IDE 的插件。该插件查看 Python 代码中的常见安全漏洞并建议修复。它还可以从 Docker 容器中执行。它有大约 40 个检查，其中一些是 Django 特定的。
 
-## Related Articles and References
+## 相关文章和参考资料
 
-- [Django REST Framework (DRF) Secure Code Guidelines](https://openaccess.uoc.edu/handle/10609/147246)
-- [Django’s security policies](https://docs.djangoproject.com/en/4.1/internals/security/)
-- [Security in Django](https://docs.djangoproject.com/en/4.1/topics/security/)
+- [Django REST Framework (DRF) 安全代码指南](https://openaccess.uoc.edu/handle/10609/147246)
+- [Django 的安全策略](https://docs.djangoproject.com/en/4.1/internals/security/)
+- [Django 中的安全性](https://docs.djangoproject.com/en/4.1/topics/security/)
