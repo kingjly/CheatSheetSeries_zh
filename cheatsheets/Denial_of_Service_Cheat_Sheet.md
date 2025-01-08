@@ -1,128 +1,124 @@
-# Denial of Service Cheat Sheet
+# 拒绝服务攻击备忘录
 
-## Introduction
+## 引言
 
-This cheat sheet describes a methodology for handling denial of service (DoS) attacks on different layers. It also serves as a platform for further discussion and analysis, since there are many different ways to perform DoS attacks.
+本备忘录描述了在不同层面处理拒绝服务（DoS）攻击的方法论。它还作为进一步讨论和分析的平台，因为执行 DoS 攻击的方式有很多。
 
-### Fundamentals
+### 基本原理
 
-Because anti-DoS methods cannot be one-step solutions, your developers and application/infrastructure architects must develop DoS solutions carefully.  They must keep in mind that "availability" is a basic part of the [CIA triad](https://whatis.techtarget.com/definition/Confidentiality-integrity-and-availability-CIA).
+由于反 DoS 方法不能是一步到位的解决方案，开发人员和应用程序/基础架构架构师必须谨慎地开发 DoS 解决方案。他们必须牢记"可用性"是 [CIA 三元组](https://whatis.techtarget.com/definition/Confidentiality-integrity-and-availability-CIA) 的基本部分。
 
-  Remember that if every part of the computing system within the interoperability flow does not function correctly, your infrastructure suffers. A successful DoS attack hinders the availability of instances or objects to a system and can eventually render the entire system inaccessible.
+请记住，如果互操作流程中的每个计算系统组件无法正常运行，您的基础架构就会遭受损害。成功的 DoS 攻击会阻碍系统中实例或对象的可用性，并最终可能使整个系统无法访问。
 
-**To ensure systems can be resilient and resist a DoS attack, we strongly suggest a thorough analysis on components within your inventory based on functionality, architecture and performance (i.e. application-wise, infrastructure and network related).**
+**为确保系统具有弹性并能抵抗 DoS 攻击，我们强烈建议根据功能、架构和性能（即应用程序、基础架构和网络相关）对清单中的组件进行彻底分析。**
 
 ![DDOSFlow](../assets/Denial_of_Service_Cheat_Sheet_FlowDDOS.png)
 
-This DoS system inventory should look for potential places where DoS attacks can cause problems and highlight any single points of system failures, which can range from programming related errors to resource exhaustion. It should give you a clear picture of what issues are at stake (e.g. bottlenecks, etc.). **To resolve problems, a solid understanding of your environment is essential to develop suitable defence mechanisms**. These could be aligned with:
+这个 DoS 系统清单应该寻找 DoS 攻击可能造成问题的潜在位置，并突出任何系统故障的单点，这些可能从编程相关错误到资源耗尽。它应该清晰地展示所面临的问题（例如瓶颈等）。**要解决问题，对环境的扎实理解对于开发合适的防御机制至关重要**。这些可以与以下方面保持一致：
 
-1. Scaling options (**up** = inner hardware components, **out** = the number of complete components).
-2. Existing conceptual / logical techniques (such as applying redundancy measurements, bulk-heading, etc. - which expands your in-house capabilities).
-3. A cost analysis applied to your situation.
+1. 扩展选项（**向上** = 内部硬件组件，**向外** = 完整组件的数量）。
+2. 现有的概念/逻辑技术（如应用冗余测量、舱壁等 - 这扩展了内部能力）。
+3. 针对具体情况的成本分析。
 
-This document adopts a specific guidance structure from CERT-EU to analyze this subject, which you may need to change depending on your situation. It is not a complete approach but it will help you create fundamental blocks which should be utilized to assist you in constructing anti-DoS concepts fitting your needs.
+本文档采用 CERT-EU 的特定指导结构来分析这个主题，您可能需要根据具体情况进行调整。这不是一个完整的方法，但它将帮助您创建基本模块，用于构建适合您需求的反 DoS 概念。
 
-### Analyzing DoS attack surfaces
+### 分析 DoS 攻击面
 
-In this cheat sheet, we will use the DDOS classification as documented by CERT-EU to examine DoS system vulnerabilities. It uses the seven OSI model and focuses three main attack surfaces, namely Application, Session and Network.
+在本备忘录中，我们将使用 CERT-EU 记录的 DDOS 分类来检查 DoS 系统漏洞。它使用七层 OSI 模型，并关注三个主要攻击面：应用层、会话层和网络层。
 
-#### 1) Overview of potential DoS weaknesses
+#### 1) 潜在 DoS 弱点概述
 
-It is important to understand that each of these three attack categories needs to be considered when designing a DoS-resilient solution:
+重要的是要理解，在设计 DoS 弹性解决方案时，需要考虑这三个攻击类别：
 
- **Application attacks** focus on rendering applications unavailable by exhausting resources or by making it unusable in a functional way.
+**应用层攻击**专注于通过耗尽资源或使其在功能上无法使用来使应用程序不可用。
 
- **Session (or protocol) attacks** focus on consuming server resources, or resources of intermediary equipment like firewalls and load-balancers.
+**会话（或协议）攻击**专注于消耗服务器资源，或中间设备（如防火墙和负载均衡器）的资源。
 
- **Network (or volumetric) attacks** focus on saturating the bandwidth of the network resource.
+**网络（或容量）攻击**专注于使网络资源的带宽饱和。
 
-Note that OSI model layers 1 and 2 are not included in this categorization, so we will now discuss these layers and how DoS applies to them.
+请注意，OSI 模型的第 1 层和第 2 层未包含在此分类中，因此我们现在将讨论这些层以及 DoS 如何应用于它们。
 
-The **physical layer** consists of the networking hardware transmission technologies of a network. It is a fundamental layer underlying the logical data structures of the higher-level functions in a network. Typical DoS scenarios that involve the physical layer involve system destruction, obstruction, and malfunction. For example, a Georgian elderly woman sliced through an underground cable, resulting in the loss of internet for the whole of Armenia.
+**物理层**由网络硬件传输技术组成。它是网络高级功能逻辑数据结构的基础层。涉及物理层的典型 DoS 场景包括系统破坏、阻塞和故障。例如，一位格鲁吉亚老妇人切断了地下电缆，导致整个亚美尼亚失去互联网。
 
-The **data layer** is the protocol layer that transfers data between adjacent network nodes in a wide area network (WAN) or between nodes on the same local area network (LAN) segment. Typical DoS scenarios are MAC flooding (targeting switch MAC tables) and ARP poisoning.
+**数据层**是在广域网（WAN）中在相邻网络节点之间或局域网（LAN）段内节点之间传输数据的协议层。典型的 DoS 场景是 MAC 泛洪（针对交换机 MAC 表）和 ARP 欺骗。
 
-In **MAC flooding attacks**, a switch is flooded with packets that all have different source MAC addresses. The goal of this attack is to consume the limited memory used by a switch to store the MAC and physical port translation table (MAC table), which causes valid MAC addresses to be purged and forces the switch to enter a fail-over mode where it becomes a network hub. If this occurs, all data is forwarded to all ports, resulting in a data leakage.
+在 **MAC 泛洪攻击** 中，交换机被大量具有不同源 MAC 地址的数据包淹没。此攻击的目标是消耗交换机用于存储 MAC 和物理端口转换表（MAC 表）的有限内存，这会导致有效的 MAC 地址被清除，并迫使交换机进入故障切换模式，成为网络集线器。如果发生这种情况，所有数据都将转发到所有端口，导致数据泄露。
 
-[Future additions to sheet: The impact in relation to DoS and document compact remediation]
+在 **ARP 欺骗攻击** 中，恶意行为者在网络上发送伪造的 ARP（地址解析协议）消息。如果攻击者的 MAC 地址与网络上合法设备的 IP 地址关联，攻击者可以拦截、修改或停止原本发送给受害者 IP 地址的数据。ARP 协议特定于局域网，可能导致网络通信中的 DoS。
 
-In **ARP poisoning attacks**, a malicious actor sends spoofed ARP (Address Resolution Protocol) messages over the wire. If the attacker's MAC address becomes linked to the IP address of a legitimate device on the network, the attacker can intercept, modify or stop data that was intended for the victim IP address. The ARP protocol is specific to the local area network and could cause a DoS on the wire communication.
+数据包过滤技术可用于检查传输中的数据包以识别和阻止有问题的 ARP 数据包。另一种方法是使用静态 ARP 表，但它们证明难以维护。
 
-Packet filtering technology can be used to inspect packets in transit to identify and block offending ARP packets. Another approach is to use static ARP tables but they prove difficult to be maintained.
+## 应用层攻击
 
-## Application attacks
+**应用层攻击通常通过耗尽系统资源或使其在功能上无法使用来使应用程序不可用。** 这些攻击不必消耗网络带宽就能有效。相反，它们以这样一种方式对应用程序服务器施加操作压力，使服务器变得不可用、无法使用或功能失效。所有利用 OSI 第 7 层协议栈弱点的攻击通常被归类为应用层攻击。它们是最具挑战性的攻击，难以识别和缓解。
 
-**Application layer attacks usually make applications unavailable by exhausting system resources or by making it unusable in a functional way.** These attacks do not have to consume the network bandwidth to be effective. Rather they place an operational strain on the application server in such a way that the server becomes unavailable, unusable or non-functional. All attacks exploiting weaknesses on OSI layer 7 protocol stack are generally categorised as application attacks. They are the most challenging to identify/mitigate.
+**慢速 HTTP 攻击以非常缓慢和分段的方式传递 HTTP 请求，一次一个。在 HTTP 请求完全传递之前，服务器将保持资源停滞，等待缺失的传入数据。** 在某一时刻，服务器将达到最大并发连接池，导致 DoS。从攻击者的角度来看，慢速 HTTP 攻击成本很低，因为它们需要最少的资源。
 
-[Future additions to sheet: List all attacks per category. Because we cannot map remediations one on one with an attack vector, we will first need to list them before discussing the action points.]
+### 软件设计概念
 
-**Slow HTTP attacks deliver HTTP requests very slow and fragmented, one at a time. Until the HTTP request was fully delivered, the server will keep resources stalled while waiting for the missing incoming data.** At one moment, the server will reach the maximum concurrent connection pool, resulting in a DoS. From an attacker's perspective, slow HTTP attacks are cheap to perform because they require minimal resources.
+- **首先使用资源消耗低的验证**：我们希望尽快减少对这些资源的影响。之后应进行更多（CPU、内存和带宽）昂贵的验证。
+- **采用优雅降级**：这是应用程序设计阶段要遵循的核心概念，以限制 DoS 的影响。当系统或应用程序的部分组件出现故障时，您需要继续保持一定级别的功能。DoS 的主要问题是它导致整个系统中应用程序突然和突然终止。容错设计使系统或应用程序能够继续其预期操作，可能是在降低的水平上，而不是在系统部分失败时完全失败。
+- **防止单点故障**：检测和防止单点故障（SPOF）是抵抗 DoS 攻击的关键。大多数 DoS 攻击假设系统有 SPOF 会因系统过载而失败。我们建议您使用无状态组件，使用冗余系统，创建舱壁以阻止故障在基础架构中蔓延，并确保系统在外部服务失败时仍能生存。[预防](https://www.baeldung.com/cs/distributed-systems-prevent-single-point-failure)
+- **避免高 CPU 消耗操作**：当发生 DoS 攻击时，倾向于使用大量 CPU 资源的操作可能会严重拖累系统性能并成为故障点。我们强烈建议您检查代码的性能问题，包括您使用的语言中固有的问题。参见 [Java](https://www.theserverside.com/answer/How-to-fix-high-Java-CPU-usage-problems) [JVM-IBM](https://www.ibm.com/docs/en/baw/23.x?topic=issues-best-practices-high-jvm-cpu-utilization) 和 [Microsoft-IIS](https://learn.microsoft.com/en-us/troubleshoot/developer/webapps/iis/health-diagnostic-performance/troubleshoot-high-cpu-in-iis-app-pool)
+- **处理异常**：当发生 DoS 攻击时，应用程序可能会抛出异常，确保系统能够优雅地处理这些异常至关重要。再次强调，DoS 攻击假设过载系统将无法以系统可以继续运行的方式抛出异常。我们建议您检查代码，确保异常被正确处理。参见 [大规模系统](https://raygun.com/blog/errors-and-exceptions/) [Java](https://www.theserverside.com/blog/Coffee-Talk-Java-News-Stories-and-Opinions/Java-Exception-handling-best-practices) 和 [Java](https://www.digitalocean.com/community/tutorials/exception-handling-in-java)
+- **防止溢出和下溢**：由于缓冲区溢出和下溢经常导致漏洞，学习如何防止它们是关键。[OWASP](https://owasp.org/www-community/vulnerabilities/Buffer_Overflow) [Overflow-Underflow-C](https://developer.apple.com/library/archive/documentation/Security/Conceptual/SecureCodingGuide/Articles/BufferOverflows.html) [Overflow](https://www.freecodecamp.org/news/buffer-overflow-attacks/)
+- **线程**：避免必须等待大型任务完成才能继续的操作。异步操作在这些情况下很有用。
+- 识别资源密集型页面并提前规划。
 
-### Software Design Concepts
+### 会话
 
-- **Using validation that is cheap in resources first**: We want to reduce impact on these resources as soon as possible. More (CPU, memory and bandwidth) expensive validation should be performed afterward.
-- **Employing graceful degradation**: This is a core concept to follow during application design phase, in order to limit impact of DoS. You need to continue some level of functionality when portions of a system or application break. One of the main problems with DoS is that it causes sudden and abrupt application terminations throughout the system. A fault tolerant design enables a system or application to continue its intended operation, possibly at a reduced level, rather than failing completely if parts of the system fails.
-- **Prevent single point of failure**: Detecting and preventing single points of failure (SPOF) is key to resisting DoS attacks. Most DoS attacks assume that a system has SPOFs that will fail due to overwhelmed systems. We suggest that you employ stateless components, use redundant systems, create bulkheads to stop failures from spreading across the infrastructure, and make sure that systems can survive when external services fail. [Prevention](https://www.baeldung.com/cs/distributed-systems-prevent-single-point-failure)
-- **Avoid highly CPU consuming operations**: When a DoS attack occurs, operations that tend to use a lot of CPU resources can become serious drags on system performance and can become a point of failure. We strongly suggest that you review performance issues with your code, including problems that are inherent in the languages that you are using. See [Java](https://www.theserverside.com/answer/How-to-fix-high-Java-CPU-usage-problems) [JVM-IBM](https://www.ibm.com/docs/en/baw/23.x?topic=issues-best-practices-high-jvm-cpu-utilization) and [Microsoft-IIS](https://learn.microsoft.com/en-us/troubleshoot/developer/webapps/iis/health-diagnostic-performance/troubleshoot-high-cpu-in-iis-app-pool)
-- **Handle exceptions**: When a DoS attack occurs, it is likely that applications will throw exceptions and it is vital that your systems can handle them gracefully. Again, a DoS attack assumes that an overwhelmed system will not be able to throw exceptions in a way that the system can continue operating. We suggest that you go through your code and make sure that exceptions are handled properly. See [Large-Scale-Systems](https://raygun.com/blog/errors-and-exceptions/) [Java](https://www.theserverside.com/blog/Coffee-Talk-Java-News-Stories-and-Opinions/Java-Exception-handling-best-practices) and [Java](https://www.digitalocean.com/community/tutorials/exception-handling-in-java)
-- **Protect overflow and underflow** Since buffer overflow and underflow often lead to vulnerabilities, learning how to prevent them is key. [OWASP](https://owasp.org/www-community/vulnerabilities/Buffer_Overflow) [Overflow-Underflow-C](https://developer.apple.com/library/archive/documentation/Security/Conceptual/SecureCodingGuide/Articles/BufferOverflows.html) [Overflow](https://www.freecodecamp.org/news/buffer-overflow-attacks/)
-- **Threading**: Avoid operations which must wait for completion of large tasks to proceed. Asynchronous operations are useful in these situations.
-- Identify resource intensive pages and plan ahead.
+- **基于非活动和最终超时限制服务器端会话时间**：（资源耗尽）虽然会话超时通常与会话安全和防止会话劫持有关，但它也是防止资源耗尽的重要措施。
+- **限制与会话绑定的信息存储**：与会话关联的数据越少，用户会话对 Web 服务器性能的负担就越小。
 
-### Session
+### 输入验证
 
-- **Limit server side session time based on inactivity and a final timeout**: (resource exhaustion) While sessions timeout is most of the time discussed in relation to session security and preventing session hijacking, it is also an important measure to prevent resource exhaustion.
-- **Limit session bound information storage**: The less data is linked to a session, the less burden a user session has on the webserver's performance.
+- **限制文件上传大小和扩展名**：这种策略可以防止文件存储空间或其他将上传作为输入的 Web 应用程序功能的 DoS（例如图像调整大小、PDF 创建等）（资源耗尽）- [清单](https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload)。
+- **限制总请求大小**：使资源消耗型 DoS 攻击更难成功。（资源耗尽）
+- **防止基于输入的资源分配**：再次使资源消耗型 DoS 攻击更难成功。（资源耗尽）
+- **防止基于输入的函数和线程交互**：用户输入可能影响函数需要执行的次数，或 CPU 消耗的强度。依赖（未过滤的）用户输入进行资源分配可能会通过资源耗尽导致 DoS 场景。（资源耗尽）
+- **基于输入的谜题**，如验证码或简单的数学问题，通常用于"保护"Web 表单。典型的例子是发布请求后发送电子邮件的 Web 表单。验证码可以防止恶意攻击者或垃圾邮件机器人使邮箱泛滥。**谜题针对功能滥用有一定作用，但这种技术无法帮助防御 DoS 攻击。**
 
-### Input validation
+### 访问控制
 
-- **Limit file upload size and extensions**:  This tactic prevents DoS on file space storage or other web application functions which will use the upload as input (e.g. image resizing, PDF creation, etc. (resource exhaustion) - [Checklist](https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload).
-- **Limit total request size**:  To make it harder for resource-consuming DoS attacks to succeed. (resource exhaustion)
-- **Prevent input based resource allocation**: Again, to make it harder for resource-consuming DoS attacks to succeed. (resource exhaustion)
-- **Prevent input based function and threading interaction**:  User input can influence how many times a function needs to be executed, or how intensive the CPU consumption becomes. Depending on (unfiltered) user input for resource allocation could allow a DoS scenario through resource exhaustion. (resource exhaustion)
-- **Input based puzzles** like captchas or simple math problems are often used to 'protect' a web form. The classic example is a webform that will send out an email after posting the request. A captcha could then prevent the mailbox from getting flooded by a malicious attacker or spambot.  **Puzzles serve a purpose against functionality abuse but this kind of technology will not help defend against DoS attacks.**
+- **作为暴露功能手段的身份验证**：最小权限原则可以通过拒绝攻击者使用 DoS 技术访问潜在有害功能，在防止 DoS 攻击中发挥关键作用。
+- **用户锁定**是攻击者可以利用应用程序安全机制通过滥用登录失败来造成 DoS 的场景。
 
-### Access control
+## 网络攻击
 
-- **Authentication as a means to expose functionality**: The principle of least privilege can play a key role in preventing DoS attacks by denying attackers the ability to access potentially damaging functions with DoS techniques.
-- **User lockout** is a scenario where an attacker can take advantage of the application security mechanisms to cause DoS by abusing the login failure.
-
-## Network attacks
-
-For more information on network attacks, see:
+有关网络攻击的更多信息，请参见：
 
 [Juniper](https://www.juniper.net/documentation/us/en/software/junos/denial-of-service/topics/topic-map/security-network-dos-attack.html)
 [eSecurityPlanet](https://www.esecurityplanet.com/networks/types-of-ddos-attacks/)
 
-[Future additions to cheat sheet: Discuss attacks where network bandwidth gets saturation. Volumetric in nature. Amplification techniques make these attacks effective. List attacks: NTP amplification, DNS amplification, UDP flooding, TCP flooding]
+[未来将添加到备忘录：讨论网络带宽饱和的攻击。本质上是容量型的。放大技术使这些攻击有效。列出攻击：NTP 放大、DNS 放大、UDP 泛洪、TCP 泛洪]
 
-### Network Design Concepts
+### 网络设计概念
 
-- **Preventing single point of failure**: See above.
-- **Caching**: The concept that data is stored so future requests for that data can be served faster. The more data is served via caching, to more resilient the application becomes to bandwidth exhaustion.
-- **Static resources hosting on a different domain** will reduce the number of http requests on the web application. Images and JavaScript are typical files that are loaded from a different domain.  
+- **防止单点故障**：参见上文。
+- **缓存**：数据存储以便未来对该数据的请求可以更快地提供服务。通过缓存提供的数据越多，应用程序对带宽耗尽的弹性就越强。
+- **在不同域上托管静态资源**将减少 Web 应用程序上的 HTTP 请求数。图像和 JavaScript 是通常从不同域加载的典型文件。
 
-### Rate limiting
+### 速率限制
 
-Rate limiting is the process of controlling traffic rate from and to a server or component. It can be implemented on infrastructure as well as on an application level. Rate limiting can be based on (offending) IPs, on IP block lists, on geolocation, etc.
+速率限制是控制服务器或组件进出流量速率的过程。可以在基础架构和应用程序级别实施。速率限制可以基于（违规）IP、IP 黑名单、地理位置等。
 
-- **Define a minimum ingress data rate limit** and drop all connections below that rate. Note that if the rate limit is set too low, this could impact clients. Inspect the logs to establish a baseline of genuine traffic rate. (Protection against slow HTTP attacks)
-- **Define an absolute connection timeout**
-- **Define a maximum ingress data rate limit** then drop all connections above that rate.
-- **Define a total bandwidth size limit** to prevent bandwidth exhaustion
-- **Define a load limit**, which specifies the number of users allowed to access any given resource at any given time.
+- **定义最小入口数据速率限制**并丢弃低于该速率的所有连接。请注意，如果速率限制设置过低，可能会影响客户端。检查日志以建立真实流量速率的基准。（防止慢速 HTTP 攻击）
+- **定义绝对连接超时**
+- **定义最大入口数据速率限制**，然后丢弃超过该速率的所有连接。
+- **定义总带宽大小限制**以防止带宽耗尽
+- **定义负载限制**，指定在任何给定时间允许访问任何给定资源的用户数量。
 
-### ISP-Level remediations
+### ISP 级缓解
 
-- **Filter invalid sender addresses using edge routers**, in accordance with RFC 2267, to filter out IP-spoofing attacks done with the goal of bypassing block lists.
-- **Check your ISP services in terms of DDOS beforehand** (support for multiple internet access points, enough bandwidth (xx-xxx Gbit/s) and special hardware for traffic analysis and defence on application level
+- **使用边缘路由器过滤无效发送方地址**，根据 RFC 2267，过滤出旨在绕过黑名单的 IP 欺骗攻击。
+- **提前检查您的 ISP 服务中的 DDOS**（支持多个互联网接入点，足够的带宽（xx-xxx Gbit/s）和用于流量分析和应用层防御的专用硬件）
 
-### Global-Level remediations: Commercial cloud filter services
+### 全球级缓解：商业云过滤服务
 
-- Consider using a filter service in order to resist larger attacks (up to 500GBit/s)
-- **Filter services** support different mechanics to filter out malicious or non compliant traffic
-- **Comply with relevant data protection/privacy laws** - a lot of providers route traffic through USA/UK
+- 考虑使用过滤服务以抵抗大规模攻击（高达 500Gbit/s）
+- **过滤服务**支持不同的机制来过滤恶意或不合规的流量
+- **遵守相关数据保护/隐私法律** - 许多提供商将流量路由通过美国/英国
 
-## Related Articles
+## 相关文章
 
-- [CERT-EU Publication](http://cert.europa.eu/static/WhitePapers/CERT-EU-SWP_14_09_DDoS_final.pdf)
+- [CERT-EU 出版物](http://cert.europa.eu/static/WhitePapers/CERT-EU-SWP_14_09_DDoS_final.pdf)
