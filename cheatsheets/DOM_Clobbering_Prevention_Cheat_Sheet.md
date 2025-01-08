@@ -1,57 +1,56 @@
-# DOM Clobbering Prevention Cheat Sheet
+# DOM 污染防御备忘录
 
-## Introduction
+## 引言
 
-[DOM Clobbering](https://domclob.xyz/domc_wiki/#overview) is a type of code-reuse, HTML-only injection attack, where attackers confuse a web application by injecting HTML elements whose `id` or `name` attribute matches the name of security-sensitive variables or browser APIs, such as variables used for fetching remote content (e.g., script src), and overshadow their value.
+[DOM 污染](https://domclob.xyz/domc_wiki/#overview)是一种代码重用的、仅基于 HTML 的注入攻击，攻击者通过注入 `id` 或 `name` 属性与安全敏感变量或浏览器 API 名称相匹配的 HTML 元素，从而混淆 Web 应用程序，并覆盖其原有值。
 
-It is particularly relevant when script injection is not possible, e.g., when filtered by HTML sanitizers, or mitigated by disallowing or controlling script execution. In these scenarios, attackers may still inject non-script HTML markups into webpages and transform the initially secure markup into executable code, achieving [Cross-Site Scripting (XSS)](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html).
+当无法进行脚本注入时（例如被 HTML 净化器过滤，或通过禁止或控制脚本执行来缓解），这种攻击尤其相关。在这些场景中，攻击者仍可以将非脚本的 HTML 标记注入网页，并将原本安全的标记转换为可执行代码，从而实现[跨站脚本（XSS）](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)。
 
-**This cheat sheet is a list of guidelines, secure coding patterns, and practices to prevent or restrict the impact of DOM Clobbering in your web application.**
+**本指南是一系列防止或限制 Web 应用程序中 DOM 污染影响的指导原则、安全编码模式和实践。**
 
-## Background
+## 背景
 
-Before we dive into DOM Clobbering, let's refresh our knowledge with some basic Web background.
+在深入探讨 DOM 污染之前，让我们先回顾一些基本的 Web 背景知识。
 
-When a webpage is loaded, the browser creates a [DOM tree](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction) that represents the structure and content of the page, and JavaScript code has read and write access to this tree.
+当网页加载时，浏览器会创建一个表示页面结构和内容的 [DOM 树](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction)，JavaScript 代码可以读取和写入这棵树。
 
-When creating the DOM tree, browsers also create an attribute for (some) named HTML elements on `window` and `document` objects. Named HTML elements are those having an `id` or `name` attribute. For example, the markup:
+在创建 DOM 树时，浏览器还会在 `window` 和 `document` 对象上为（某些）具名 HTML 元素创建属性。具名 HTML 元素是指具有 `id` 或 `name` 属性的元素。例如，以下标记：
 
 ```html
 <form id=x></a>
 ```
 
-will lead to browsers creating references to that form element with the attribute `x` of `window` and `document`:
+将导致浏览器在 `window` 和 `document` 上创建对该表单元素的引用：
 
 ```js
 var obj1 = document.getElementById('x');
 var obj2 = document.x;
 var obj3 = document.x;
 var obj4 = window.x;
-var obj5 = x; // by default, objects belong to the global Window, so x is same as window.x
+var obj5 = x; // 默认情况下，对象属于全局 Window，所以 x 等同于 window.x
 console.log(
  obj1 === obj2 && obj2 === obj3 &&
  obj3 === obj4 && obj4 === obj5
 ); // true
 ```
 
-When accessing an attribute of `window` and `document` objects, named HTML element references come before lookups of built-in APIs and other attributes on `window` and `document` that developers have defined, also known as [named property accesses](https://html.spec.whatwg.org/multipage/nav-history-apis.html#named-access-on-the-window-object). Developers unaware of such behavior may use the content of window/document attributes for sensitive operations, such as URLs for fetching remote content, and attackers can exploit it by injecting markups with colliding names. Similarly to custom attributes/variables, built-in browser APIs may be overshadowed by DOM Clobbering.
+在访问 `window` 和 `document` 对象的属性时，具名 HTML 元素引用的优先级高于内置 API 和开发者在 `window` 和 `document` 上定义的其他属性的查找，这也称为[具名属性访问](https://html.spec.whatwg.org/multipage/nav-history-apis.html#named-access-on-the-window-object)。对此行为不了解的开发者可能会将 window/document 属性的内容用于敏感操作，如获取远程内容的 URL，而攻击者可以通过注入具有冲突名称的标记来利用这一点。与自定义属性/变量类似，内置浏览器 API 也可能被 DOM 污染所覆盖。
 
-If attackers are able to inject (non-script) HTML markup in the DOM tree,
-it can change the value of a variable that the web application relies on due to named property accesses, causing it to malfunction, expose sensitive data, or execute attacker-controlled scripts. DOM Clobbering works by taking advantage of this (legacy) behaviour, causing a namespace collision between the execution environment (i.e., `window` and `document` objects), and JavaScript code.
+如果攻击者能够在 DOM 树中注入（非脚本）HTML 标记，就可以改变 Web 应用程序依赖的变量值，导致其功能异常、暴露敏感数据或执行攻击者控制的脚本。DOM 污染通过利用这种（遗留的）行为，在执行环境（即 `window` 和 `document` 对象）和 JavaScript 代码之间造成命名空间冲突。
 
-### Example Attack 1
+### 攻击示例 1
 
 ```javascript
 let redirectTo = window.redirectTo || '/profile/';
 location.assign(redirectTo);
 ```
 
-The attacker can:
+攻击者可以：
 
-- inject the markup `<a id=redirectTo href='javascript:alert(1)'` and obtain XSS.
-- inject the markup `<a id=redirectTo href='phishing.com'` and obtain open redirect.
+- 注入标记 `<a id=redirectTo href='javascript:alert(1)'` 并获得 XSS。
+- 注入标记 `<a id=redirectTo href='phishing.com'` 并实现开放重定向。
 
-### Example Attack 2
+### 攻击示例 2
 
 ```javascript
 var script = document.createElement('script');
@@ -60,55 +59,55 @@ s.src = src;
 document.body.appendChild(s);
 ```
 
-The attacker can inject the markup `<a id=config><a id=config name=url href='malicious.js'>` to load additional JavaScript code, and obtain arbitrary client-side code execution.
+攻击者可以注入标记 `<a id=config><a id=config name=url href='malicious.js'>` 以加载额外的 JavaScript 代码，从而获得任意客户端代码执行。
 
-## Summary of Guidelines
+## 指南概要
 
-For quick reference, below is the summary of guidelines discussed next.
+以下是后续讨论的指南快速参考。
 
-|    | **Guidelines**                                                | Description                                                               |
-|----|---------------------------------------------------------------|---------------------------------------------------------------------------|
-| \# 1  | Use HTML Sanitizers                                           | [link](#1-html-sanitization)                                              |
-| \# 2  | Use Content-Security Policy                                   | [link](#2-content-security-policy)                                        |
-| \# 3  | Freeze Sensitive DOM Objects                                  | [link](#3-freezing-sensitive-dom-objects)                                 |
-| \# 4  | Validate All Inputs to DOM Tree                               | [link](#4-validate-all-inputs-to-dom-tree)                                |
-| \# 5  | Use Explicit Variable Declarations                            | [link](#5-use-explicit-variable-declarations)                             |
-| \# 6  | Do Not Use Document and Window for Global Variables           | [link](#6-do-not-use-document-and-window-for-global-variables)            |
-| \# 7  | Do Not Trust Document Built-in APIs Before Validation         | [link](#7-do-not-trust-document-built-in-apis-before-validation)          |
-| \# 8  | Enforce Type Checking                                         | [link](#8-enforce-type-checking)                                          |
-| \# 9  | Use Strict Mode                                               | [link](#9-use-strict-mode)                                                |
-| \# 10 | Apply Browser Feature Detection                               | [link](#10-apply-browser-feature-detection)                               |
-| \# 11 | Limit Variables to Local Scope                                | [link](#11-limit-variables-to-local-scope)                                |
-| \# 12 | Use Unique Variable Names In Production                       | [link](#12-use-unique-variable-names-in-production)                       |
-| \# 13 | Use Object-oriented Programming Techniques like Encapsulation | [link](#13-use-object-oriented-programming-techniques-like-encapsulation) |
+|    | **指南**                                                     | 描述                                                         |
+|----|--------------------------------------------------------------|--------------------------------------------------------------|
+| \# 1  | 使用 HTML 净化器                                            | [链接](#1-html-净化)                                         |
+| \# 2  | 使用内容安全策略                                            | [链接](#2-内容安全策略)                                      |
+| \# 3  | 冻结敏感的 DOM 对象                                         | [链接](#3-冻结敏感的-dom-对象)                               |
+| \# 4  | 验证所有 DOM 树输入                                         | [链接](#4-验证所有-dom-树输入)                               |
+| \# 5  | 使用显式变量声明                                            | [链接](#5-使用显式变量声明)                                  |
+| \# 6  | 不要将文档和窗口用作全局变量                                | [链接](#6-不要将文档和窗口用作全局变量)                      |
+| \# 7  | 不要在验证前信任文档内置 API                                | [链接](#7-不要在验证前信任文档内置-api)                      |
+| \# 8  | 强制类型检查                                                | [链接](#8-强制类型检查)                                      |
+| \# 9  | 使用严格模式                                                | [链接](#9-使用严格模式)                                      |
+| \# 10 | 应用浏览器特性检测                                          | [链接](#10-应用浏览器特性检测)                               |
+| \# 11 | 将变量限制在局部作用域                                      | [链接](#11-将变量限制在局部作用域)                           |
+| \# 12 | 在生产环境中使用唯一的变量名                                | [链接](#12-在生产环境中使用唯一的变量名)                     |
+| \# 13 | 使用面向对象编程技术，如封装                                | [链接](#13-使用面向对象编程技术如封装)                       |
 
-## Mitigation Techniques
+## 缓解技术
 
-### \#1: HTML Sanitization
+### \#1: HTML 净化
 
-Robust HTML sanitizers can prevent or restrict the risk of DOM Clobbering. They can do so in multiple ways. For example:
+强大的 HTML 净化器可以防止或限制 DOM 污染的风险。它们可以通过多种方式实现：
 
-- completely remove named properties like `id` and `name`. While effective, this may hinder the usability when named properties are needed for legitimate functionalties.
-- namespace isolation, which can be, for example, prefixing the value of named properties by a constant string to limit the risk of naming collisions.
-- dynamically checking if named properties of the input mark has collisions with the existing DOM tree, and if that is the case, then remove named properties of the input markup.
+- 完全移除 `id` 和 `name` 等具名属性。虽然有效，但可能会在需要具名属性进行合法功能时阻碍可用性。
+- 命名空间隔离，例如为具名属性的值添加常量字符串前缀，以限制命名冲突的风险。
+- 动态检查输入标记的具名属性是否与现有 DOM 树存在冲突，如果是，则移除输入标记的具名属性。
 
-OWASP recommends [DOMPurify](https://github.com/cure53/DOMPurify) or the [Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Sanitizer_API) for HTML sanitization.
+OWASP 推荐使用 [DOMPurify](https://github.com/cure53/DOMPurify) 或 [Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Sanitizer_API) 进行 HTML 净化。
 
-#### DOMPurify Sanitizer
+#### DOMPurify 净化器
 
-By default, DOMPurify removes all clobbering collisions with **built-in** APIs and properties (using the enabled-by-default `SANITIZE_DOM` configuration option).
+默认情况下，DOMPurify 会移除与**内置** API 和属性的所有污染冲突（使用默认启用的 `SANITIZE_DOM` 配置选项）。
 
-To be protected against clobbering of custom variables and properties as well, you need to enable the `SANITIZE_NAMED_PROPS` config:
+要防止自定义变量和属性的污染，需要启用 `SANITIZE_NAMED_PROPS` 配置：
 
 ```js
 var clean = DOMPurify.sanitize(dirty, {SANITIZE_NAMED_PROPS: true});
 ```
 
-This would isolate the namespace of named properties and JavaScript variables by prefixing them with `user-content-` string.
+这将通过在具名属性和 JavaScript 变量前添加 `user-content-` 字符串来隔离其命名空间。
 
 #### Sanitizer API
 
-The new browser-built-in [Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Sanitizer_API) does not prevent DOM Clobbering it its [default setting](https://wicg.github.io/sanitizer-api/#dom-clobbering), but can be configured to remove named properties:
+新的浏览器内置 [Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Sanitizer_API) 在[默认设置](https://wicg.github.io/sanitizer-api/#dom-clobbering)下不能防止 DOM 污染，但可以配置为移除具名属性：
 
 ```js
 const sanitizerInstance = new Sanitizer({
@@ -120,74 +119,74 @@ const sanitizerInstance = new Sanitizer({
 containerDOMElement.setHTML(input, {sanitizer: sanitizerInstance});
 ```
 
-### \#2: Content-Security Policy
+### \#2: 内容安全策略
 
-[Content-Security Policy (CSP)](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) is a set of rules that tell the browser which resources are allowed to be loaded on a web page. By restricting the sources of JavaScript files (e.g., with the [script-src](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src) directive), CSP can prevent malicious code from being injected into the page.
+[内容安全策略（CSP）](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)是一组规则，告诉浏览器允许在网页上加载哪些资源。通过限制 JavaScript 文件的来源（例如使用 [script-src](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src) 指令），CSP 可以防止恶意代码被注入页面。
 
-**Note:** CSP can only mitigate **some variants** of DOM clobbering attacks, such as when attackers attempt to load new scripts by clobbering script sources, but not when already-present code can be abused for code execution, e.g., clobbering the parameters of code evaluation constructs like `eval()`.
+**注意：** CSP 只能缓解 DOM 污染攻击的**部分变体**，例如当攻击者试图通过污染脚本源加载新脚本时，但对于已存在的可被滥用于代码执行的代码（如污染 `eval()` 等代码评估构造的参数）则无法防范。
 
-### \#3: Freezing Sensitive DOM Objects
+### \#3: 冻结敏感的 DOM 对象
 
-A simple way to mitigate DOM Clobbering against individual objects could be to freeze sensitive DOM objects and their properties, e.g., via [Object.freeze()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze) method.
+针对单个对象缓解 DOM 污染的简单方法是冻结敏感的 DOM 对象及其属性，例如通过 [Object.freeze()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze) 方法。
 
-**Note:** Freezing object properties prevents them from being overwritten by named DOM elements. But, determining all objects and object properties that need to be frozen may be not be easy, limiting the usefulness of this approach.
+**注意：** 冻结对象属性可以防止它们被具名 DOM 元素覆盖。但是，确定需要冻结的所有对象和对象属性可能并不容易，这限制了这种方法的实用性。
 
-## Secure Coding Guidelines
+## 安全编码指南
 
-DOM Clobbering can be avoided by defensive programming and adhering to a few coding patterns and guidelines.
+通过防御性编程和遵循几种编码模式和指南，可以避免 DOM 污染。
 
-### \#4: Validate All Inputs to DOM Tree
+### \#4: 验证所有 DOM 树输入
 
-Before inserting any markup into the webpage's DOM tree, sanitize `id` and `name` attributes (see [HTML sanitization](#html-sanitization)).
+在将任何标记插入网页的 DOM 树之前，对 `id` 和 `name` 属性进行净化（参见 [HTML 净化](#html-净化)）。
 
-### \#5: Use Explicit Variable Declarations
+### \#5: 使用显式变量声明
 
-When initializing varibles, always use a variable declarator like `var`, `let` or `const`, which prevents clobbering of the variable.
+初始化变量时，始终使用 `var`、`let` 或 `const` 等变量声明器，这可以防止变量被污染。
 
-**Note:** Declaring a variable with `let` does not create a property on `window`, unlike `var`. Therefore, `window.VARNAME` can still be clobbered (assuming `VARNAME` is the name of the variable).
+**注意：** 使用 `let` 声明变量不会在 `window` 上创建属性，与 `var` 不同。因此，`window.VARNAME` 仍然可能被污染（假设 `VARNAME` 是变量名）。
 
-### \#6: Do Not Use Document and Window for Global Variables
+### \#6: 不要将文档和窗口用作全局变量
 
-Avoid using objects like `document` and `window` for storing global variables, because they can be easily manipulated. (see, e.g., [here](https://domclob.xyz/domc_wiki/indicators/patterns.html#do-not-use-document-for-global-variables)).
+避免使用 `document` 和 `window` 等对象存储全局变量，因为它们很容易被操纵（参见[此处](https://domclob.xyz/domc_wiki/indicators/patterns.html#do-not-use-document-for-global-variables)）。
 
-### \#7: Do Not Trust Document Built-in APIs Before Validation
+### \#7: 不要在验证前信任文档内置 API
 
-Document properties, including built-in ones, are always overshadowed by DOM Clobbering, even right after they are assigned a value.
+文档属性，包括内置属性，始终可以被 DOM 污染覆盖，即使在赋值后立即使用。
 
-**Hint:** This is due to the so-called [named property visibility algorithm](https://webidl.spec.whatwg.org/#legacy-platform-object-abstract-ops), where named HTML element references come before lookups of built-in APIs and other attributes on `document`.
+**提示：** 这是由所谓的[具名属性可见性算法](https://webidl.spec.whatwg.org/#legacy-platform-object-abstract-ops)造成的，其中具名 HTML 元素引用的优先级高于 `document` 上的内置 API 和其他属性的查找。
 
-### \#8: Enforce Type Checking
+### \#8: 强制类型检查
 
-Always check the type of `document` and `window` properties before using them in sensitive operations, e.g., using the [`instanceof`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof) operator.
+在敏感操作中使用 `document` 和 `window` 属性之前，始终检查其类型，例如使用 [`instanceof`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof) 运算符。
 
-**Hint:** When an object is clobbered, it would refer to an [`Element`](https://developer.mozilla.org/en-US/docs/Web/API/Element) instance, which may not be the expected type.
+**提示：** 当对象被污染时，它将引用 [`Element`](https://developer.mozilla.org/en-US/docs/Web/API/Element) 实例，这可能不是预期的类型。
 
-### \#9: Use Strict Mode
+### \#9: 使用严格模式
 
-Use `strict` mode to prevent unintended global variable creation, and to [raise an error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Read-only) when read-only properties are attempted to be over-written.
+使用 `strict` 模式可以防止意外创建全局变量，并在尝试覆盖只读属性时[引发错误](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Read-only)。
 
-### \#10: Apply Browser Feature Detection
+### \#10: 应用浏览器特性检测
 
-Instead of relying on browser-specific features or properties, use feature detection to determine whether a feature is supported before using it. This can help prevent errors and DOM Clobbering that might arise when using those features in unsupported browsers.
+不要依赖特定于浏览器的特性或属性，而是使用特性检测来确定是否支持某个特性，然后再使用它。这可以帮助防止在不支持的浏览器中使用这些特性时可能出现的错误和 DOM 污染。
 
-**Hint:** Unsupported feature APIs can act as an undefined variable/property in unsupported browsers, making them clobberable.
+**提示：** 在不支持的浏览器中，不支持的特性 API 可能表现为未定义的变量/属性，使其容易被污染。
 
-### \#11: Limit Variables to Local Scope
+### \#11: 将变量限制在局部作用域
 
-Global variables are more prone to being overwritten by DOM Clobbering. Whenever possible, use local variables and object properties.
+全局变量更容易被 DOM 污染覆盖。尽可能使用局部变量和对象属性。
 
-### \#12: Use Unique Variable Names In Production
+### \#12: 在生产环境中使用唯一的变量名
 
-Using unique variable names may help prevent naming collisions that could lead to accidental overwrites.
+使用唯一的变量名可以帮助防止可能导致意外覆盖的命名冲突。
 
-### \#13: Use Object-oriented Programming Techniques like Encapsulation
+### \#13: 使用面向对象编程技术，如封装
 
-Encapsulating variables and functions within objects or classes can help prevent them from being overwritten. By making them private, they cannot be accessed from outside the object, making them less prone to DOM Clobbering.
+将变量和函数封装在对象或类中可以帮助防止它们被覆盖。通过使它们私有，它们无法从对象外部访问，从而使它们不太容易受到 DOM 污染的影响。
 
-## References
+## 参考文献
 
 - [domclob.xyz](https://domclob.xyz)
-- [PortSwigger: DOM Clobbering Strikes Back](https://portswigger.net/research/dom-clobbering-strikes-back)
-- [Blogpost: XSS in GMail’s AMP4Email](https://research.securitum.com/xss-in-amp4email-dom-clobbering/)
-- [HackTricks: DOM Clobbering](https://book.hacktricks.xyz/pentesting-web/xss-cross-site-scripting/dom-clobbering)
-- [HTMLHell: DOM Clobbering](https://www.htmhell.dev/adventcalendar/2022/12/)
+- [PortSwigger: DOM 污染再袭](https://portswigger.net/research/dom-clobbering-strikes-back)
+- [博客文章：GMail 的 AMP4Email 中的 XSS](https://research.securitum.com/xss-in-amp4email-dom-clobbering/)
+- [HackTricks: DOM 污染](https://book.hacktricks.xyz/pentesting-web/xss-cross-site-scripting/dom-clobbering)
+- [HTMLHell: DOM 污染](https://www.htmhell.dev/adventcalendar/2022/12/)
