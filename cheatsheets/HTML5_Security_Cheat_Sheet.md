@@ -1,189 +1,190 @@
-# HTML5 Security Cheat Sheet
+# HTML5 安全备忘录
 
-## Introduction
+## 引言
 
-The following cheat sheet serves as a guide for implementing HTML 5 in a secure fashion.
+以下备忘录作为安全实施 HTML5 的指南。
 
-## Communication APIs
+## 通信 API
 
-### Web Messaging
+### Web 消息传递
 
-Web Messaging (also known as Cross Domain Messaging) provides a means of messaging between documents from different origins in a way that is generally safer than the multiple hacks used in the past to accomplish this task. However, there are still some recommendations to keep in mind:
+Web 消息传递（也称为跨域消息传递）提供了一种在不同源的文档之间传递消息的方法，这种方法通常比过去使用的多种黑客技术更安全。但仍有一些建议需要注意：
 
-- When posting a message, explicitly state the expected origin as the second argument to `postMessage` rather than `*` in order to prevent sending the message to an unknown origin after a redirect or some other means of the target window's origin changing.
-- The receiving page should **always**:
-    - Check the `origin` attribute of the sender to verify the data is originating from the expected location.
-    - Perform input validation on the `data` attribute of the event to ensure that it's in the desired format.
-- Don't assume you have control over the `data` attribute. A single [Cross Site Scripting](Cross_Site_Scripting_Prevention_Cheat_Sheet.md) flaw in the sending page allows an attacker to send messages of any given format.
-- Both pages should only interpret the exchanged messages as **data**. Never evaluate passed messages as code (e.g. via `eval()`) or insert it to a page DOM (e.g. via `innerHTML`), as that would create a DOM-based XSS vulnerability. For more information see [DOM based XSS Prevention Cheat Sheet](DOM_based_XSS_Prevention_Cheat_Sheet.md).
-- To assign the data value to an element, instead of using a insecure method like `element.innerHTML=data;`, use the safer option: `element.textContent=data;`
-- Check the origin properly exactly to match the FQDN(s) you expect. Note that the following code: `if(message.origin.indexOf(".owasp.org")!=-1) { /* ... */ }` is very insecure and will not have the desired behavior as `owasp.org.attacker.com` will match.
-- If you need to embed external content/untrusted gadgets and allow user-controlled scripts (which is highly discouraged), please check the information on [sandboxed frames](HTML5_Security_Cheat_Sheet.md#sandboxed-frames).
+- 发送消息时，明确指定 `postMessage` 的第二个参数为预期的源，而不是 `*`，以防止在重定向或目标窗口源发生变化后将消息发送到未知源。
+- 接收页面应该**始终**：
+    - 检查发送者的 `origin` 属性，以验证数据是否来自预期位置。
+    - 对事件的 `data` 属性执行输入验证，确保其为所需格式。
+- 不要假定你可以控制 `data` 属性。发送页面中的单个[跨站脚本](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)漏洞允许攻击者发送任何给定格式的消息。
+- 双方都应该仅将交换的消息解释为**数据**。切勿通过 `eval()` 评估传递的消息，或将其插入页面 DOM（例如通过 `innerHTML`），否则会创建基于 DOM 的 XSS 漏洞。更多信息请参见 [DOM 基于 XSS 预防备忘录](DOM_based_XSS_Prevention_Cheat_Sheet.md)。
+- 要将数据值分配给元素，不要使用不安全的方法如 `element.innerHTML=data;`，而应使用更安全的选项：`element.textContent=data;`
+- 精确检查源以匹配你预期的完全限定域名（FQDN）。注意，以下代码非常不安全：`if(message.origin.indexOf(".owasp.org")!=-1) { /* ... */ }`，因为 `owasp.org.attacker.com` 也会匹配。
+- 如果需要嵌入外部内容/不受信任的小工具并允许用户控制的脚本（强烈不建议），请查看[沙盒框架](HTML5_Security_Cheat_Sheet.md#sandboxed-frames)的相关信息。
 
-### Cross Origin Resource Sharing
+### 跨源资源共享（CORS）
 
-- Validate URLs passed to `XMLHttpRequest.open`. Current browsers allow these URLs to be cross domain; this behavior can lead to code injection by a remote attacker. Pay extra attention to absolute URLs.
-- Ensure that URLs responding with `Access-Control-Allow-Origin: *` do not include any sensitive content or information that might aid attacker in further attacks. Use the `Access-Control-Allow-Origin` header only on chosen URLs that need to be accessed cross-domain. Don't use the header for the whole domain.
-- Allow only selected, trusted domains in the `Access-Control-Allow-Origin` header. Prefer allowing specific domains over blocking or allowing any domain (do not use `*` wildcard nor blindly return the `Origin` header content without any checks).
-- Keep in mind that CORS does not prevent the requested data from going to an unauthorized location. It's still important for the server to perform usual [CSRF](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md) prevention.
-- While the [Fetch Standard](https://fetch.spec.whatwg.org/#http-cors-protocol) recommends a pre-flight request with the `OPTIONS` verb, current implementations might not perform this request, so it's important that "ordinary" (`GET` and `POST`) requests perform any access control necessary.
-- Discard requests received over plain HTTP with HTTPS origins to prevent mixed content bugs.
-- Don't rely only on the Origin header for Access Control checks. Browser always sends this header in CORS requests, but may be spoofed outside the browser. Application-level protocols should be used to protect sensitive data.
+- 验证传递给 `XMLHttpRequest.open` 的 URL。当前浏览器允许这些 URL 是跨域的；这种行为可能导致远程攻击者进行代码注入。对绝对 URL 要特别注意。
+- 确保响应 `Access-Control-Allow-Origin: *` 的 URL 不包含任何敏感内容或可能帮助攻击者进一步攻击的信息。仅对需要跨域访问的特定 URL 使用 `Access-Control-Allow-Origin` 标头。不要为整个域使用该标头。
+- 在 `Access-Control-Allow-Origin` 标头中仅允许选定的受信任域。优先允许特定域，而不是阻止或允许任何域（不要使用 `*` 通配符，也不要盲目返回 `Origin` 标头内容而不进行任何检查）。
+- 请记住，CORS 并不能阻止请求的数据被发送到未经授权的位置。服务器仍然需要执行常规的 [CSRF](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md) 预防。
+- 虽然 [Fetch 标准](https://fetch.spec.whatwg.org/#http-cors-protocol)建议使用 `OPTIONS` 动词进行预检请求，但当前实现可能不会执行此请求，因此对"普通"（`GET` 和 `POST`）请求执行必要的访问控制很重要。
+- 丢弃通过纯 HTTP 接收的带有 HTTPS 源的请求，以防止混合内容错误。
+- 不要仅依赖 Origin 标头进行访问控制检查。浏览器在 CORS 请求中始终发送此标头，但在浏览器外可能被伪造。应使用应用程序级协议来保护敏感数据。
 
-### WebSockets
+### WebSocket
 
-- Drop backward compatibility in implemented client/servers and use only protocol versions above hybi-00. Popular Hixie-76 version (hiby-00) and older are outdated and insecure.
-- The recommended version supported in latest versions of all current browsers is [RFC 6455](http://tools.ietf.org/html/rfc6455) (supported by Firefox 11+, Chrome 16+, Safari 6, Opera 12.50, and IE10).
-- While it's relatively easy to tunnel TCP services through WebSockets (e.g. VNC, FTP), doing so enables access to these tunneled services for the in-browser attacker in case of a Cross Site Scripting attack. These services might also be called directly from a malicious page or program.
-- The protocol doesn't handle authorization and/or authentication. Application-level protocols should handle that separately in case sensitive data is being transferred.
-- Process the messages received by the websocket as data. Don't try to assign it directly to the DOM nor evaluate as code. If the response is JSON, never use the insecure `eval()` function; use the safe option JSON.parse() instead.
-- Endpoints exposed through the `ws://` protocol are easily reversible to plain text. Only `wss://` (WebSockets over SSL/TLS) should be used for protection against Man-In-The-Middle attacks.
-- Spoofing the client is possible outside a browser, so the WebSockets server should be able to handle incorrect/malicious input. Always validate input coming from the remote site, as it might have been altered.
-- When implementing servers, check the `Origin:` header in the Websockets handshake. Though it might be spoofed outside a browser, browsers always add the Origin of the page that initiated the Websockets connection.
-- As a WebSockets client in a browser is accessible through JavaScript calls, all Websockets communication can be spoofed or hijacked through [Cross Site Scripting](https://owasp.org/www-community/attacks/xss/). Always validate data coming through a WebSockets connection.
+- 在实现的客户端/服务器中放弃向后兼容性，仅使用 hybi-00 以上的协议版本。流行的 Hixie-76 版本（hiby-00）及更早版本已过时且不安全。
+- 推荐的版本是在所有当前浏览器的最新版本中支持的 [RFC 6455](http://tools.ietf.org/html/rfc6455)（被 Firefox 11+、Chrome 16+、Safari 6、Opera 12.50 和 IE10 支持）。
+- 虽然通过 WebSocket 隧道传输 TCP 服务（如 VNC、FTP）相对容易，但这样做会在跨站脚本攻击的情况下使浏览器内攻击者能够访问这些隧道服务。这些服务也可能直接从恶意页面或程序调用。
+- 该协议不处理授权和/或身份验证。如果传输敏感数据，应用程序级协议应单独处理这些问题。
+- 将 WebSocket 接收的消息作为数据处理。不要尝试直接将其分配给 DOM 或作为代码评估。如果响应是 JSON，切勿使用不安全的 `eval()` 函数；改用安全的 `JSON.parse()` 选项。
+- 通过 `ws://` 协议公开的端点很容易还原为纯文本。只应使用 `wss://`（基于 SSL/TLS 的 WebSocket）以防止中间人攻击。
+- 在浏览器外可以伪造客户端，因此 WebSocket 服务器应能处理不正确/恶意的输入。始终验证来自远程站点的输入，因为它可能已被更改。
+- 在实现服务器时，检查 WebSocket 握手中的 `Origin:` 标头。尽管在浏览器外可能被伪造，但浏览器始终添加发起 WebSocket 连接的页面的源。
+- 由于浏览器中的 WebSocket 客户端可通过 JavaScript 调用访问，所有 WebSocket 通信都可能通过[跨站脚本](https://owasp.org/www-community/attacks/xss/)被伪造或劫持。始终验证通过 WebSocket 连接传输的数据。
 
-### Server-Sent Events
+### 服务器发送事件（Server-Sent Events）
 
-- Validate URLs passed to the `EventSource` constructor, even though only same-origin URLs are allowed.
-- As mentioned before, process the messages (`event.data`) as data and never evaluate the content as HTML or script code.
-- Always check the origin attribute of the message (`event.origin`) to ensure the message is coming from a trusted domain. Use an allow-list approach.
+- 验证传递给 `EventSource` 构造函数的 URL，即使仅允许同源 URL。
+- 如前所述，将消息（`event.data`）作为数据处理，切勿将内容评估为 HTML 或脚本代码。
+- 始终检查消息的源属性（`event.origin`），确保消息来自受信任的域。使用允许列表方法。
 
-## Storage APIs
+## 存储 API
 
-### Local Storage
+### 本地存储（Local Storage）
 
-- Also known as Offline Storage, Web Storage. Underlying storage mechanism may vary from one user agent to the next. In other words, any authentication your application requires can be bypassed by a user with local privileges to the machine on which the data is stored. Therefore, it's recommended to avoid storing any sensitive information in local storage where authentication would be assumed.
-- Due to the browser's security guarantees it is appropriate to use local storage where access to the data is not assuming authentication or authorization.
-- Use the object sessionStorage instead of localStorage if persistent storage is not needed. sessionStorage object is available only to that window/tab until the window is closed.
-- A single [Cross Site Scripting](https://owasp.org/www-community/attacks/xss/) can be used to steal all the data in these objects, so again it's recommended not to store sensitive information in local storage.
-- A single [Cross Site Scripting](https://owasp.org/www-community/attacks/xss/) can be used to load malicious data into these objects too, so don't consider objects in these to be trusted.
-- Pay extra attention to "localStorage.getItem" and "setItem" calls implemented in HTML5 page. It helps in detecting when developers build solutions that put sensitive information in local storage, which can be a severe risk if authentication or authorization to that data is incorrectly assumed.
-- Do not store session identifiers in local storage as the data is always accessible by JavaScript. Cookies can mitigate this risk using the `httpOnly` flag.
-- There is no way to restrict the visibility of an object to a specific path like with the attribute path of HTTP Cookies, every object is shared within an origin and protected with the Same Origin Policy. Avoid hosting multiple applications on the same origin, all of them would share the same localStorage object, use different subdomains instead.
+- 也称为离线存储、Web 存储。底层存储机制可能因用户代理而异。换句话说，应用程序要求的任何身份验证都可以被对存储数据的机器具有本地权限的用户绕过。因此，建议避免在本地存储中存储任何敏感信息，其中身份验证被假定为已存在。
+- 由于浏览器的安全保证，在不假定对数据的访问需要身份验证或授权时，使用本地存储是适当的。
+- 如果不需要持久存储，请使用 sessionStorage 对象而非 localStorage。sessionStorage 对象仅在窗口/标签关闭之前可用。
+- 单个[跨站脚本](https://owasp.org/www-community/attacks/xss/)可用于窃取这些对象中的所有数据，因此再次建议不要在本地存储中存储敏感信息。
+- 单个[跨站脚本](https://owasp.org/www-community/attacks/xss/)也可用于将恶意数据加载到这些对象中，因此不要认为这些对象中的数据是可信的。
+- 特别注意 HTML5 页面中的 "localStorage.getItem" 和 "setItem" 调用。这有助于检测开发人员构建的将敏感信息存储在本地存储中的解决方案，如果对该数据的身份验证或授权不正确，这可能是一个严重的风险。
+- 不要在本地存储中存储会话标识符，因为数据始终可以通过 JavaScript 访问。Cookie 可以通过 `httpOnly` 标志缓解此风险。
+- 没有办法像 HTTP Cookie 的 path 属性那样将对象的可见性限制到特定路径，每个对象在源内共享并受同源策略保护。避免在同一源上托管多个应用程序，所有应用程序将共享相同的 localStorage 对象，改用不同的子域。
 
-### Client-side databases
+### 客户端数据库
 
-- On November 2010, the W3C announced Web SQL Database (relational SQL database) as a deprecated specification. A new standard Indexed Database API or IndexedDB (formerly WebSimpleDB) is actively developed, which provides key-value database storage and methods for performing advanced queries.
-- Underlying storage mechanisms may vary from one user agent to the next. In other words, any authentication your application requires can be bypassed by a user with local privileges to the machine on which the data is stored. Therefore, it's recommended not to store any sensitive information in local storage.
-- If utilized, WebDatabase content on the client side can be vulnerable to SQL injection and needs to have proper validation and parameterization.
-- Like Local Storage, a single [Cross Site Scripting](https://owasp.org/www-community/attacks/xss/) can be used to load malicious data into a web database as well. Don't consider data in these to be trusted.
+- 2010 年 11 月，W3C 宣布 Web SQL 数据库（关系型 SQL 数据库）为已弃用的规范。一个新的标准 Indexed Database API 或 IndexedDB（以前称为 WebSimpleDB）正在积极开发，它提供键值数据库存储和执行高级查询的方法。
+- 底层存储机制可能因用户代理而异。换句话说，应用程序要求的任何身份验证都可以被对存储数据的机器具有本地权限的用户绕过。因此，建议不要在本地存储中存储任何敏感信息。
+- 如果使用，客户端的 WebDatabase 内容可能容易受到 SQL 注入攻击，需要进行适当的验证和参数化。
+- 与本地存储一样，单个[跨站脚本](https://owasp.org/www-community/attacks/xss/)也可用于将恶意数据加载到 Web 数据库中。不要认为这些数据是可信的。
 
-## Geolocation
+## 地理定位
 
-- The [Geolocation API](https://www.w3.org/TR/2021/WD-geolocation-20211124/#security) requires that user agents ask for the user's permission before calculating location. Whether or how this decision is remembered varies from browser to browser. Some user agents require the user to visit the page again in order to turn off the ability to get the user's location without asking, so for privacy reasons, it's recommended to require user input before calling `getCurrentPosition` or `watchPosition`.
+- [地理定位 API](https://www.w3.org/TR/2021/WD-geolocation-20211124/#security) 要求用户代理在计算位置之前询问用户权限。浏览器对于是否记住此决定以及如何记住的方式各不相同。某些用户代理要求用户再次访问页面才能在不询问的情况下关闭获取用户位置的能力，因此出于隐私考虑，建议在调用 `getCurrentPosition` 或 `watchPosition` 之前需要用户输入。
 
 ## Web Workers
 
-- Web Workers are allowed to use `XMLHttpRequest` object to perform in-domain and Cross Origin Resource Sharing requests. See relevant section of this Cheat Sheet to ensure CORS security.
-- While Web Workers don't have access to DOM of the calling page, malicious Web Workers can use excessive CPU for computation, leading to Denial of Service condition or abuse Cross Origin Resource Sharing for further exploitation. Ensure code in all Web Workers scripts is not malevolent. Don't allow creating Web Worker scripts from user supplied input.
-- Validate messages exchanged with a Web Worker. Do not try to exchange snippets of JavaScript for evaluation e.g. via `eval()` as that could introduce a [DOM Based XSS](DOM_based_XSS_Prevention_Cheat_Sheet.md) vulnerability.
+- Web Workers 允许使用 `XMLHttpRequest` 对象执行同域和跨源资源共享请求。请参阅本备忘录的相关章节以确保 CORS 安全。
+- 尽管 Web Workers 无法访问调用页面的 DOM，但恶意的 Web Workers 可能会过度使用 CPU 进行计算，导致拒绝服务条件，或滥用跨源资源共享进行进一步利用。确保所有 Web Workers 脚本中的代码不具有恶意。不要允许从用户提供的输入创建 Web Worker 脚本。
+- 验证与 Web Worker 交换的消息。不要尝试交换用于评估的 JavaScript 代码片段（例如通过 `eval()`），因为这可能引入[基于 DOM 的 XSS](DOM_based_XSS_Prevention_Cheat_Sheet.md) 漏洞。
 
-## Tabnabbing
+## Tabnabbing（标签劫持）
 
-Attack is described in detail in this [article](https://owasp.org/www-community/attacks/Reverse_Tabnabbing).
+攻击细节在此[文章](https://owasp.org/www-community/attacks/Reverse_Tabnabbing)中详细描述。
 
-To summarize, it's the capacity to act on parent page's content or location from a newly opened page via the back link exposed by the **opener** JavaScript object instance.
+总之，这是通过 **opener** JavaScript 对象实例公开的返回链接，从新打开的页面对父页面的内容或位置进行操作的能力。
 
-It applies to an HTML link or a JavaScript `window.open` function using the attribute/instruction `target` to specify a [target loading location](https://www.w3schools.com/tags/att_a_target.asp) that does not replace the current location and then makes the current window/tab available.
+这适用于 HTML 链接或 JavaScript 的 `window.open` 函数，使用 `target` 属性/指令指定不替换当前位置的[目标加载位置](https://www.w3schools.com/tags/att_a_target.asp)，然后使当前窗口/标签可用。
 
-To prevent this issue, the following actions are available:
+为防止此问题，可采取以下操作：
 
-Cut the back link between the parent and the child pages:
+切断父页面和子页面之间的返回链接：
 
-- For HTML links:
-    - To cut this back link, add the attribute `rel="noopener"` on the tag used to create the link from the parent page to the child page. This attribute value cuts the link, but depending on the browser, lets referrer information be present in the request to the child page.
-    - To also remove the referrer information use this attribute value: `rel="noopener noreferrer"`.
-- For the JavaScript `window.open` function, add the values `noopener,noreferrer` in the [windowFeatures](https://developer.mozilla.org/en-US/docs/Web/API/Window/open) parameter of the `window.open` function.
+- 对于 HTML 链接：
+    - 要切断此返回链接，在从父页面到子页面的链接标签上添加 `rel="noopener"` 属性。这个属性值会切断链接，但取决于浏览器，可能会在对子页面的请求中保留引用信息。
+    - 要同时删除引用信息，请使用此属性值：`rel="noopener noreferrer"`。
+- 对于 JavaScript 的 `window.open` 函数，在 `window.open` 函数的 [windowFeatures](https://developer.mozilla.org/en-US/docs/Web/API/Window/open) 参数中添加 `noopener,noreferrer` 值。
 
-As the behavior using the elements above is different between the browsers, either use an HTML link or JavaScript to open a window (or tab), then use this configuration to maximize the cross supports:
+由于上述元素的行为在不同浏览器中存在差异，因此要最大化跨支持，可以：
 
-- For [HTML links](https://www.scaler.com/topics/html/html-links/), add the attribute `rel="noopener noreferrer"` to every link.
-- For JavaScript, use this function to open a window (or tab):
+- 对于 [HTML 链接](https://www.scaler.com/topics/html/html-links/)，为每个链接添加 `rel="noopener noreferrer"` 属性。
+- 对于 JavaScript，使用以下函数打开窗口（或标签）：
 
 ``` javascript
 function openPopup(url, name, windowFeatures){
-  //Open the popup and set the opener and referrer policy instruction
+  // 打开弹出窗口并设置 opener 和引用策略指令
   var newWindow = window.open(url, name, 'noopener,noreferrer,' + windowFeatures);
-  //Reset the opener link
+  // 重置 opener 链接
   newWindow.opener = null;
 }
 ```
 
-- Add the HTTP response header `Referrer-Policy: no-referrer` to every HTTP response sent by the application ([Header Referrer-Policy information](https://owasp.org/www-project-secure-headers/). This configuration will ensure that no referrer information is sent along with requests from the page.
+- 为应用程序发送的每个 HTTP 响应添加 HTTP 响应标头 `Referrer-Policy: no-referrer`（[标头 Referrer-Policy 信息](https://owasp.org/www-project-secure-headers/)）。此配置将确保不会随页面的请求发送任何引用信息。
 
-Compatibility matrix:
+兼容性矩阵：
 
 - [noopener](https://caniuse.com/#search=noopener)
 - [noreferrer](https://caniuse.com/#search=noreferrer)
 - [referrer-policy](https://caniuse.com/#feat=referrer-policy)
 
-## Sandboxed frames
+## 沙盒框架
 
-- Use the `sandbox` attribute of an `iframe` for untrusted content.
-- The `sandbox` attribute of an `iframe` enables restrictions on content within an `iframe`. The following restrictions are active when the `sandbox` attribute is set:
-    1. All markup is treated as being from a unique origin.
-    2. All forms and scripts are disabled.
-    3. All links are prevented from targeting other browsing contexts.
-    4. All features that trigger automatically are blocked.
-    5. All plugins are disabled.
+- 对不受信任的内容使用 `iframe` 的 `sandbox` 属性。
+- `iframe` 的 `sandbox` 属性可以对 `iframe` 内的内容启用限制。设置 `sandbox` 属性时，以下限制处于活动状态：
+    1. 所有标记都被视为来自唯一源。
+    2. 所有表单和脚本被禁用。
+    3. 所有链接被阻止针对其他浏览上下文。
+    4. 所有自动触发的功能被阻止。
+    5. 所有插件被禁用。
 
-It is possible to have a [fine-grained control](https://html.spec.whatwg.org/multipage/iframe-embed-object.html#attr-iframe-sandbox) over `iframe` capabilities using the value of the `sandbox` attribute.
+可以使用 `sandbox` 属性的值对 `iframe` 功能进行[细粒度控制](https://html.spec.whatwg.org/multipage/iframe-embed-object.html#attr-iframe-sandbox)。
 
-- In old versions of user agents where this feature is not supported, this attribute will be ignored. Use this feature as an additional layer of protection or check if the browser supports sandboxed frames and only show the untrusted content if supported.
-- Apart from this attribute, to prevent Clickjacking attacks and unsolicited framing it is encouraged to use the header `X-Frame-Options` which supports the `deny` and `same-origin` values. Other solutions like framebusting `if(window!==window.top) { window.top.location=location;}` are not recommended.
+- 在不支持此功能的旧版用户代理中，此属性将被忽略。将此功能用作额外的保护层，或检查浏览器是否支持沙盒框架，并仅在支持时显示不受信任的内容。
+- 除了此属性外，为防止点击劫持攻击和未经请求的框架，建议使用支持 `deny` 和 `same-origin` 值的 `X-Frame-Options` 标头。不推荐使用其他解决方案，如框架破坏 `if(window!==window.top) { window.top.location=location;}`。
 
-## Credential and Personally Identifiable Information (PII) Input hints
 
-- Protect the input values from being cached by the browser.
+## 凭据和个人可识别信息（PII）输入提示
 
-> Access a financial account from a public computer. Even though one is logged-off, the next person who uses the machine can log-in because the browser autocomplete functionality. To mitigate this, we tell the input fields not to assist in any way.
+- 防止浏览器缓存输入值。
+
+> 在公共计算机上访问金融账户。即使已注销，下一个使用该机器的人仍可通过浏览器自动完成功能登录。为缓解这一问题，我们告诉输入字段不要以任何方式辅助。
 
 ```html
 <input type="text" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></input>
 ```
 
-Text areas and input fields for PII (name, email, address, phone number) and login credentials (username, password) should be prevented from being stored in the browser. Use these HTML5 attributes to prevent the browser from storing PII from your form:
+对于 PII（姓名、电子邮件、地址、电话号码）和登录凭据（用户名、密码）的文本区域和输入字段，应防止浏览器存储。使用这些 HTML5 属性防止浏览器存储表单中的 PII：
 
 - `spellcheck="false"`
 - `autocomplete="off"`
 - `autocorrect="off"`
 - `autocapitalize="off"`
 
-## Offline Applications
+## 离线应用
 
-- Whether the user agent requests permission from the user to store data for offline browsing and when this cache is deleted, varies from one browser to the next. Cache poisoning is an issue if a user connects through insecure networks, so for privacy reasons it is encouraged to require user input before sending any `manifest` file.
-- Users should only cache trusted websites and clean the cache after browsing through open or insecure networks.
+- 用户代理是否请求用户权限存储离线浏览数据以及何时删除此缓存，因浏览器而异。如果用户通过不安全的网络连接，缓存污染是一个问题，因此出于隐私考虑，建议在发送任何 `manifest` 文件之前需要用户输入。
+- 用户应仅缓存受信任的网站，并在通过开放或不安全的网络浏览后清理缓存。
 
-## Progressive Enhancements and Graceful Degradation Risks
+## 渐进增强和优雅降级风险
 
-- The best practice now is to determine the capabilities that a browser supports and augment with some type of substitute for capabilities that are not directly supported. This may mean an onion-like element, e.g. falling through to a Flash Player if the `<video>` tag is unsupported, or it may mean additional scripting code from various sources that should be code reviewed.
+- 现在的最佳实践是确定浏览器支持的功能，并为不直接支持的功能提供某种替代方案。这可能意味着一个洋葱状的元素，例如在不支持 `<video>` 标签时回退到 Flash Player，或者可能意味着来自各种源的额外脚本代码，这些代码应进行代码审查。
 
-## HTTP Headers to enhance security
+## 增强安全性的 HTTP 标头
 
-Consult the project [OWASP Secure Headers](https://owasp.org/www-project-secure-headers/) in order to obtains the list of HTTP security headers that an application should use to enable defenses at browser level.
+请查阅 [OWASP 安全标头](https://owasp.org/www-project-secure-headers/)项目，以获取应用程序应使用的 HTTP 安全标头列表，以在浏览器级别启用防御。
 
-## WebSocket implementation hints
+## WebSocket 实施提示
 
-In addition to the elements mentioned above, this is the list of areas for which caution must be taken during the implementation.
+除了上面提到的元素外，以下是实施过程中必须谨慎对待的领域列表。
 
-- Access filtering through the "Origin" HTTP request header
-- Input / Output validation
-- Authentication
-- Authorization
-- Access token explicit invalidation
-- Confidentiality and Integrity
+- 通过 "Origin" HTTP 请求标头进行访问过滤
+- 输入/输出验证
+- 身份验证
+- 授权
+- 访问令牌显式失效
+- 机密性和完整性
 
-The section below will propose some implementation hints for every area and will go along with an application example showing all the points described.
+下面的章节将为每个领域提供一些实施建议，并配有展示所有描述点的应用示例。
 
-The complete source code of the example application is available [here](https://github.com/righettod/poc-websocket).
+示例应用的完整源代码可在[此处](https://github.com/righettod/poc-websocket)获得。
 
-### Access filtering
+### 访问过滤
 
-During a websocket channel initiation, the browser sends the **Origin** HTTP request header that contains the source domain initiation for the request to handshake. Even if this header can be spoofed in a forged HTTP request (not browser based), it cannot be overridden or forced in a browser context. It then represents a good candidate to apply filtering according to an expected value.
+在 WebSocket 通道启动期间，浏览器发送 **Origin** HTTP 请求标头，其中包含请求握手的源域发起。即使此标头可以在伪造的 HTTP 请求（非浏览器基础）中被伪造，但在浏览器上下文中也无法覆盖或强制。因此，它是根据预期值应用过滤的良好候选者。
 
-An example of an attack using this vector, named *Cross-Site WebSocket Hijacking (CSWSH)*, is described [here](https://www.christian-schneider.net/CrossSiteWebSocketHijacking.html).
+使用此向量的攻击，名为*跨站 WebSocket 劫持（CSWSH）*，在[此处](https://www.christian-schneider.net/CrossSiteWebSocketHijacking.html)描述。
 
-The code below defines a configuration that applies filtering based on an "allowlist" of origins. This ensures that only allowed origins can establish a full handshake:
+下面的代码定义了一个基于"允许列表"的源进行过滤的配置。这确保只有允许的源可以建立完整的握手：
 
 ``` java
 import org.owasp.encoder.Encode;
@@ -195,8 +196,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Setup handshake rules applied to all WebSocket endpoints of the application.
- * Use to setup the Access Filtering using "Origin" HTTP header as input information.
+ * 为应用程序的所有 WebSocket 端点设置握手规则。
+ * 用于使用 "Origin" HTTP 标头作为输入信息设置访问过滤。
  *
  * @see "http://docs.oracle.com/javaee/7/api/index.html?javax/websocket/server/
  * ServerEndpointConfig.Configurator.html"
@@ -205,12 +206,12 @@ import java.util.List;
 public class EndpointConfigurator extends ServerEndpointConfig.Configurator {
 
     /**
-     * Logger
+     * 日志记录器
      */
     private static final Logger LOG = LoggerFactory.getLogger(EndpointConfigurator.class);
 
     /**
-     * Get the expected source origins from a JVM property in order to allow external configuration
+     * 从 JVM 属性获取预期的源域，以允许外部配置
      */
     private static final List<String> EXPECTED_ORIGINS =  Arrays.asList(System.getProperty("source.origins")
                                                           .split(";"));
@@ -223,10 +224,10 @@ public class EndpointConfigurator extends ServerEndpointConfig.Configurator {
         boolean isAllowed = EXPECTED_ORIGINS.contains(originHeaderValue);
         String safeOriginValue = Encode.forHtmlContent(originHeaderValue);
         if (isAllowed) {
-            LOG.info("[EndpointConfigurator] New handshake request received from {} and was accepted.",
+            LOG.info("[EndpointConfigurator] 收到来自 {} 的新握手请求并已接受。",
                       safeOriginValue);
         } else {
-            LOG.warn("[EndpointConfigurator] New handshake request received from {} and was rejected !",
+            LOG.warn("[EndpointConfigurator] 收到来自 {} 的新握手请求并已拒绝！",
                       safeOriginValue);
         }
         return isAllowed;
@@ -235,17 +236,17 @@ public class EndpointConfigurator extends ServerEndpointConfig.Configurator {
 }
 ```
 
-### Authentication and Input/Output validation
+### 认证与输入/输出验证
 
-When using websocket as communication channel, it's important to use an authentication method allowing the user to receive an access *Token* that is not automatically sent by the browser and then must be explicitly sent by the client code during each exchange.
+在使用 WebSocket 作为通信通道时，重要的是使用一种认证方法，允许用户接收一个访问*令牌*，该令牌不会被浏览器自动发送，而必须由客户端代码在每次交换中显式发送。
 
-HMAC digests are the simplest method, and [JSON Web Token](https://jwt.io/introduction/) is a good feature rich alternative, because it allows the transport of access ticket information in a stateless and not alterable way. Moreover, it defines a validity timeframe. You can find additional information about JWT hardening on this [cheat sheet](JSON_Web_Token_for_Java_Cheat_Sheet.md).
+HMAC 摘要是最简单的方法，而 [JSON Web Token](https://jwt.io/introduction/)（JWT）是一个功能丰富的优秀替代方案，因为它允许以无状态且不可更改的方式传输访问凭证信息。此外，它还定义了有效期限。关于 JWT 强化的更多信息，可以查看这个[备忘录](JSON_Web_Token_for_Java_Cheat_Sheet.md)。
 
-[JSON Validation Schema](http://json-schema.org/) are used to define and validate the expected content in input and output messages.
+[JSON 验证模式](http://json-schema.org/)用于定义和验证输入和输出消息中的预期内容。
 
-The code below defines the complete authentication messages flow handling:
+下面的代码定义了完整的认证消息流处理：
 
-**Authentication Web Socket endpoint** - Provide a WS endpoint that enables authentication exchange
+**WebSocket 认证端点** - 提供一个支持认证交换的 WS 端点
 
 ``` java
 import org.owasp.pocwebsocket.configurator.EndpointConfigurator;
@@ -263,69 +264,68 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 /**
- * Class in charge of managing the client authentication.
+ * 负责管理客户端认证的类。
  *
  * @see "http://docs.oracle.com/javaee/7/api/javax/websocket/server/ServerEndpointConfig.Configurator.html"
  * @see "http://svn.apache.org/viewvc/tomcat/trunk/webapps/examples/WEB-INF/classes/websocket/"
  */
 @ServerEndpoint(value = "/auth", configurator = EndpointConfigurator.class,
-subprotocols = {"authentication"}, encoders = {AuthenticationResponseEncoder.class},
-decoders = {AuthenticationRequestDecoder.class})
+子协议 = {"authentication"}, 编码器 = {AuthenticationResponseEncoder.class},
+解码器 = {AuthenticationRequestDecoder.class})
 public class AuthenticationEndpoint {
 
     /**
-     * Logger
+     * 日志记录器
      */
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationEndpoint.class);
 
     /**
-     * Handle the beginning of an exchange
+     * 处理交换的开始
      *
-     * @param session Exchange session information
+     * @param session 交换会话信息
      */
     @OnOpen
     public void start(Session session) {
-        //Define connection idle timeout and message limits in order to mitigate as much as possible
-        //DOS attacks using massive connection opening or massive big messages sending
-        int msgMaxSize = 1024 * 1024;//1 MB
-        session.setMaxIdleTimeout(60000);//1 minute
+        // 定义连接空闲超时和消息限制，尽可能减轻使用大量连接打开或发送大消息的 DOS 攻击
+        int msgMaxSize = 1024 * 1024; // 1 MB
+        session.setMaxIdleTimeout(60000); // 1 分钟
         session.setMaxTextMessageBufferSize(msgMaxSize);
         session.setMaxBinaryMessageBufferSize(msgMaxSize);
-        //Log exchange start
-        LOG.info("[AuthenticationEndpoint] Session {} started", session.getId());
-        //Affect a new message handler instance in order to process the exchange
+        // 记录交换开始
+        LOG.info("[AuthenticationEndpoint] 会话 {} 已开始", session.getId());
+        // 分配一个新的消息处理程序实例以处理交换
         session.addMessageHandler(new AuthenticationMessageHandler(session.getBasicRemote()));
-        LOG.info("[AuthenticationEndpoint] Session {} message handler affected for processing",
+        LOG.info("[AuthenticationEndpoint] 会话 {} 已分配消息处理程序进行处理",
                   session.getId());
     }
 
     /**
-     * Handle error case
+     * 处理错误情况
      *
-     * @param session Exchange session information
-     * @param thr     Error details
+     * @param session 交换会话信息
+     * @param thr     错误详情
      */
     @OnError
     public void onError(Session session, Throwable thr) {
-        LOG.error("[AuthenticationEndpoint] Error occur in session {}", session.getId(), thr);
+        LOG.error("[AuthenticationEndpoint] 会话 {} 发生错误", session.getId(), thr);
     }
 
     /**
-     * Handle close event
+     * 处理关闭事件
      *
-     * @param session     Exchange session information
-     * @param closeReason Exchange closing reason
+     * @param session     交换会话信息
+     * @param closeReason 交换关闭原因
      */
     @OnClose
     public void onClose(Session session, CloseReason closeReason) {
-        LOG.info("[AuthenticationEndpoint] Session {} closed: {}", session.getId(),
+        LOG.info("[AuthenticationEndpoint] 会话 {} 已关闭：{}", session.getId(),
                   closeReason.getReasonPhrase());
     }
 
 }
 ```
 
-**Authentication message handler** - Handle all authentication requests
+**认证消息处理器** - 处理所有认证请求
 
 ``` java
 import org.owasp.pocwebsocket.enumeration.AccessLevel;
@@ -342,21 +342,21 @@ import javax.websocket.RemoteEndpoint;
 import java.io.IOException;
 
 /**
- * Handle authentication message flow
+ * 处理认证消息流
  */
 public class AuthenticationMessageHandler implements MessageHandler.Whole<AuthenticationRequest> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationMessageHandler.class);
 
     /**
-     * Reference to the communication channel with the client
+     * 与客户端通信的通道引用
      */
     private RemoteEndpoint.Basic clientConnection;
 
     /**
-     * Constructor
+     * 构造函数
      *
-     * @param clientConnection Reference to the communication channel with the client
+     * @param clientConnection 与客户端通信的通道引用
      */
     public AuthenticationMessageHandler(RemoteEndpoint.Basic clientConnection) {
         this.clientConnection = clientConnection;
@@ -370,42 +370,42 @@ public class AuthenticationMessageHandler implements MessageHandler.Whole<Authen
     public void onMessage(AuthenticationRequest message) {
         AuthenticationResponse response = null;
         try {
-            //Authenticate
+            // 认证
             String authenticationToken = "";
             String accessLevel = this.authenticate(message.getLogin(), message.getPassword());
             if (accessLevel != null) {
-                //Create a simple JSON token representing the authentication profile
+                // 创建表示认证配置文件的简单 JSON 令牌
                 authenticationToken = AuthenticationUtils.issueToken(message.getLogin(), accessLevel);
             }
-            //Build the response object
+            // 构建响应对象
             String safeLoginValue = Encode.forHtmlContent(message.getLogin());
             if (!authenticationToken.isEmpty()) {
-                response = new AuthenticationResponse(true, authenticationToken, "Authentication succeed !");
-                LOG.info("[AuthenticationMessageHandler] User {} authentication succeed.", safeLoginValue);
+                response = new AuthenticationResponse(true, authenticationToken, "认证成功！");
+                LOG.info("[AuthenticationMessageHandler] 用户 {} 认证成功。", safeLoginValue);
             } else {
-                response = new AuthenticationResponse(false, authenticationToken, "Authentication failed !");
-                LOG.warn("[AuthenticationMessageHandler] User {} authentication failed.", safeLoginValue);
+                response = new AuthenticationResponse(false, authenticationToken, "认证失败！");
+                LOG.warn("[AuthenticationMessageHandler] 用户 {} 认证失败。", safeLoginValue);
             }
         } catch (Exception e) {
-            LOG.error("[AuthenticationMessageHandler] Error occur in authentication process.", e);
-            //Build the response object indicating that authentication fail
-            response = new AuthenticationResponse(false, "", "Authentication failed !");
+            LOG.error("[AuthenticationMessageHandler] 认证过程中发生错误。", e);
+            // 构建表示认证失败的响应对象
+            response = new AuthenticationResponse(false, "", "认证失败！");
         } finally {
-            //Send response
+            // 发送响应
             try {
                 this.clientConnection.sendObject(response);
             } catch (IOException | EncodeException e) {
-                LOG.error("[AuthenticationMessageHandler] Error occur in response object sending.", e);
+                LOG.error("[AuthenticationMessageHandler] 发送响应对象时发生错误。", e);
             }
         }
     }
 
     /**
-     * Authenticate the user
+     * 用户认证
      *
-     * @param login    User login
-     * @param password User password
-     * @return The access level if the authentication succeed or NULL if the authentication failed
+     * @param login    用户登录名
+     * @param password 用户密码
+     * @return 认证成功时返回访问级别，认证失败时返回 NULL
      */
     private String authenticate(String login, String password) {
       ....
@@ -413,7 +413,7 @@ public class AuthenticationMessageHandler implements MessageHandler.Whole<Authen
 }
 ```
 
-**Utility class to manage JWT** - Handle the issuing and the validation of the access token. Simple JWT has been used for the example (focus was made here on the global WS endpoint implementation) here without extra hardening (see this [cheat sheet](JSON_Web_Token_for_Java_Cheat_Sheet.md) to apply extra hardening on the JWT)
+**管理 JWT 的实用类** - 处理访问令牌的签发和验证。本示例使用了简单的 JWT（重点放在全局 WS 端点实现上），未进行额外的强化（请参阅此[备忘录](JSON_Web_Token_for_Java_Cheat_Sheet.md)以对 JWT 应用额外的强化）
 
 ``` java
 import com.auth0.jwt.JWT;
@@ -428,20 +428,20 @@ import java.util.Calendar;
 import java.util.Locale;
 
 /**
- * Utility class to manage the authentication JWT token
+ * 管理认证 JWT 令牌的实用类
  */
 public class AuthenticationUtils {
 
     /**
-     * Build a JWT token for a user
+     * 为用户构建 JWT 令牌
      *
-     * @param login       User login
-     * @param accessLevel Access level of the user
-     * @return The Base64 encoded JWT token
-     * @throws Exception If any error occur during the issuing
+     * @param login       用户登录名
+     * @param accessLevel 用户访问级别
+     * @return Base64 编码的 JWT 令牌
+     * @throws Exception 签发过程中发生任何错误
      */
     public static String issueToken(String login, String accessLevel) throws Exception {
-        //Issue a JWT token with validity of 30 minutes
+        // 签发有效期为 30 分钟的 JWT 令牌
         Algorithm algorithm = Algorithm.HMAC256(loadSecret());
         Calendar c = Calendar.getInstance();
         c.add(Calendar.MINUTE, 30);
@@ -450,12 +450,11 @@ public class AuthenticationUtils {
     }
 
     /**
-     * Verify the validity of the provided JWT token
+     * 验证提供的 JWT 令牌的有效性
      *
-     * @param token JWT token encoded to verify
-     * @return The verified and decoded token with user authentication and
-     * authorization (access level) information
-     * @throws Exception If any error occur during the token validation
+     * @param token 要验证的编码 JWT 令牌
+     * @return 经过验证和解码的令牌，包含用户认证和授权（访问级别）信息
+     * @throws Exception 令牌验证过程中发生任何错误
      */
     public static DecodedJWT validateToken(String token) throws Exception {
         Algorithm algorithm = Algorithm.HMAC256(loadSecret());
@@ -464,11 +463,10 @@ public class AuthenticationUtils {
     }
 
     /**
-     * Load the JWT secret used to sign token using a byte array for secret storage in order
-     * to avoid persistent string in memory
+     * 加载用于签名令牌的 JWT 密钥，使用字节数组存储密钥以避免在内存中持久化字符串
      *
-     * @return The secret as byte array
-     * @throws IOException If any error occur during the secret loading
+     * @return 以字节数组形式返回的密钥
+     * @throws IOException 加载密钥过程中发生任何错误
      */
     private static byte[] loadSecret() throws IOException {
         return Files.readAllBytes(Paths.get("src", "main", "resources", "jwt-secret.txt"));
@@ -476,12 +474,12 @@ public class AuthenticationUtils {
 }
 ```
 
-**JSON schema of the input and output authentication message** - Define the expected structure of the input and output messages from the authentication endpoint point of view
+**认证消息的 JSON 模式** - 定义从认证端点的角度看输入和输出消息的预期结构
 
 ```json
 {
     "$schema": "http://json-schema.org/schema#",
-    "title": "AuthenticationRequest",
+    "title": "认证请求",
     "type": "object",
     "properties": {
     "login": {
@@ -500,10 +498,10 @@ public class AuthenticationUtils {
 
 {
 "$schema": "http://json-schema.org/schema#",
-"title": "AuthenticationResponse",
+"title": "认证响应",
 "type": "object",
 "properties": {
-    "isSuccess;": {
+    "isSuccess": {
     "type": "boolean"
     },
     "token": {
@@ -523,7 +521,7 @@ public class AuthenticationUtils {
 }
 ```
 
-**Authentication message decoder and encoder** - Perform the JSON serialization/deserialization and the input/output validation using dedicated JSON Schema. It makes it possible to systematically ensure that all messages received and sent by the endpoint strictly respect the expected structure and content.
+**认证消息解码器和编码器** - 使用专用的 JSON 模式执行 JSON 序列化/反序列化和输入/输出验证。这使得能够系统地确保端点接收和发送的所有消息严格遵守预期的结构和内容。
 
 ``` java
 import com.fasterxml.jackson.databind.JsonNode;
@@ -542,23 +540,22 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Decode JSON text representation to an AuthenticationRequest object
+ * 将 JSON 文本表示解码为 AuthenticationRequest 对象
  * <p>
- * As there's one instance of the decoder class by endpoint session so we can use the
- * JsonSchema as decoder instance variable.
+ * 由于每个端点会话只有一个解码器类实例，因此可以将 JsonSchema 用作解码器实例变量。
  */
 public class AuthenticationRequestDecoder implements Decoder.Text<AuthenticationRequest> {
 
     /**
-     * JSON validation schema associated to this type of message
+     * 与此类型消息关联的 JSON 验证模式
      */
     private JsonSchema validationSchema = null;
 
     /**
-     * Initialize decoder and associated JSON validation schema
+     * 初始化解码器和关联的 JSON 验证模式
      *
-     * @throws IOException If any error occur during the object creation
-     * @throws ProcessingException If any error occur during the schema loading
+     * @throws IOException 对象创建期间发生任何错误
+     * @throws ProcessingException 模式加载期间发生任何错误
      */
     public AuthenticationRequestDecoder() throws IOException, ProcessingException {
         JsonNode node = JsonLoader.fromFile(
@@ -572,22 +569,19 @@ public class AuthenticationRequestDecoder implements Decoder.Text<Authentication
     @Override
     public AuthenticationRequest decode(String s) throws DecodeException {
         try {
-            //Validate the provided representation against the dedicated schema
-            //Use validation mode with report in order to enable further inspection/tracing
-            //of the error details
-            //Moreover the validation method "validInstance()" generate a NullPointerException
-            //if the representation do not respect the expected schema
-            //so it's more proper to use the validation method with report
+            // 根据专用模式验证提供的表示
+            // 使用带报告的验证模式，以便进一步检查/跟踪错误详情
+            // 此外，验证方法 "validInstance()" 如果表示不符合预期模式，会生成 NullPointerException
+            // 因此使用带报告的验证方法更为恰当
             ProcessingReport validationReport = this.validationSchema.validate(JsonLoader.fromString(s),
                                                                                true);
-            //Ensure there no error
+            // 确保没有错误
             if (!validationReport.isSuccess()) {
-                //Simply reject the message here: Don't care about error details...
-                throw new DecodeException(s, "Validation of the provided representation failed !");
+                // 此处简单拒绝消息：不关心错误详情...
+                throw new DecodeException(s, "提供的表示验证失败！");
             }
         } catch (IOException | ProcessingException e) {
-            throw new DecodeException(s, "Cannot validate the provided representation to a"
-                                      + " JSON valid representation !", e);
+            throw new DecodeException(s, "无法将提供的表示验证为有效的 JSON 表示！", e);
         }
 
         return new Gson().fromJson(s, AuthenticationRequest.class);
@@ -600,19 +594,17 @@ public class AuthenticationRequestDecoder implements Decoder.Text<Authentication
     public boolean willDecode(String s) {
         boolean canDecode = false;
 
-        //If the provided JSON representation is empty/null then we indicate that
-        //representation cannot be decoded to our expected object
+        // 如果提供的 JSON 表示为空/null，则表明无法解码为预期对象
         if (s == null || s.trim().isEmpty()) {
             return canDecode;
         }
 
-        //Try to cast the provided JSON representation to our object to validate at least
-        //the structure (content validation is done during decoding)
+        // 尝试将提供的 JSON 表示转换为我们的对象，以验证至少其结构（内容验证在解码期间完成）
         try {
             AuthenticationRequest test = new Gson().fromJson(s, AuthenticationRequest.class);
             canDecode = (test != null);
         } catch (Exception e) {
-            //Ignore explicitly any casting error...
+            // 显式忽略任何转换错误...
         }
 
         return canDecode;
@@ -623,7 +615,7 @@ public class AuthenticationRequestDecoder implements Decoder.Text<Authentication
      */
     @Override
     public void init(EndpointConfig config) {
-        //Not used
+        // 未使用
     }
 
     /**
@@ -631,7 +623,7 @@ public class AuthenticationRequestDecoder implements Decoder.Text<Authentication
      */
     @Override
     public void destroy() {
-        //Not used
+        // 未使用
     }
 }
 ```
@@ -653,23 +645,22 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Encode AuthenticationResponse object to JSON text representation.
+ * 将 AuthenticationResponse 对象编码为 JSON 文本表示。
  * <p>
- * As there one instance of the encoder class by endpoint session so we can use
- * the JsonSchema as encoder instance variable.
+ * 由于每个端点会话只有一个编码器类实例，因此可以将 JsonSchema 用作编码器实例变量。
  */
 public class AuthenticationResponseEncoder implements Encoder.Text<AuthenticationResponse> {
 
     /**
-     * JSON validation schema associated to this type of message
+     * 与此类型消息关联的 JSON 验证模式
      */
     private JsonSchema validationSchema = null;
 
     /**
-     * Initialize encoder and associated JSON validation schema
+     * 初始化编码器和关联的 JSON 验证模式
      *
-     * @throws IOException If any error occur during the object creation
-     * @throws ProcessingException If any error occur during the schema loading
+     * @throws IOException 对象创建期间发生任何错误
+     * @throws ProcessingException 模式加载期间发生任何错误
      */
     public AuthenticationResponseEncoder() throws IOException, ProcessingException {
         JsonNode node = JsonLoader.fromFile(
@@ -682,25 +673,22 @@ public class AuthenticationResponseEncoder implements Encoder.Text<Authenticatio
      */
     @Override
     public String encode(AuthenticationResponse object) throws EncodeException {
-        //Generate the JSON representation
+        // 生成 JSON 表示
         String json = new Gson().toJson(object);
         try {
-            //Validate the generated representation against the dedicated schema
-            //Use validation mode with report in order to enable further inspection/tracing
-            //of the error details
-            //Moreover the validation method "validInstance()" generate a NullPointerException
-            //if the representation do not respect the expected schema
-            //so it's more proper to use the validation method with report
+            // 根据专用模式验证生成的表示
+            // 使用带报告的验证模式，以便进一步检查/跟踪错误详情
+            // 此外，验证方法 "validInstance()" 如果表示不符合预期模式，会生成 NullPointerException
+            // 因此使用带报告的验证方法更为恰当
             ProcessingReport validationReport = this.validationSchema.validate(JsonLoader.fromString(json),
                                                                                 true);
-            //Ensure there no error
+            // 确保没有错误
             if (!validationReport.isSuccess()) {
-                //Simply reject the message here: Don't care about error details...
-                throw new EncodeException(object, "Validation of the generated representation failed !");
+                // 此处简单拒绝消息：不关心错误详情...
+                throw new EncodeException(object, "生成的表示验证失败！");
             }
         } catch (IOException | ProcessingException e) {
-            throw new EncodeException(object, "Cannot validate the generated representation to a"+
-                                              " JSON valid representation !", e);
+            throw new EncodeException(object, "无法将生成的表示验证为有效的 JSON 表示！", e);
         }
 
         return json;
@@ -711,7 +699,7 @@ public class AuthenticationResponseEncoder implements Encoder.Text<Authenticatio
      */
     @Override
     public void init(EndpointConfig config) {
-        //Not used
+        // 未使用
     }
 
     /**
@@ -719,25 +707,25 @@ public class AuthenticationResponseEncoder implements Encoder.Text<Authenticatio
      */
     @Override
     public void destroy() {
-        //Not used
+        // 未使用
     }
 
 }
 ```
 
-Note that the same approach is used in the messages handling part of the POC. All messages exchanged between the client and the server are systematically validated using the same way, using dedicated JSON schemas linked to messages dedicated Encoder/Decoder (serialization/deserialization).
+注意，在 POC 的消息处理部分使用了相同的方法。客户端和服务器之间交换的所有消息都使用专用的 JSON 模式和相应的编码器/解码器（序列化/反序列化）进行系统性验证。
 
-### Authorization and access token explicit invalidation
+### 授权和访问令牌显式失效
 
-Authorization information is stored in the access token using the JWT *Claim* feature (in the POC the name of the claim is *access_level*). Authorization is validated when a request is received and before any other action using the user input information.
+授权信息使用 JWT 的 *Claim* 特性存储在访问令牌中（在 POC 中，声明的名称是 *access_level*）。在接收到请求并使用用户输入信息执行任何其他操作之前，都会验证授权。
 
-The access token is passed with every message sent to the message endpoint and a denylist is used in order to allow the user to request an explicit token invalidation.
+访问令牌随每个发送到消息端点的消息一起传递，并使用拒绝列表，以允许用户请求显式令牌失效。
 
-Explicit token invalidation is interesting from a user's point of view because, often when tokens are used, the validity timeframe of the token is relatively long (it's common to see a valid timeframe superior to 1 hour) so it's important to allow a user to have a way to indicate to the system "OK, I have finished my exchange with you, so you can close our exchange session and cleanup associated links".
+从用户的角度来看，显式令牌失效很有意义，因为在使用令牌时，令牌的有效期通常相对较长（看到超过 1 小时的有效期是很常见的），因此允许用户向系统表明"好的，我已经完成了与你的交互，你可以关闭我们的交换会话并清理相关链接"是很重要的。
 
-It also helps the user to revoke itself of current access if a malicious concurrent access is detected using the same token (case of token stealing).
+这还有助于用户在检测到使用相同令牌的恶意并发访问时撤销当前访问（令牌被盗的情况）。
 
-**Token denylist** - Maintain a temporary list using memory and time limited Caching of hashes of token that are not allowed to be used anymore
+**令牌拒绝列表** - 使用内存和时间受限的缓存维护令牌哈希的临时列表，这些令牌不再允许使用
 
 ``` java
 import org.apache.commons.jcs.JCS;
@@ -749,19 +737,17 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Utility class to manage the access token that have been declared as no
- * more usable (explicit user logout)
+ * 管理已声明不再可用的访问令牌的实用类（显式用户登出）
  */
 public class AccessTokenBlocklistUtils {
     /**
-     * Message content send by user that indicate that the access token that
-     * come along the message must be block-listed for further usage
+     * 用户发送的消息内容，表示必须将随消息一起的访问令牌列入黑名单，不再使用
      */
     public static final String MESSAGE_ACCESS_TOKEN_INVALIDATION_FLAG = "INVALIDATE_TOKEN";
 
     /**
-     * Use cache to store block-listed token hash in order to avoid memory exhaustion and be consistent
-     * because token are valid 30 minutes so the item live in cache 60 minutes
+     * 使用缓存存储黑名单令牌哈希，以避免内存耗尽并保持一致性
+     * 因为令牌有效期为 30 分钟，所以缓存中的项目保留 60 分钟
      */
     private static final CacheAccess<String, String> TOKEN_CACHE;
 
@@ -769,15 +755,15 @@ public class AccessTokenBlocklistUtils {
         try {
             TOKEN_CACHE = JCS.getInstance("default");
         } catch (CacheException e) {
-            throw new RuntimeException("Cannot init token cache !", e);
+            throw new RuntimeException("无法初始化令牌缓存！", e);
         }
     }
 
     /**
-     * Add token into the denylist
+     * 将令牌添加到拒绝列表
      *
-     * @param token Token for which the hash must be added
-     * @throws NoSuchAlgorithmException If SHA256 is not available
+     * @param token 需要添加哈希的令牌
+     * @throws NoSuchAlgorithmException 如果 SHA256 不可用
      */
     public static void addToken(String token) throws NoSuchAlgorithmException {
         if (token != null && !token.trim().isEmpty()) {
@@ -789,11 +775,11 @@ public class AccessTokenBlocklistUtils {
     }
 
     /**
-     * Check if a token is present in the denylist
+     * 检查令牌是否存在于拒绝列表中
      *
-     * @param token Token for which the presence of the hash must be verified
-     * @return TRUE if token is block-listed
-     * @throws NoSuchAlgorithmException If SHA256 is not available
+     * @param token 需要验证哈希存在性的令牌
+     * @return 如果令牌在黑名单中，则返回 TRUE
+     * @throws NoSuchAlgorithmException 如果 SHA256 不可用
      */
     public static boolean isBlocklisted(String token) throws NoSuchAlgorithmException {
         boolean exists = false;
@@ -805,11 +791,11 @@ public class AccessTokenBlocklistUtils {
     }
 
     /**
-     * Compute the SHA256 hash of a token
+     * 计算令牌的 SHA256 哈希
      *
-     * @param token Token for which the hash must be computed
-     * @return The hash encoded in HEX
-     * @throws NoSuchAlgorithmException If SHA256 is not available
+     * @param token 需要计算哈希的令牌
+     * @return 以十六进制编码的哈希
+     * @throws NoSuchAlgorithmException 如果 SHA256 不可用
      */
     private static String computeHash(String token) throws NoSuchAlgorithmException {
         String hashHex = null;
@@ -820,11 +806,10 @@ public class AccessTokenBlocklistUtils {
         }
         return hashHex;
     }
-
 }
 ```
 
-**Message handling** - Process a request from a user to add a message in the list. Show a authorization validation approach example
+**消息处理** - 处理用户添加消息到列表的请求。展示授权验证方法的示例
 
 ``` java
 import com.auth0.jwt.interfaces.Claim;
@@ -845,26 +830,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Handle message flow
+ * 处理消息流
  */
 public class MessageHandler implements javax.websocket.MessageHandler.Whole<MessageRequest> {
 
     private static final Logger LOG = LoggerFactory.getLogger(MessageHandler.class);
 
     /**
-     * Reference to the communication channel with the client
+     * 与客户端通信的通道引用
      */
     private RemoteEndpoint.Basic clientConnection;
 
     /**
-     * Constructor
+     * 构造函数
      *
-     * @param clientConnection Reference to the communication channel with the client
+     * @param clientConnection 与客户端通信的通道引用
      */
     public MessageHandler(RemoteEndpoint.Basic clientConnection) {
         this.clientConnection = clientConnection;
     }
-
 
     /**
      * {@inheritDoc}
@@ -873,30 +857,29 @@ public class MessageHandler implements javax.websocket.MessageHandler.Whole<Mess
     public void onMessage(MessageRequest message) {
         MessageResponse response = null;
         try {
-            /*Step 1: Verify the token*/
+            /*步骤1：验证令牌*/
             String token = message.getToken();
-            //Verify if is it in the block list
+            // 验证是否在黑名单中
             if (AccessTokenBlocklistUtils.isBlocklisted(token)) {
-                throw new IllegalAccessException("Token is in the block list !");
+                throw new IllegalAccessException("令牌在黑名单中！");
             }
 
-            //Verify the signature of the token
+            // 验证令牌签名
             DecodedJWT decodedToken = AuthenticationUtils.validateToken(token);
 
-            /*Step 2: Verify the authorization (access level)*/
+            /*步骤2：验证授权（访问级别）*/
             Claim accessLevel = decodedToken.getClaim("access_level");
             if (accessLevel == null || AccessLevel.valueOf(accessLevel.asString()) == null) {
-                throw new IllegalAccessException("Token have an invalid access level claim !");
+                throw new IllegalAccessException("令牌具有无效的访问级别声明！");
             }
 
-            /*Step 3: Do the expected processing*/
-            //Init the list of the messages for the current user
+            /*步骤3：执行预期处理*/
+            // 为当前用户初始化消息列表
             if (!MessageUtils.MESSAGES_DB.containsKey(decodedToken.getSubject())) {
                 MessageUtils.MESSAGES_DB.put(decodedToken.getSubject(), new ArrayList<>());
             }
 
-            //Add message to the list of message of the user if the message is a not a token invalidation
-            //order otherwise add the token to the block list
+            // 如果消息不是令牌失效标志，则添加到用户消息列表；否则将令牌添加到黑名单
             if (AccessTokenBlocklistUtils.MESSAGE_ACCESS_TOKEN_INVALIDATION_FLAG
                 .equalsIgnoreCase(message.getContent().trim())) {
                 AccessTokenBlocklistUtils.addToken(message.getToken());
@@ -904,7 +887,7 @@ public class MessageHandler implements javax.websocket.MessageHandler.Whole<Mess
                 MessageUtils.MESSAGES_DB.get(decodedToken.getSubject()).add(message.getContent());
             }
 
-            //According to the access level of user either return only is message or return all message
+            // 根据用户访问级别，返回自己的消息或所有消息
             List<String> messages = new ArrayList<>();
             if (accessLevel.asString().equals(AccessLevel.USER.name())) {
                 MessageUtils.MESSAGES_DB.get(decodedToken.getSubject())
@@ -914,72 +897,69 @@ public class MessageHandler implements javax.websocket.MessageHandler.Whole<Mess
                 v.forEach(s -> messages.add(String.format("(%s): %s", k, s))));
             }
 
-            //Build the response object indicating that exchange succeed
+            // 构建响应对象，指示交换成功
             if (AccessTokenBlocklistUtils.MESSAGE_ACCESS_TOKEN_INVALIDATION_FLAG
                 .equalsIgnoreCase(message.getContent().trim())) {
-                response = new MessageResponse(true, messages, "Token added to the block list");
-            }else{
+                response = new MessageResponse(true, messages, "令牌已添加到黑名单");
+            } else {
                 response = new MessageResponse(true, messages, "");
             }
 
         } catch (Exception e) {
-            LOG.error("[MessageHandler] Error occur in exchange process.", e);
-            //Build the response object indicating that exchange fail
-            //We send the error detail on client because ware are in POC (it will not the case in a real app)
-            response = new MessageResponse(false, new ArrayList<>(), "Error occur during exchange: "
+            LOG.error("[MessageHandler] 交换过程中发生错误。", e);
+            // 构建响应对象，指示交换失败
+            // 因为是 POC，所以向客户端发送错误详情（实际应用中不会这样做）
+            response = new MessageResponse(false, new ArrayList<>(), "交换期间发生错误：" 
                        + e.getMessage());
         } finally {
-            //Send response
+            // 发送响应
             try {
                 this.clientConnection.sendObject(response);
             } catch (IOException | EncodeException e) {
-                LOG.error("[MessageHandler] Error occur in response object sending.", e);
+                LOG.error("[MessageHandler] 发送响应对象时发生错误。", e);
             }
         }
     }
 }
 ```
 
-### Confidentiality and Integrity
+### 机密性和完整性
 
-If the raw version of the protocol is used (protocol `ws://`) then the transferred data is exposed to eavesdropping and potential on-the-fly alteration.
+如果使用原始版本的协议（协议 `ws://`），则传输的数据将暴露于窃听和潜在的即时篡改。
 
-Example of capture using [Wireshark](https://www.wireshark.org/) and searching for password exchanges in the stored PCAP file, not printable characters has been explicitly removed from the command result:
+使用 [Wireshark](https://www.wireshark.org/) 捕获并搜索存储的 PCAP 文件中的密码交换的示例（已从命令结果中显式删除不可打印的字符）：
 
 ``` shell
 $ grep -aE '(password)' capture.pcap
 {"login":"bob","password":"bob123"}
 ```
 
-There is a way to check, at WebSocket endpoint level, if the channel is secure by calling the method `isSecure()` on the *session* object instance.
+可以通过在 *session* 对象实例上调用 `isSecure()` 方法，在 WebSocket 端点级别检查通道是否安全。
 
-Example of implementation in the method of the endpoint in charge of setup of the session and affects the message handler:
+在负责设置会话并影响消息处理程序的端点方法中的实现示例：
 
 ``` java
 /**
- * Handle the beginning of an exchange
+ * 处理交换的开始
  *
- * @param session Exchange session information
+ * @param session 交换会话信息
  */
 @OnOpen
 public void start(Session session) {
     ...
-    //Affect a new message handler instance in order to process the exchange only if the channel is secured
+    // 仅在通道安全的情况下，影响新的消息处理程序实例以处理交换
     if(session.isSecure()) {
         session.addMessageHandler(new AuthenticationMessageHandler(session.getBasicRemote()));
     }else{
-        LOG.info("[AuthenticationEndpoint] Session {} do not use a secure channel so no message handler " +
-                 "was affected for processing and session was explicitly closed !", session.getId());
+        LOG.info("[AuthenticationEndpoint] 会话 {} 未使用安全通道，因此未分配消息处理程序进行处理，会话已显式关闭！", session.getId());
         try{
-            session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT,"Insecure channel used !"));
+            session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT,"使用了不安全的通道！"));
         }catch(IOException e){
-            LOG.error("[AuthenticationEndpoint] Session {} cannot be explicitly closed !", session.getId(),
-                      e);
+            LOG.error("[AuthenticationEndpoint] 会话 {} 无法显式关闭！", session.getId(), e);
         }
-
     }
-    LOG.info("[AuthenticationEndpoint] Session {} message handler affected for processing", session.getId());
+    LOG.info("[AuthenticationEndpoint] 会话 {} 已分配消息处理程序进行处理", session.getId());
 }
 ```
 
-Expose WebSocket endpoints only on [wss://](https://kaazing.com/html5-websocket-security-is-strong/) protocol (WebSockets over SSL/TLS) in order to ensure *Confidentiality* and *Integrity* of the traffic like using HTTP over SSL/TLS to secure HTTP exchanges.
+仅在 [wss://](https://kaazing.com/html5-websocket-security-is-strong/) 协议（通过 SSL/TLS 的 WebSocket）上公开 WebSocket 端点，以确保流量的*机密性*和*完整性*，类似于使用 HTTP over SSL/TLS 来保护 HTTP 交换。
