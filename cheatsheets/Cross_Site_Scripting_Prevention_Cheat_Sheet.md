@@ -1,64 +1,64 @@
-# Cross Site Scripting Prevention Cheat Sheet
+# 跨站脚本（XSS）防御备忘录
 
-## Introduction
+## 引言
 
-This cheat sheet helps developers prevent XSS vulnerabilities.
+本备忘录帮助开发者防范 XSS 漏洞。
 
-Cross-Site Scripting (XSS) is a misnomer. Originally this term was derived from early versions of the attack that were primarily focused on stealing data cross-site. Since then, the term has widened to include injection of basically any content. XSS attacks are serious and can lead to account impersonation, observing user behaviour, loading external content, stealing sensitive data, and more.
+跨站脚本（Cross-Site Scripting，XSS）这个术语其实是个误称。最初，这个术语源于早期主要关注跨站数据窃取的攻击方式。此后，这个术语的范围已经扩大到包括基本上任何内容的注入。XSS 攻击是严重的，可能导致账户冒充、监视用户行为、加载外部内容、窃取敏感数据等。
 
-**This cheatsheet contains techniques to prevent or limit the impact of XSS. Since no single technique will solve XSS, using the right combination of defensive techniques will be necessary to prevent XSS.**
+**本速查表包含防止或限制 XSS 影响的技术。由于没有单一技术可以完全解决 XSS，因此需要正确组合防御性技术来预防 XSS。**
 
-## Framework Security
+## 框架安全
 
-Fortunately, applications built with modern web frameworks have fewer XSS bugs, because these frameworks steer developers towards good security practices and help mitigate XSS by using templating, auto-escaping, and more. However, developers need to know that problems can occur if frameworks are used insecurely, such as:
+幸运的是，使用现代 Web 框架构建的应用程序具有较少的 XSS 漏洞，因为这些框架引导开发者采用良好的安全实践，并通过使用模板、自动转义等方式帮助缓解 XSS。然而，开发者需要知道，如果框架使用不当，仍然可能出现问题，例如：
 
-- _escape hatches_ that frameworks use to directly manipulate the DOM
-- React’s `dangerouslySetInnerHTML` without sanitising the HTML
-- React cannot handle `javascript:` or `data:` URLs without specialized validation
-- Angular’s `bypassSecurityTrustAs*` functions
-- Lit's `unsafeHTML` function
-- Polymer's `inner-h-t-m-l` attribute and `htmlLiteral` function
-- Template injection
-- Out of date framework plugins or components
-- and more
+- 框架用于直接操作 DOM 的"逃生舱口"
+- 在未经过滤的情况下使用 React 的 `dangerouslySetInnerHTML`
+- React 无法处理未经专门验证的 `javascript:` 或 `data:` URL
+- Angular 的 `bypassSecurityTrustAs*` 函数
+- Lit 的 `unsafeHTML` 函数
+- Polymer 的 `inner-h-t-m-l` 属性和 `htmlLiteral` 函数
+- 模板注入
+- 过时的框架插件或组件
+- 等等
 
-When you use a modern web framework, you need to know how your framework prevents XSS and where it has gaps. There will be times where you need to do something outside the protection provided by your framework, which means that Output Encoding and HTML Sanitization can be critical. OWASP will be producing framework specific cheatsheets for React, Vue, and Angular.
+当使用现代 Web 框架时，你需要了解框架如何防止 XSS 以及存在哪些漏洞。有时你需要在框架提供的保护之外做一些事情，这意味着输出编码和 HTML 净化可能至关重要。OWASP 将为 React、Vue 和 Angular 制作特定框架的速查表。
 
-## XSS Defense Philosophy
+## XSS 防御理念
 
-In order for an XSS attack to be successful, an attacker must be able to to insert and execute malicious content in a webpage. Thus, all variables in a web application needs to be protected. Ensuring that **all variables** go through validation and are then escaped or sanitized is known as **perfect injection resistance**. Any variable that does not go through this process is a potential weakness. Frameworks make it easy to ensure variables are correctly validated and escaped or sanitised.
+为了 XSS 攻击成功，攻击者必须能够在网页中插入和执行恶意内容。因此，Web 应用程序中的所有变量都需要得到保护。确保**所有变量**都经过验证，然后进行转义或净化，这被称为**完美的注入抵抗**。任何未经过此过程的变量都是潜在的弱点。框架使得确保变量正确验证并转义或净化变得容易。
 
-However, no framework is perfect and security gaps still exist in popular frameworks like React and Angular. Output encoding and HTML sanitization help address those gaps.
+然而，没有框架是完美的，即使是 React 和 Angular 等流行框架中仍然存在安全漏洞。输出编码和 HTML 净化有助于解决这些漏洞。
 
-## Output Encoding
+## 输出编码
 
-When you need to safely display data exactly as a user types it in, output encoding is recommended. Variables should not be interpreted as code instead of text. This section covers each form of output encoding, where to use it, and when you should not use dynamic variables at all.
+当你需要按用户输入的方式安全地显示数据时，建议使用输出编码。变量不应被解释为代码，而应被解释为文本。本节介绍每种输出编码形式、使用场景，以及何时根本不应使用动态变量。
 
-First, when you wish to display data as the user typed it in, start with your framework’s default output encoding protection. Automatic encoding and escaping functions are built into most frameworks.
+首先，当你希望按用户输入的方式显示数据时，请从框架的默认输出编码保护开始。大多数框架都内置了自动编码和转义函数。
 
-If you’re not using a framework or need to cover gaps in the framework then you should use an output encoding library. Each variable used in the user interface should be passed through an output encoding function. A list of output encoding libraries is included in the appendix.
+如果你没有使用框架或需要弥补框架中的漏洞，则应使用输出编码库。用户界面中使用的每个变量都应通过输出编码函数。附录中包含了输出编码库列表。
 
-There are many different output encoding methods because browsers parse HTML, JS, URLs, and CSS differently. Using the wrong encoding method may introduce weaknesses or harm the functionality of your application.
+存在许多不同的输出编码方法，因为浏览器以不同方式解析 HTML、JS、URL 和 CSS。使用错误的编码方法可能会引入弱点或损害应用程序的功能。
 
-### Output Encoding for “HTML Contexts”
+### HTML 上下文的输出编码
 
-“HTML Context” refers to inserting a variable between two basic HTML tags like a `<div>` or `<b>`. For example:
+"HTML 上下文"是指在两个基本 HTML 标签（如 `<div>` 或 `<b>`）之间插入变量。例如：
 
 ```HTML
 <div> $varUnsafe </div>
 ```
 
-An attacker could modify data that is rendered as `$varUnsafe`. This could lead to an attack being added to a webpage. For example:
+攻击者可能修改渲染为 `$varUnsafe` 的数据。这可能导致攻击被添加到网页中。例如：
 
 ```HTML
-<div> <script>alert`1`</script> </div> // Example Attack
+<div> <script>alert`1`</script> </div> // 示例攻击
 ```
 
-In order to add a variable to a HTML context safely to a web template, use HTML entity encoding for that variable.
+为了安全地将变量添加到 Web 模板的 HTML 上下文中，请对该变量使用 HTML 实体编码。
 
-Here are some examples of encoded values for specific characters:
+以下是特定字符的编码值示例：
 
-If you're using JavaScript for writing to HTML, look at the `.textContent` attribute. It is a **Safe Sink** and will automatically HTML Entity Encode.
+如果你使用 JavaScript 写入 HTML，请查看 `.textContent` 属性。它是一个**安全接收器**，将自动进行 HTML 实体编码。
 
 ```HTML
 &    &amp;
@@ -68,42 +68,42 @@ If you're using JavaScript for writing to HTML, look at the `.textContent` attri
 '    &#x27;
 ```
 
-### Output Encoding for “HTML Attribute Contexts”
+### HTML 属性上下文的输出编码
 
-“HTML Attribute Contexts” occur when a variable is placed in an HTML attribute value. You may want to do this to change a hyperlink, hide an element, add alt-text for an image, or change inline CSS styles. You should apply HTML attribute encoding to variables being placed in most HTML attributes. A list of safe HTML attributes is provided in the **Safe Sinks** section.
+"HTML 属性上下文"发生在变量被放置在 HTML 属性值中的情况。你可能希望这样做以更改超链接、隐藏元素、为图像添加替代文本或更改内联 CSS 样式。对于大多数 HTML 属性中的变量，你应该应用 HTML 属性编码。在**安全接收器**部分提供了安全的 HTML 属性列表。
 
 ```HTML
 <div attr="$varUnsafe">
-<div attr=”*x” onblur=”alert(1)*”> // Example Attack
+<div attr="*x" onblur="alert(1)*"> // 示例攻击
 ```
 
-**It’s critical to use quotation marks like `"` or `'` to surround your variables.** Quoting makes it difficult to change the context a variable operates in, which helps prevent XSS. Quoting also significantly reduces the characterset that you need to encode, making your application more reliable and the encoding easier to implement.
+**使用 `"` 或 `'` 等引号包围变量至关重要。** 引号使得更改变量所在的上下文变得困难，这有助于防止 XSS。引号还显著减少了需要编码的字符集，使应用程序更可靠，编码实现更容易。
 
-If you're writing to a HTML Attribute with JavaScript, look at the `.setAttribute` and `[attribute]` methods because they will automatically HTML Attribute Encode. Those are **Safe Sinks** as long as the attribute name is hardcoded and innocuous, like `id` or `class`. Generally, attributes that accept JavaScript, such as `onClick`, are **NOT safe** to use with untrusted attribute values.
+如果你使用 JavaScript 写入 HTML 属性，请查看 `.setAttribute` 和 `[attribute]` 方法，因为它们会自动进行 HTML 属性编码。只要属性名是硬编码且无害的（如 `id` 或 `class`），这些都是**安全接收器**。通常，接受 JavaScript 的属性（如 `onClick`）在使用不可信的属性值时**不安全**。
 
-### Output Encoding for “JavaScript Contexts”
+### JavaScript 上下文的输出编码
 
-“JavaScript Contexts” refers to the situation where variables are placed into inline JavaScript and then embedded in an HTML document. This situation commonly occurs in programs that heavily use custom JavaScript that is embedded in their web pages.
+"JavaScript 上下文"是指将变量放置在内联 JavaScript 中并嵌入 HTML 文档的情况。这种情况在大量使用嵌入网页的自定义 JavaScript 的程序中很常见。
 
-However, the only ‘safe’ location for placing variables in JavaScript is inside a “quoted data value”. All other contexts are unsafe and you should not place variable data in them.
+然而，放置变量的唯一"安全"位置是在"带引号的数据值"内。所有其他上下文都是不安全的，你不应在其中放置变量数据。
 
-Examples of “Quoted Data Values”
+"带引号的数据值"示例：
 
 ```HTML
-<script>alert('$varUnsafe’)</script>
-<script>x=’$varUnsafe’</script>
+<script>alert('$varUnsafe')</script>
+<script>x='$varUnsafe'</script>
 <div onmouseover="'$varUnsafe'"</div>
 ```
 
-Encode all characters using the `\xHH` format. Encoding libraries often have a `EncodeForJavaScript` or similar to support this function.
+使用 `\xHH` 格式对所有字符进行编码。编码库通常有 `EncodeForJavaScript` 或类似函数来支持此功能。
 
-Please look at the [OWASP Java Encoder JavaScript encoding examples](https://owasp.org/www-project-java-encoder/) for examples of proper JavaScript use that requires minimal encoding.
+请查看 [OWASP Java 编码器 JavaScript 编码示例](https://owasp.org/www-project-java-encoder/)，了解需要最少编码的正确 JavaScript 使用示例。
 
-For JSON, verify that the `Content-Type` header is `application/json` and not `text/html` to prevent XSS.
+对于 JSON，请验证 `Content-Type` 标头是 `application/json` 而不是 `text/html`，以防止 XSS。
 
-### Output Encoding for “CSS Contexts”
+### CSS 上下文的输出编码
 
-“CSS Contexts” refer to variables placed into inline CSS, which is common when developers want their users to customize the look and feel of their webpages. Since CSS is surprisingly powerful, it has been used for many types of attacks. **Variables should only be placed in a CSS property value. Other “CSS Contexts” are unsafe and you should not place variable data in them.**
+"CSS 上下文"是指放置在内联 CSS 中的变量，当开发者希望用户自定义网页外观时很常见。由于 CSS 出奇地强大，它已被用于多种攻击。**变量应该只放置在 CSS 属性值中。其他"CSS 上下文"是不安全的，你不应在其中放置变量数据。**
 
 ```HTML
 <style> selector { property : $varUnsafe; } </style>
@@ -111,75 +111,74 @@ For JSON, verify that the `Content-Type` header is `application/json` and not `t
 <span style="property : $varUnsafe">Oh no</span>
 ```
 
-If you're using JavaScript to change a CSS property, look into using
-`style.property = x`.
-This is a **Safe Sink** and will automatically CSS encode data in it.
+如果你使用 JavaScript 更改 CSS 属性，可以使用 `style.property = x`。
+这是一个**安全接收器**，将自动对其中的数据进行 CSS 编码。
 
-When inserting variables into CSS properties, ensure the data is properly encoded and sanitized to prevent injection attacks. Avoid placing variables directly into selectors or other CSS contexts.
+在将变量插入 CSS 属性时，确保数据经过正确编码和净化以防止注入攻击。避免将变量直接放入选择器或其他 CSS 上下文中。
 
-### Output Encoding for “URL Contexts”
+### URL 上下文的输出编码
 
-“URL Contexts” refer to variables placed into a URL. Most commonly, a developer will add a parameter or URL fragment to a URL base that is then displayed or used in some operation. Use URL Encoding for these scenarios.
+"URL 上下文"是指放置在 URL 中的变量。最常见的是，开发者会向 URL 基础添加参数或 URL 片段，然后显示或用于某些操作。对于这些场景，使用 URL 编码。
 
 ```HTML
-<a href="http://www.owasp.org?test=$varUnsafe">link</a >
+<a href="http://www.owasp.org?test=$varUnsafe">link</a>
 ```
 
-Encode all characters with the `%HH` encoding format. Make sure any attributes are fully quoted, same as JS and CSS.
+使用 `%HH` 编码格式对所有字符进行编码。确保任何属性都完全带引号，与 JS 和 CSS 相同。
 
-#### Common Mistake
+#### 常见错误
 
-There will be situations where you use a URL in different contexts. The most common one would be adding it to an `href` or `src` attribute of an `<a>` tag. In these scenarios, you should do URL encoding, followed by HTML attribute encoding.
+在某些情况下，你会在不同上下文中使用 URL。最常见的是将其添加到 `<a>` 标签的 `href` 或 `src` 属性中。在这些场景中，你应该先进行 URL 编码，然后再进行 HTML 属性编码。
 
 ```HTML
 url = "https://site.com?data=" + urlencode(parameter)
 <a href='attributeEncode(url)'>link</a>
 ```
 
-If you're using JavaScript to construct a URL Query Value, look into using `window.encodeURIComponent(x)`. This is a **Safe Sink** and will automatically URL encode data in it.
+如果你使用 JavaScript 构建 URL 查询值，可以使用 `window.encodeURIComponent(x)`。这是一个**安全接收器**，将自动对其中的数据进行 URL 编码。
 
-### Dangerous Contexts
+### 危险上下文
 
-Output encoding is not perfect. It will not always prevent XSS. These locations are known as **dangerous contexts**. Dangerous contexts include:
+输出编码并非完美。它不会始终防止 XSS。这些位置被称为**危险上下文**。危险上下文包括：
 
 ```HTML
-<script>Directly in a script</script>
-<!-- Inside an HTML comment -->
-<style>Directly in CSS</style>
+<script>直接在脚本中</script>
+<!-- 在 HTML 注释中 -->
+<style>直接在 CSS 中</style>
 <div ToDefineAnAttribute=test />
 <ToDefineATag href="/test" />
 ```
 
-Other areas to be careful with include:
+其他需要小心的区域包括：
 
-- Callback functions
-- Where URLs are handled in code such as this CSS { background-url : “javascript:alert(xss)”; }
-- All JavaScript event handlers (`onclick()`, `onerror()`, `onmouseover()`).
-- Unsafe JS functions like `eval()`, `setInterval()`, `setTimeout()`
+- 回调函数
+- 代码中处理 URL 的地方，如 CSS { background-url : "javascript:alert(xss)"; }
+- 所有 JavaScript 事件处理程序（`onclick()`、`onerror()`、`onmouseover()`）
+- 不安全的 JS 函数，如 `eval()`、`setInterval()`、`setTimeout()`
 
-Don't place variables into dangerous contexts as even with output encoding, it will not prevent an XSS attack fully.
+不要将变量放入危险上下文，因为即使使用输出编码，也无法完全防止 XSS 攻击。
 
-## HTML Sanitization
+## HTML 净化
 
-When users need to author HTML, developers may let users change the styling or structure of content inside a WYSIWYG editor. Output encoding in this case will prevent XSS, but it will break the intended functionality of the application. The styling will not be rendered. In these cases, HTML Sanitization should be used.
+当用户需要编写 HTML 时，开发者可能允许用户在 WYSIWYG 编辑器中更改内容的样式或结构。在这种情况下，输出编码会阻止 XSS，但会破坏应用程序的预期功能。样式将无法呈现。在这些情况下，应使用 HTML 净化。
 
-HTML Sanitization will strip dangerous HTML from a variable and return a safe string of HTML. OWASP recommends [DOMPurify](https://github.com/cure53/DOMPurify) for HTML Sanitization.
+HTML 净化将从变量中剥离危险的 HTML 并返回安全的 HTML 字符串。OWASP 推荐使用 [DOMPurify](https://github.com/cure53/DOMPurify) 进行 HTML 净化。
 
 ```js
 let clean = DOMPurify.sanitize(dirty);
 ```
 
-There are some further things to consider:
+还有一些需要考虑的事项：
 
-- If you sanitize content and then modify it afterwards, you can easily void your security efforts.
-- If you sanitize content and then send it to a library for use, check that it doesn’t mutate that string somehow. Otherwise, again, your security efforts are void.
-- You must regularly patch DOMPurify or other HTML Sanitization libraries that you use. Browsers change functionality and bypasses are being discovered regularly.
+- 如果你净化内容后又对其进行修改，很容易会作废你的安全工作。
+- 如果你净化内容后将其发送到库使用，请检查它是否以某种方式改变了该字符串。否则，你的安全工作同样会作废。
+- 你必须定期修补 DOMPurify 或其他你使用的 HTML 净化库。浏览器功能在变化，绕过漏洞正在不断被发现。
 
-## Safe Sinks
+## 安全接收器
 
-Security professionals often talk in terms of sources and sinks. If you pollute a river, it'll flow downstream somewhere. It’s the same with computer security. XSS sinks are places where variables are placed into your webpage.
+安全专业人士经常从源和接收器的角度来讨论问题。如果你污染了一条河，它会在下游某处流动。计算机安全也是如此。XSS 接收器是网页中放置变量的地方。
 
-Thankfully, many sinks where variables can be placed are safe. This is because these sinks treat the variable as text and will never execute it. Try to refactor your code to remove references to unsafe sinks like innerHTML, and instead use textContent or value.
+幸运的是，许多可以放置变量的接收器是安全的。这是因为这些接收器将变量视为文本，永远不会执行它。尝试重构代码，删除对 innerHTML 等不安全接收器的引用，转而使用 textContent 或 value。
 
 ```js
 elem.textContent = dangerVariable;
@@ -192,159 +191,159 @@ document.createElement(dangerVariable);
 elem.innerHTML = DOMPurify.sanitize(dangerVar);
 ```
 
-**Safe HTML Attributes include:** `align`, `alink`, `alt`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `color`, `cols`, `colspan`, `coords`, `dir`, `face`, `height`, `hspace`, `ismap`, `lang`, `marginheight`, `marginwidth`, `multiple`, `nohref`, `noresize`, `noshade`, `nowrap`, `ref`, `rel`, `rev`, `rows`, `rowspan`, `scrolling`, `shape`, `span`, `summary`, `tabindex`, `title`, `usemap`, `valign`, `value`, `vlink`, `vspace`, `width`.
+**安全的 HTML 属性包括：** `align`, `alink`, `alt`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `color`, `cols`, `colspan`, `coords`, `dir`, `face`, `height`, `hspace`, `ismap`, `lang`, `marginheight`, `marginwidth`, `multiple`, `nohref`, `noresize`, `noshade`, `nowrap`, `ref`, `rel`, `rev`, `rows`, `rowspan`, `scrolling`, `shape`, `span`, `summary`, `tabindex`, `title`, `usemap`, `valign`, `value`, `vlink`, `vspace`, `width`。
 
-For attributes not reported above, ensure that if JavaScript code is provided as a value, it cannot be executed.
+对于上面未报告的属性，请确保如果提供 JavaScript 代码作为值，它无法被执行。
 
-## Other Controls
+## 其他控制措施
 
-Framework Security Protections, Output Encoding, and HTML Sanitization will provide the best protection for your application. OWASP recommends these in all circumstances.
+框架安全保护、输出编码和 HTML 净化将为你的应用程序提供最佳保护。OWASP 在所有情况下都推荐这些方法。
 
-Consider adopting the following controls in addition to the above.
+考虑除上述方法外，还采用以下控制措施：
 
-- Cookie Attributes - These change how JavaScript and browsers can interact with cookies. Cookie attributes try to limit the impact of an XSS attack but don’t prevent the execution of malicious content or address the root cause of the vulnerability.
-- Content Security Policy - An allowlist that prevents content being loaded. It’s easy to make mistakes with the implementation so it should not be your primary defense mechanism. Use a CSP as an additional layer of defense and have a look at the [cheatsheet here](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html).
-- Web Application Firewalls - These look for known attack strings and block them. WAF’s are unreliable and new bypass techniques are being discovered regularly. WAFs also don’t address the root cause of an XSS vulnerability. In addition, WAFs also miss a class of XSS vulnerabilities that operate exclusively client-side. WAFs are not recommended for preventing XSS, especially DOM-Based XSS.
+- Cookie 属性 - 这些改变 JavaScript 和浏览器与 Cookie 交互的方式。Cookie 属性试图限制 XSS 攻击的影响，但不能防止恶意内容的执行或解决漏洞的根本原因。
+- 内容安全策略（CSP） - 一个阻止加载内容的白名单。实施很容易出错，因此不应成为你的主要防御机制。将 CSP 作为额外的防御层，并查看[此处的速查表](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html)。
+- Web 应用防火墙（WAF） - 这些会查找已知的攻击字符串并阻止它们。WAF 不可靠，新的绕过技术正在不断被发现。WAF 也不能解决 XSS 漏洞的根本原因。此外，WAF 还会遗漏完全在客户端运行的 XSS 漏洞类别。不建议使用 WAF 来防止 XSS，尤其是基于 DOM 的 XSS。
 
-### XSS Prevention Rules Summary
+### XSS 防御规则总结
 
-These snippets of HTML demonstrate how to render untrusted data safely in a variety of different contexts.
+这些 HTML 片段展示了如何在各种不同上下文中安全地呈现不可信数据。
 
-Data Type: String
-Context: HTML Body
-Code: `<span>UNTRUSTED DATA </span>`
-Sample Defense: HTML Entity Encoding (rule \#1)
+数据类型：字符串
+上下文：HTML 正文
+代码：`<span>不可信数据</span>`
+示例防御：HTML 实体编码（规则 #1）
 
-Data Type: Strong
-Context: Safe HTML Attributes
-Code: `<input type="text" name="fname" value="UNTRUSTED DATA ">`
-Sample Defense: Aggressive HTML Entity Encoding (rule \#2), Only place untrusted data into a list of safe attributes (listed below), Strictly validate unsafe attributes such as background, ID and name.
+数据类型：强
+上下文：安全的 HTML 属性
+代码：`<input type="text" name="fname" value="不可信数据">`
+示例防御：积极的 HTML 实体编码（规则 #2），仅将不可信数据放入安全属性列表（如下所列），严格验证不安全属性，如 background、ID 和 name。
 
-Data Type: String
-Context: GET Parameter
-Code: `<a href="/site/search?value=UNTRUSTED DATA ">clickme</a>`
-Sample Defense: URL Encoding (rule \#5).
+数据类型：字符串
+上下文：GET 参数
+代码：`<a href="/site/search?value=不可信数据">点击我</a>`
+示例防御：URL 编码（规则 #5）。
 
-Data Type: String
-Context: Untrusted URL in a SRC or HREF attribute
-Code: `<a href="UNTRUSTED URL ">clickme</a> <iframe src="UNTRUSTED URL " />`
-Sample Defense: Canonicalize input, URL Validation, Safe URL verification, Allow-list http and HTTPS URLs only (Avoid the JavaScript Protocol to Open a new Window), Attribute encoder.
+数据类型：字符串
+上下文：不可信 URL 在 SRC 或 HREF 属性中
+代码：`<a href="不可信 URL">点击我</a> <iframe src="不可信 URL" />`
+示例防御：规范化输入，URL 验证，安全 URL 验证，仅允许 http 和 HTTPS URL（避免使用 JavaScript 协议打开新窗口），属性编码器。
 
-Data Type: String
-Context: CSS Value
-Code: `HTML <div style="width: UNTRUSTED DATA ;">Selection</div>`
-Sample Defense: Strict structural validation (rule \#4), CSS hex encoding, Good design of CSS features.
+数据类型：字符串
+上下文：CSS 值
+代码：`HTML <div style="width: 不可信数据;">选择</div>`
+示例防御：严格的结构验证（规则 #4），CSS 十六进制编码，良好的 CSS 功能设计。
 
-Data Type: String
-Context: JavaScript Variable
-Code: `<script>var currentValue='UNTRUSTED DATA ';</script> <script>someFunction('UNTRUSTED DATA ');</script>`
-Sample Defense: Ensure JavaScript variables are quoted, JavaScript hex encoding, JavaScript Unicode encoding, avoid backslash encoding (`\"` or `\'` or `\\`).
+数据类型：字符串
+上下文：JavaScript 变量
+代码：`<script>var currentValue='不可信数据';</script> <script>someFunction('不可信数据');</script>`
+示例防御：确保 JavaScript 变量带引号，JavaScript 十六进制编码，JavaScript Unicode 编码，避免反斜杠编码（`\"` 或 `\'` 或 `\\`）。
 
-Data Type: HTML
-Context: HTML Body
-Code: `<div>UNTRUSTED HTML</div>`
-Sample Defense: HTML validation (JSoup, AntiSamy, HTML Sanitizer...).
+数据类型：HTML
+上下文：HTML 正文
+代码：`<div>不可信 HTML</div>`
+示例防御：HTML 验证（JSoup、AntiSamy、HTML Sanitizer 等）。
 
-Data Type: String
-Context: DOM XSS
-Code: `<script>document.write("UNTRUSTED INPUT: " + document.location.hash );<script/>`
-Sample Defense: [DOM based XSS Prevention Cheat Sheet](DOM_based_XSS_Prevention_Cheat_Sheet.md) |
+数据类型：字符串
+上下文：DOM XSS
+代码：`<script>document.write("不可信输入: " + document.location.hash );<script/>`
+示例防御：[基于 DOM 的 XSS 防御速查表](DOM_based_XSS_Prevention_Cheat_Sheet.md)
 
-### Output Encoding Rules Summary
+### 输出编码规则总结
 
-The purpose of output encoding (as it relates to Cross Site Scripting) is to convert untrusted input into a safe form where the input is displayed as **data** to the user without executing as **code** in the browser. The following charts provides a list of critical output encoding methods needed to stop Cross Site Scripting.
+输出编码的目的（与跨站脚本有关）是将不可信输入转换为安全形式，使输入作为**数据**显示给用户，而不在浏览器中作为**代码**执行。以下图表提供了阻止跨站脚本所需的关键输出编码方法列表。
 
-Encoding Type: HTML Entity
-Encoding Mechanism: Convert `&` to `&amp;`, Convert `<` to `&lt;`, Convert `>` to `&gt;`, Convert `"` to `&quot;`, Convert `'` to `&#x27`
+编码类型：HTML 实体
+编码机制：转换 `&` 为 `&amp;`，转换 `<` 为 `&lt;`，转换 `>` 为 `&gt;`，转换 `"` 为 `&quot;`，转换 `'` 为 `&#x27`
 
-Encoding Type: HTML Attribute Encoding
-Encoding Mechanism: Encode all characters with the HTML Entity `&#xHH;` format, including spaces, where **HH** represents the hexadecimal value of the character in Unicode. For example, `A` becomes `&#x41`. All alphanumeric characters (letters A to Z, a to z, and digits 0 to 9) remain unencoded.
+编码类型：HTML 属性编码
+编码机制：使用 HTML 实体 `&#xHH;` 格式对所有字符进行编码，包括空格，其中 **HH** 表示 Unicode 中字符的十六进制值。例如，`A` 变为 `&#x41`。所有字母数字字符（A 到 Z 的字母，a 到 z 的字母，以及 0 到 9 的数字）保持未编码。
 
-Encoding Type: URL Encoding
-Encoding Mechanism: Use standard percent encoding, as specified in the [W3C specification](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1), to encode parameter values. Be cautious and only encode parameter values, not the entire URL or path fragments of a URL.
+编码类型：URL 编码
+编码机制：使用 [W3C 规范](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1)中指定的标准百分比编码对参数值进行编码。谨慎操作，仅对参数值进行编码，不要对整个 URL 或 URL 的路径片段进行编码。
 
-Encoding Type: JavaScript Encoding
-Encoding Mechanism: Encode all characters using the Unicode `\uXXXX` encoding format, where **XXXX** represents the hexadecimal Unicode code point. For example, `A` becomes `\u0041`. All alphanumeric characters (letters A to Z, a to z, and digits 0 to 9) remain unencoded.
+编码类型：JavaScript 编码
+编码机制：使用 Unicode `\uXXXX` 编码格式对所有字符进行编码，其中 **XXXX** 表示十六进制 Unicode 码点。例如，`A` 变为 `\u0041`。所有字母数字字符（A 到 Z 的字母，a 到 z 的字母，以及 0 到 9 的数字）保持未编码。
 
-Encoding Type: CSS Hex Encoding
-Encoding Mechanism: CSS encoding supports both `\XX` and `\XXXXXX` formats. To ensure proper encoding, consider these options: (a) Add a space after the CSS encode (which will be ignored by the CSS parser), or (b) use the full six-character CSS encoding format by zero-padding the value. For example, `A` becomes `\41` (short format) or `\000041` (full format). Alphanumeric characters (letters A to Z, a to z, and digits 0 to 9) remain unencoded.
+编码类型：CSS 十六进制编码
+编码机制：CSS 编码支持 `\XX` 和 `\XXXXXX` 格式。为确保正确编码，考虑以下选项：(a) 在 CSS 编码后添加空格（CSS 解析器会忽略），或 (b) 使用全六字符 CSS 编码格式，通过零填充值。例如，`A` 变为 `\41`（短格式）或 `\000041`（完整格式）。字母数字字符（A 到 Z 的字母，a 到 z 的字母，以及 0 到 9 的数字）保持未编码。
 
-## Common Anti-patterns: Ineffective Approaches to Avoid
+## 常见反模式：无效的防御方法
 
-Defending against XSS is hard. For that reason, some have sought shortcuts to preventing XSS.
+防御 XSS 很困难。因此，有些人寻求防止 XSS 的捷径。
 
-We're going to examine two common [anti-patterns](https://en.wikipedia.org/wiki/Anti-pattern) that frequently show up in ancient posts, but are still commonly cited as solutions in modern posts about XSS defense on programmer forums such as Stack Overflow and other developer hangouts.
+我们将研究两种常见的[反模式](https://en.wikipedia.org/wiki/Anti-pattern)，这些反模式经常出现在古老的帖子中，但在 Stack Overflow 等程序员论坛和其他开发者聚集地的关于 XSS 防御的现代帖子中仍被广泛引用。
 
-### Sole Reliance on Content-Security-Policy (CSP) Headers
+### 仅依赖内容安全策略（CSP）标头
 
-First, let us be clear, we are a strong proponent of CSP when it is used properly. In the context of XSS defense, CSP works best when it it is:
+首先，我们要明确，我们是 CSP 的强烈支持者，前提是正确使用。在 XSS 防御的背景下，CSP 最有效的使用方式是：
 
-- Used as a defense-in-depth technique.
-- Customized for each individual application rather than being deployed as a one-size-fits-all enterprise solution.
+- 作为深度防御技术使用。
+- 为每个单独的应用程序定制，而不是作为一刀切的企业解决方案部署。
 
-What we are against is a blanket CSP policy for the entire enterprise. Problems with that approach are:
+我们反对的是针对整个企业的笼统 CSP 策略。这种方法存在的问题是：
 
-#### Problem 1 - Assumption Browser Versions Support CSP Equally
+#### 问题1 - 假设浏览器版本对CSP支持相同
 
-There usually is an implicit assumption that all the customer browsers support all the CSP constructs that your blanket CSP policy is using. Furthermore, this assumption often is done without testing the explicitly the `User-Agent` request header to see if it indeed is a supported browser type and rejecting the use of the site if it is not. Why? Because most businesses don't want to turn away customers if they are using an outdated browser that doesn't support some CSP Level 2 or Level 3 construct that they are relying on for XSS prevention.  (Statistically, almost all browsers support CSP Level 1 directives, so unless you are worried about Grandpa pulling out his old Windows 98 laptop and using some ancient version of Internet Explorer to access your site, CSP Level 1 support can probably be assumed.)
+通常存在一个隐含的假设，即所有客户浏览器都支持笼统 CSP 策略使用的所有 CSP 构造。更进一步，这种假设往往未明确测试 `User-Agent` 请求标头，以确定是否确实是支持的浏览器类型，并在不支持时拒绝使用网站。为什么？因为大多数企业不想因客户使用不支持某些 CSP Level 2 或 Level 3 构造（用于 XSS 防御）的过时浏览器而将其拒之门外。（统计数据显示，几乎所有浏览器都支持 CSP Level 1 指令，所以除非你担心祖父用他的老旧 Windows 98 笔记本和古老的 Internet Explorer 访问你的网站，否则可以假定 CSP Level 1 支持是可行的。）
 
-#### Problem 2 - Issues Supporting Legacy Applications
+#### 问题2 - 支持遗留应用程序的问题
 
-Mandatory universal enterprise-wide CSP response headers are inevitably going to break some web applications, especially legacy ones. This causes the business to push-back against AppSec guidelines and inevitably results in AppSec issuing waivers and/or security exceptions until the application code can be patched up. But these security exceptions allow cracks in your XSS armor, and even if the cracks are temporary they still can impact your business, at least on a reputational basis.
+强制的、企业范围的 CSP 响应标头不可避免地会破坏一些 Web 应用程序，尤其是遗留应用程序。这导致业务方抵制应用安全指南，并不可避免地导致应用安全团队发出豁免或安全例外，直到应用代码可以修补。但这些安全例外会在你的 XSS 防御armor中留下裂缝，即使这些裂缝是暂时的，它们仍可能影响你的业务，至少在声誉方面。
 
-### Reliance on HTTP Interceptors
+### 依赖 HTTP 拦截器
 
-The other common anti-pattern that we have observed is the attempt to deal with validation and/or output encoding in some sort of interceptor such as a Spring Interceptor that generally implements `org.springframework.web.servlet.HandlerInterceptor` or as a JavaEE servlet filter that implements `javax.servlet.Filter`. While this can be successful for very specific applications (for instance, if you validate that all the input requests that are ever rendered are only alphanumeric data), it violates the major tenet of XSS defense where perform output encoding as close to where the data is rendered is possible. Generally, the HTTP request is examined for query and POST parameters but other things HTTP request headers that might be rendered such as cookie data, are not examined. The common approach that we've seen is someone will call either `ESAPI.validator().getValidSafeHTML()` or `ESAPI.encoder.canonicalize()` and depending on the results will redirect to an error page or call something like `ESAPI.encoder().encodeForHTML()`. Aside from the fact that this approach often misses tainted input such as request headers or "extra path information" in a URI, the approach completely ignores the fact that the output encoding is completely non-contextual. For example, how does a servlet filter know that an input query parameter is going to be rendered in an HTML context (i.e., between HTML tags) rather than in a JavaScript context such as within a `<script>` tag or used with a JavaScript event handler attribute? It doesn't. And because JavaScript and HTML encoding are not interchangeable, you leave yourself still open to XSS attacks.
+我们观察到的另一种常见反模式是试图在某种拦截器中处理验证和/或输出编码，比如实现 `org.springframework.web.servlet.HandlerInterceptor` 的 Spring 拦截器，或实现 `javax.servlet.Filter` 的 JavaEE servlet 过滤器。虽然这对于非常特定的应用程序可能成功（例如，验证所有要呈现的输入请求只包含字母数字数据），但它违背了 XSS 防御的主要原则 - 在尽可能接近数据呈现的地方执行输出编码。通常，HTTP 请求被检查查询和 POST 参数，但其他可能被呈现的 HTTP 请求标头（如 cookie 数据）未被检查。我们见过的常见方法是调用 `ESAPI.validator().getValidSafeHTML()` 或 `ESAPI.encoder.canonicalize()`，并根据结果重定向到错误页面或调用类似 `ESAPI.encoder().encodeForHTML()` 的方法。除了这种方法常常遗漏被污染的输入（如请求标头或 URI 中的"额外路径信息"）之外，该方法完全忽略了输出编码是完全非上下文的这一事实。例如，servlet 过滤器如何知道输入查询参数将在 HTML 上下文（即 HTML 标签之间）而不是在 JavaScript 上下文（如 `<script>` 标签内或与 JavaScript 事件处理程序属性一起使用）中呈现？它不知道。因为 JavaScript 和 HTML 编码不可互换，你仍然容易遭受 XSS 攻击。
 
-Unless your filter or interceptor has full knowledge of your application and specifically an awareness of how your application uses each parameter for a given request, it can't succeed for all the possible edge cases. And we would contend that it never will be able to using this approach because providing that additional required context is way too complex of a design and accidentally introducing some other vulnerability (possibly one whose impact is far worse than XSS) is almost inevitable if you attempt it.
+除非你的过滤器或拦截器完全了解你的应用程序，并具体知道应用程序如何为给定请求使用每个参数，否则它无法处理所有可能的边缘情况。我们认为，使用这种方法永远无法成功，因为提供所需的额外上下文的设计太复杂，而且尝试这样做几乎不可避免地会引入其他漏洞（可能其影响远比 XSS 更严重）。
 
-This naive approach usually has at least one of these four problems.
+这种天真的方法通常至少存在以下四个问题：
 
-#### Problem 1 - Encoding for specific context not satisfactory for all URI paths
+#### 问题1 - 特定上下文的编码对所有 URI 路径不满意
 
-One problem is the improper encoding that can still allow exploitable XSS in some URI paths of your application. An example might be a 'lastname' form parameter from a POST that normally is displayed between HTML tags so that HTML encoding is sufficient, but there may be an edge case or two where lastname is actually rendered as part of a JavaScript block where the HTML encoding is not sufficient and thus it is vulnerable to XSS attacks.
+一个问题是不恰当的编码仍可能在应用程序的某些 URI 路径中允许可利用的 XSS。例如，来自 POST 的 'lastname' 表单参数通常显示在 HTML 标签之间，因此 HTML 编码就足够了，但可能存在一两个边缘情况，其中 lastname 实际上是作为 JavaScript 块的一部分呈现，此时 HTML 编码是不够的，因此容易遭受 XSS 攻击。
 
-#### Problem 2 - Interceptor approach can lead to broken rendering caused by improper or double encoding
+#### 问题2 - 拦截器方法可能导致由于不正确或双重编码而导致的渲染中断
 
-A second problem with this approach can be the application can result in incorrect or double encoding. E.g., suppose in the previous example, a developer has done proper output encoding for the JavaScript rendering of lastname. But if it is already been HTML output encoded too, when it is rendered, a legitimate last name like "O'Hara" might come out rendered like "O\&#39;Hara".
+第二个问题是应用程序可能导致不正确或双重编码。例如，假设在前面的示例中，开发者已对 lastname 的 JavaScript 渲染进行了正确的输出编码。但如果它已经被 HTML 输出编码，当渲染时，一个合法的姓氏如 "O'Hara" 可能会呈现为 "O\&#39;Hara"。
 
-While this second case is not strictly a security problem, if it happens often enough, it can result in business push-back against the use of the filter and thus the business may decide on disabling the filter or a way to specify exceptions for certain pages or parameters being filtered, which in turn will weaken any XSS defense that it was providing.
+虽然第二种情况严格来说不是安全问题，但如果经常发生，可能导致业务方反对使用过滤器，从而决定禁用过滤器或为某些页面或参数指定例外，这反过来会削弱其提供的任何 XSS 防御。
 
-#### Problem 3 - Interceptors not effective against DOM-based XSS
+#### 问题3 - 拦截器对基于 DOM 的 XSS 无效
 
-The third problem with this is that it is not effective against DOM-based XSS. To do that, one would have to have an interceptor or filter scan all the JavaScript content going as part of an HTTP response, try to figure out the tainted output and see if it it is susceptible to DOM-based XSS. That simply is not practical.
+第三个问题是它对基于 DOM 的 XSS 无效。要做到这一点，需要有一个拦截器或过滤器扫描作为 HTTP 响应一部分的所有 JavaScript 内容，尝试找出被污染的输出并查看它是否容易受到基于 DOM 的 XSS 攻击。这简直是不切实际的。
 
-#### Problem 4 - Interceptors not effective where data from responses originates outside your application
+#### 问题4 - 拦截器对源自应用程序外部的响应数据无效
 
-The last problem with interceptors is that they generally are oblivious to data in your application's responses that originate from other internal sources such as an internal REST-based web service or even an internal database. The problem is that unless your application is strictly validating that data _at the point that it is retrieved_ (which generally is the only point your application has enough context to do a strict data validation using an allow-list approach), that data should always be considered tainted. But if you are attempting to do output encoding or strict data validation all of tainted data on the HTTP response side of an interceptor (such as a Java servlet filter), at that point, your application's interceptor will have no idea of there is tainted data present from those REST web services or other databases that you used. The approach that generally is used on response-side interceptors attempting to provide XSS defense has been to only consider the matching "input parameters" as tainted and do output encoding or HTML sanitization on them and everything else is considered safe. But sometimes it's not? While it frequently is assumed that all internal web services and all internal databases can be "trusted" and used as it, this is a very bad assumption to make unless you have included that in some deep threat modeling for your application.
+最后一个问题是拦截器通常对应用程序响应中源自其他内部源（如内部基于 REST 的 Web 服务或内部数据库）的数据视而不见。问题在于，除非应用程序在检索数据时严格验证数据（这通常是应用程序有足够上下文使用白名单方法进行严格数据验证的唯一点），否则该数据应始终被视为被污染。但是，如果你试图在 HTTP 响应端的拦截器（如 Java servlet 过滤器）上对所有被污染的数据进行输出编码或严格的数据验证，那么此时你的应用程序的拦截器将不知道来自这些 REST Web 服务或其他数据库的被污染数据是否存在。通常在响应端拦截器上用于提供 XSS 防御的方法是仅考虑匹配的"输入参数"为被污染，并对其进行输出编码或 HTML 净化，而其他一切都被视为安全。但有时并非如此？虽然经常假设所有内部 Web 服务和所有内部数据库都是"可信的"并可直接使用，但除非你已将其纳入应用程序的深度威胁建模，否则这是一个非常糟糕的假设。
 
-For example, suppose you are working on an application to show a customer their detailed monthly bill. Let's assume that your application is either querying a foreign (as in not part of your specific application) internal database or REST web service that your application uses to obtain the user's full name, address, etc. But that data originates from another application which you are assuming is "trusted" but actually has an unreported persistent XSS vulnerability on the various customer address-related fields. Furthermore, let's assume that you company's customer support staff can examine a customer's detailed bill to assist them when customers have questions about their bills. So nefarious customer decides to plant an XSS bomb in the address field and then calls customer service for assistance with the bill. Should a scenario like that ever play out, an interceptor attempting to prevent XSS is going to miss that completely and the result is going to be something much worse than just popping an alert box to display "1" or "XSS" or "pwn'd".
+例如，假设你正在开发一个应用程序，用于向客户展示其详细的月度账单。假设你的应用程序正在查询一个外部（非你特定应用程序的一部分）内部数据库或 REST Web 服务，以获取用户的全名、地址等。但该数据源于另一个应用程序，你假设它是"可信的"，但实际上在各种与客户地址相关的字段中有未报告的持续性 XSS 漏洞。此外，假设你公司的客户支持人员可以查看客户的详细账单以协助客户解答账单相关问题。因此，一个阴险的客户决定在地址字段中植入 XSS 炸弹，然后致电客户服务寻求账单帮助。如果这种情况真的发生，试图防止 XSS 的拦截器将完全错过这一点，其结果将远比仅仅弹出显示"1"或"XSS"或"pwn'd"的警告框更糟。
 
-### Summary
+### 总结
 
-One final note: If deploying interceptors / filters as an XSS defense was a useful approach against XSS attacks, don't you think that it would be incorporated into all commercial Web Application Firewalls (WAFs) and be an approach that OWASP recommends in this cheat sheet?
+最后一点：如果部署拦截器/过滤器作为 XSS 防御是针对 XSS 攻击的有用方法，你不认为它早就会被纳入所有商业 Web 应用防火墙（WAF）中，并成为 OWASP 在本速查表中推荐的方法吗？
 
-## Related Articles
+## 相关文章
 
-**XSS Attack Cheat Sheet:**
+**XSS 攻击速查表：**
 
-The following article describes how attackers can exploit different kinds of XSS vulnerabilities (and this article was created to help you avoid them):
+以下文章描述了攻击者如何利用不同类型的 XSS 漏洞（本文旨在帮助你避免这些漏洞）：
 
-- OWASP: [XSS Filter Evasion Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/XSS_Filter_Evasion_Cheat_Sheet.html).
+- OWASP：[XSS 过滤器规避速查表](https://cheatsheetseries.owasp.org/cheatsheets/XSS_Filter_Evasion_Cheat_Sheet.html)。
 
-**Description of XSS Vulnerabilities:**
+**XSS 漏洞描述：**
 
-- OWASP article on [XSS](https://owasp.org/www-community/attacks/xss/) Vulnerabilities.
+- OWASP 关于 [XSS](https://owasp.org/www-community/attacks/xss/) 漏洞的文章。
 
-**Discussion about the Types of XSS Vulnerabilities:**
+**关于 XSS 漏洞类型的讨论：**
 
-- [Types of Cross-Site Scripting](https://owasp.org/www-community/Types_of_Cross-Site_Scripting).
+- [跨站脚本的类型](https://owasp.org/www-community/Types_of_Cross-Site_Scripting)。
 
-**How to Review Code for Cross-Site Scripting Vulnerabilities:**
+**如何审查跨站脚本漏洞的代码：**
 
-- [OWASP Code Review Guide](https://owasp.org/www-project-code-review-guide/) article on [Reviewing Code for Cross-site scripting](https://wiki.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting) Vulnerabilities.
+- [OWASP 代码审查指南](https://owasp.org/www-project-code-review-guide/)中关于[审查跨站脚本漏洞的代码](https://wiki.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting)的文章。
 
-**How to Test for Cross-Site Scripting Vulnerabilities:**
+**如何测试跨站脚本漏洞：**
 
-- [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/) article on testing for Cross-Site Scripting vulnerabilities.
-- [XSS Experimental Minimal Encoding Rules](https://wiki.owasp.org/index.php/XSS_Experimental_Minimal_Encoding_Rules)#  <#Title#>
+- [OWASP 测试指南](https://owasp.org/www-project-web-security-testing-guide/)中关于测试跨站脚本漏洞的文章。
+- [XSS 实验性最小编码规则](https://wiki.owasp.org/index.php/XSS_Experimental_Minimal_Encoding_Rules)
