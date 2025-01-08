@@ -1,32 +1,32 @@
-# DOM based XSS Prevention Cheat Sheet
+# 基于 DOM 的 XSS 防御备忘录
 
-## Introduction
+## 引言
 
-When looking at XSS (Cross-Site Scripting), there are three generally recognized forms of [XSS](https://owasp.org/www-community/attacks/xss/):
+在研究 XSS（跨站脚本）时，通常认为存在三种形式的 [XSS](https://owasp.org/www-community/attacks/xss/)：
 
-- [Reflected or Stored](https://owasp.org/www-community/attacks/xss/#stored-and-reflected-xss-attacks)
-- [DOM Based XSS](https://owasp.org/www-community/attacks/DOM_Based_XSS).
+- [反射型或存储型](https://owasp.org/www-community/attacks/xss/#stored-and-reflected-xss-attacks)
+- [基于 DOM 的 XSS](https://owasp.org/www-community/attacks/DOM_Based_XSS)
 
-The [XSS Prevention Cheatsheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md) does an excellent job of addressing Reflected and Stored XSS. This cheatsheet addresses DOM (Document Object Model) based XSS and is an extension (and assumes comprehension) of the [XSS Prevention Cheatsheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md).
+[XSS 防御备忘录](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)在处理反射型和存储型 XSS 方面做得非常出色。本备忘录专注于基于 DOM（文档对象模型）的 XSS，是 [XSS 防御备忘录](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)的扩展（并假定读者已理解原文）。
 
-In order to understand DOM based XSS, one needs to see the fundamental difference between Reflected and Stored XSS when compared to DOM based XSS. The primary difference is where the attack is injected into the application.
+为了理解基于 DOM 的 XSS，需要了解反射型/存储型 XSS 与基于 DOM 的 XSS 之间的根本区别。主要区别在于攻击被注入应用程序的位置。
 
-Reflected and Stored XSS are server side injection issues while DOM based XSS is a client (browser) side injection issue.
+反射型和存储型 XSS 是服务器端注入问题，而基于 DOM 的 XSS 是客户端（浏览器）侧注入问题。
 
-All of this code originates on the server, which means it is the application owner's responsibility to make it safe from XSS, regardless of the type of XSS flaw it is. Also, XSS attacks always **execute** in the browser.
+所有这些代码都源自服务器，这意味着应用程序所有者有责任使其免受 XSS 攻击，无论是哪种类型的 XSS 漏洞。同时，XSS 攻击始终在**浏览器中执行**。
 
-The difference between Reflected/Stored XSS is where the attack is added or injected into the application. With Reflected/Stored the attack is injected into the application during server-side processing of requests where untrusted input is dynamically added to HTML. For DOM XSS, the attack is injected into the application during runtime in the client directly.
+反射型/存储型 XSS 与基于 DOM 的 XSS 的区别在于攻击被添加或注入应用程序的位置。对于反射型/存储型 XSS，攻击在服务器端处理请求期间被注入，其中不可信的输入被动态添加到 HTML 中。对于 DOM XSS，攻击直接在客户端运行时被注入到应用程序中。
 
-When a browser is rendering HTML and any other associated content like CSS or JavaScript, it identifies various rendering contexts for the different kinds of input and follows different rules for each context. A rendering context is associated with the parsing of HTML tags and their attributes.
+当浏览器渲染 HTML 以及 CSS 或 JavaScript 等相关内容时，它会识别不同类型输入的各种渲染上下文，并为每个上下文遵循不同的规则。渲染上下文与 HTML 标签及其属性的解析相关联。
 
-- The HTML parser of the rendering context dictates how data is presented and laid out on the page and can be further broken down into the standard contexts of HTML, HTML attribute, URL, and CSS.
-- The JavaScript or VBScript parser of an execution context is associated with the parsing and execution of script code. Each parser has distinct and separate semantics in the way they can possibly execute script code which make creating consistent rules for mitigating vulnerabilities in various contexts difficult. The complication is compounded by the differing meanings and treatment of encoded values within each subcontext (HTML, HTML attribute, URL, and CSS) within the execution context.
+- 渲染上下文的 HTML 解析器决定数据如何在页面上呈现和布局，并可进一步细分为 HTML、HTML 属性、URL 和 CSS 的标准上下文。
+- 执行上下文的 JavaScript 或 VBScript 解析器与脚本代码的解析和执行相关。每个解析器在可能执行脚本代码的方式上都有不同且独立的语义，这使得在各种上下文中缓解漏洞的一致规则变得困难。这种复杂性因执行上下文中每个子上下文（HTML、HTML 属性、URL 和 CSS）内编码值的不同含义和处理方式而加剧。
 
-For the purposes of this article, we refer to the HTML, HTML attribute, URL, and CSS contexts as subcontexts because each of these contexts can be reached and set within a JavaScript execution context.
+就本文而言，我们将 HTML、HTML 属性、URL 和 CSS 上下文称为子上下文，因为这些上下文中的每一个都可以在 JavaScript 执行上下文中被访问和设置。
 
-In JavaScript code, the main context is JavaScript but with the right tags and context closing characters, an attacker can try to attack the other 4 contexts using equivalent JavaScript DOM methods.
+在 JavaScript 代码中，主要上下文是 JavaScript，但通过适当的标签和上下文闭合字符，攻击者可以尝试使用等效的 JavaScript DOM 方法攻击其他 4 个解析上下文。  
 
-The following is an example vulnerability which occurs in the JavaScript context and HTML subcontext:
+以下是在 JavaScript 解析上下文和 HTML 解析上下文中发生的漏洞示例：  
 
 ```html
  <script>
@@ -37,34 +37,34 @@ The following is an example vulnerability which occurs in the JavaScript context
  </script>
 ```
 
-Let's look at the individual subcontexts of the execution context in turn.
+接下来，我们将依次查看不同的解析上下文。
 
-## RULE \#1 - HTML Escape then JavaScript Escape Before Inserting Untrusted Data into HTML Subcontext within the Execution Context
+## 规则 \#1 - 在将不可信数据插入执行上下文中的 HTML 解析上下文之前进行 HTML 转义和 JavaScript 转义
 
-There are several methods and attributes which can be used to directly render HTML content within JavaScript. These methods constitute the HTML Subcontext within the Execution Context. If these methods are provided with untrusted input, then an XSS vulnerability could result. For example:
+有几种方法和属性可以直接在 JavaScript 中渲染 HTML 内容。这些方法构成了执行上下文中的 HTML 解析上下文。如果这些方法使用不可信的输入，则可能导致 XSS 漏洞。例如：
 
-### Example Dangerous HTML Methods
+### 危险的 HTML 方法示例
 
-#### Attributes
-
-```javascript
- element.innerHTML = "<HTML> Tags and markup";
- element.outerHTML = "<HTML> Tags and markup";
-```
-
-#### Methods
+#### 属性
 
 ```javascript
- document.write("<HTML> Tags and markup");
- document.writeln("<HTML> Tags and markup");
+ element.innerHTML = "<HTML> 标签和标记";
+ element.outerHTML = "<HTML> 标签和标记";
 ```
 
-### Guideline
+#### 方法
 
-To make dynamic updates to HTML in the DOM safe, we recommend:
+```javascript
+ document.write("<HTML> 标签和标记");
+ document.writeln("<HTML> 标签和标记");
+```
 
- 1. HTML encoding, and then
- 2. JavaScript encoding all untrusted input, as shown in these examples:
+### 指南
+
+为了安全地动态更新 DOM 中的 HTML，我们建议：
+
+ 1. HTML 编码，然后
+ 2. JavaScript 编码所有不可信的输入，如下例所示：
 
 ```javascript
  var ESAPI = require('node-esapi');
@@ -78,103 +78,75 @@ To make dynamic updates to HTML in the DOM safe, we recommend:
  document.writeln("<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForHTML(untrustedData))%>");
 ```
 
-## RULE \#2 - JavaScript Escape Before Inserting Untrusted Data into HTML Attribute Subcontext within the Execution Context
+## 规则 \#2 - 在将不可信数据插入执行上下文中的 HTML 属性解析上下文之前进行 JavaScript 转义
 
-The HTML attribute *subcontext* within the *execution* context is divergent from the standard encoding rules. This is because the rule to HTML attribute encode in an HTML attribute rendering context is necessary in order to mitigate attacks which try to exit out of an HTML attributes or try to add additional attributes which could lead to XSS.
+执行上下文中的 HTML 属性解析上下文与标准编码规则不同。这是因为在 HTML 属性渲染上下文中进行 HTML 属性编码是为了缓解试图退出 HTML 属性或添加可能导致 XSS 的额外属性的攻击。
 
-When you are in a DOM execution context you only need to JavaScript encode HTML attributes which do not execute code (attributes other than event handler, CSS, and URL attributes).
+在 DOM 执行上下文中，您只需要对不执行代码的 HTML 属性（事件处理程序、CSS 和 URL 属性除外）进行 JavaScript 编码。
 
-For example, the general rule is to HTML Attribute encode untrusted data (data from the database, HTTP request, user, back-end system, etc.) placed in an HTML Attribute. This is the appropriate step to take when outputting data in a rendering context, however using HTML Attribute encoding in an execution context will break the application display of data.
+例如，一般规则是对放置在 HTML 属性中的不可信数据（来自数据库、HTTP 请求、用户、后端系统等）进行 HTML 属性编码。这是在渲染上下文中输出数据时的适当步骤，但在执行上下文中使用 HTML 属性编码会破坏应用程序的数据显示。
 
-### SAFE but BROKEN example
+## 规则 \#3 - 在执行上下文中将不可信数据插入事件处理程序和 JavaScript 代码解析上下文时要小心
 
-```javascript
- var ESAPI = require('node-esapi');
- var x = document.createElement("input");
- x.setAttribute("name", "company_name");
- // In the following line of code, companyName represents untrusted user input
- // The ESAPI.encoder().encodeForHTMLAttribute() is unnecessary and causes double-encoding
- x.setAttribute("value", '<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForHTMLAttribute(companyName))%>');
- var form1 = document.forms[0];
- form1.appendChild(x);
-```
+在 JavaScript 代码中放置动态数据特别危险，因为与其他编码相比，JavaScript 编码对 JavaScript 编码数据有不同的语义。在许多情况下，JavaScript 编码无法阻止执行上下文中的攻击。例如，即使经过 JavaScript 编码，编码后的字符串仍然会执行。
 
-The problem is that if companyName had the value "Johnson & Johnson". What would be displayed in the input text field would be "Johnson &#x26;amp; Johnson". The appropriate encoding to use in the above case would be only JavaScript encoding to disallow an attacker from closing out the single quotes and in-lining code, or escaping to HTML and opening a new script tag.
-
-### SAFE and FUNCTIONALLY CORRECT example
-
-```javascript
- var ESAPI = require('node-esapi');
- var x = document.createElement("input");
- x.setAttribute("name", "company_name");
- x.setAttribute("value", '<%=ESAPI.encoder().encodeForJavascript(companyName)%>');
- var form1 = document.forms[0];
- form1.appendChild(x);
-```
-
-It is important to note that when setting an HTML attribute which does not execute code, the value is set directly within the object attribute of the HTML element so there is no concerns with injecting up.
-
-## RULE \#3 - Be Careful when Inserting Untrusted Data into the Event Handler and JavaScript code Subcontexts within an Execution Context
-
-Putting dynamic data within JavaScript code is especially dangerous because JavaScript encoding has different semantics for JavaScript encoded data when compared to other encodings. In many cases, JavaScript encoding does not stop attacks within an execution context. For example, a JavaScript encoded string will execute even though it is JavaScript encoded.
-
-Therefore, the primary recommendation is to **avoid including untrusted data in this context**. If you must, the following examples describe some approaches that do and do not work.
+因此，主要建议是**避免在此上下文中包含不可信数据**。如果必须使用，以下示例描述了一些可行和不可行的方法。
 
 ```javascript
 var x = document.createElement("a");
 x.href="#";
-// In the line of code below, the encoded data on the right (the second argument to setAttribute)
-// is an example of untrusted data that was properly JavaScript encoded but still executes.
+// 下面代码行中，右侧编码的数据（setAttribute 的第二个参数）
+// 是一个经过正确 JavaScript 编码但仍然执行的不可信数据示例
 x.setAttribute("onclick", "\u0061\u006c\u0065\u0072\u0074\u0028\u0032\u0032\u0029");
-var y = document.createTextNode("Click To Test");
+var y = document.createTextNode("点击测试");
 x.appendChild(y);
 document.body.appendChild(x);
 ```
 
-The `setAttribute(name_string,value_string)` method is dangerous because it implicitly coerces the *value_string* into the DOM attribute datatype of *name_string*.
+`setAttribute(name_string,value_string)` 方法很危险，因为它隐式地将 *value_string* 强制转换为 *name_string* 的 DOM 属性数据类型。
 
-In the case above, the attribute name is an JavaScript event handler, so the attribute value is implicitly converted to JavaScript code and evaluated. In the case above, JavaScript encoding does not mitigate against DOM based XSS.
+在上面的情况中，属性名是一个 JavaScript 事件处理程序，所以属性值被隐式转换为 JavaScript 代码并执行。在这种情况下，JavaScript 编码无法缓解基于 DOM 的 XSS。
 
-Other JavaScript methods which take code as a string types will have a similar problem as outline above (`setTimeout`, `setInterval`, new Function, etc.). This is in stark contrast to JavaScript encoding in the event handler attribute of a HTML tag (HTML parser) where JavaScript encoding mitigates against XSS.
+其他以字符串类型接受代码的 JavaScript 方法也会出现类似问题（`setTimeout`、`setInterval`、`new Function` 等）。这与 HTML 标签的事件处理程序属性中的 JavaScript 编码（HTML 解析器）形成鲜明对比，后者可以缓解 XSS。
 
 ```html
-<!-- Does NOT work  -->
-<a id="bb" href="#" onclick="\u0061\u006c\u0065\u0072\u0074\u0028\u0031\u0029"> Test Me</a>
+<!-- 不起作用 -->
+<a id="bb" href="#" onclick="\u0061\u006c\u0065\u0072\u0074\u0028\u0031\u0029"> 测试我</a>
 ```
 
-An alternative to using `Element.setAttribute(...)` to set DOM attributes is to set the attribute directly. Directly setting event handler attributes will allow JavaScript encoding to mitigate against DOM based XSS. Please note, it is always dangerous design to put untrusted data directly into a command execution context.
+使用 `Element.setAttribute(...)` 设置 DOM 属性的替代方法是直接设置属性。直接设置事件处理程序属性将允许 JavaScript 编码缓解基于 DOM 的 XSS。请注意，将不可信数据直接放入命令执行上下文始终是危险的设计。
 
 ``` html
-<a id="bb" href="#"> Test Me</a>
+<a id="bb" href="#"> 测试我</a>
 ```
 
 ``` javascript
-//The following does NOT work because the event handler is being set to a string.
-//"alert(7)" is JavaScript encoded.
+// 以下不起作用，因为事件处理程序被设置为字符串。
+// "alert(7)" 已进行 JavaScript 编码。
 document.getElementById("bb").onclick = "\u0061\u006c\u0065\u0072\u0074\u0028\u0037\u0029";
 
-//The following does NOT work because the event handler is being set to a string.
+// 以下不起作用，因为事件处理程序被设置为字符串。
 document.getElementById("bb").onmouseover = "testIt";
 
-//The following does NOT work because of the encoded "(" and ")".
-//"alert(77)" is JavaScript encoded.
+// 以下不起作用，因为 "(" 和 ")" 已编码。
+// "alert(77)" 已进行 JavaScript 编码。
 document.getElementById("bb").onmouseover = \u0061\u006c\u0065\u0072\u0074\u0028\u0037\u0037\u0029;
 
-//The following does NOT work because of the encoded ";".
-//"testIt;testIt" is JavaScript encoded.
+// 以下不起作用，因为 ";" 已编码。
+// "testIt;testIt" 已进行 JavaScript 编码。
 document.getElementById("bb").onmouseover = \u0074\u0065\u0073\u0074\u0049\u0074\u003b\u0074\u0065\u0073
                                             \u0074\u0049\u0074;
 
-//The following DOES WORK because the encoded value is a valid variable name or function reference.
-//"testIt" is JavaScript encoded
+// 以下起作用，因为编码值是有效的变量名或函数引用。
+// "testIt" 已进行 JavaScript 编码
 document.getElementById("bb").onmouseover = \u0074\u0065\u0073\u0074\u0049\u0074;
 
 function testIt() {
-   alert("I was called.");
+   alert("我被调用了。");
 }
 ```
 
-There are other places in JavaScript where JavaScript encoding is accepted as valid executable code.
+JavaScript 中还有其他地方接受 JavaScript 编码为有效的可执行代码。
 
 ```javascript
  for(var \u0062=0; \u0062 < 10; \u0062++){
@@ -188,7 +160,7 @@ There are other places in JavaScript where JavaScript encoding is accepted as va
  .\u0077\u0072\u0069\u0074\u0065(111111111);
 ```
 
-or
+或者
 
 ```javascript
  var s = "\u0065\u0076\u0061\u006c";
@@ -196,284 +168,145 @@ or
  window[s](t);
 ```
 
-Because JavaScript is based on an international standard (ECMAScript), JavaScript encoding enables the support of international characters in programming constructs and variables in addition to alternate string representations (string escapes).
+因为 JavaScript 基于国际标准（ECMAScript），JavaScript 编码支持编程构造和变量中的国际字符，以及替代的字符串表示（字符串转义）。
 
-However the opposite is the case with HTML encoding. HTML tag elements are well defined and do not support alternate representations of the same tag. So HTML encoding cannot be used to allow the developer to have alternate representations of the `<a>` tag for example.
+然而，HTML 编码则相反。HTML 标签元素是明确定义的，不支持同一标签的替代表示。因此，HTML 编码不能让开发者拥有 `<a>` 标签的替代表示。
 
-### HTML Encoding's Disarming Nature
+## HTML 编码的中和性质
 
-In general, HTML encoding serves to castrate HTML tags which are placed in HTML and HTML attribute contexts. Working example (no HTML encoding):
+通常，HTML 编码用于中和放置在 HTML 和 HTML 属性上下文中的 HTML 标签。工作示例（无 HTML 编码）：
 
 ```html
 <a href="..." >
 ```
 
-Normally encoded example (Does Not Work – DNW):
+通常编码的示例（不起作用 - DNW）：
 
 ```html
 &#x3c;a href=... &#x3e;
 ```
 
-HTML encoded example to highlight a fundamental difference with JavaScript encoded values (DNW):
+HTML 编码示例，突出显示与 JavaScript 编码值的根本区别（DNW）：
 
 ```html
 <&#x61; href=...>
 ```
 
-If HTML encoding followed the same semantics as JavaScript encoding, the line above could have possibly worked to render a link. This difference makes JavaScript encoding a less viable weapon in our fight against XSS.
+如果 HTML 编码遵循与 JavaScript 编码相同的语义，上面的行可能可以渲染链接。这种差异使得 JavaScript 编码在对抗 XSS 的斗争中不太可靠。
 
-## RULE \#4 - JavaScript Escape Before Inserting Untrusted Data into the CSS Attribute Subcontext within the Execution Context
+## 规则 \#4 - 在将不可信数据插入执行上下文中的 CSS 属性解析上下文之前进行 JavaScript 转义
 
-Normally executing JavaScript from a CSS context required either passing `javascript:attackCode()` to the CSS `url()` method or invoking the CSS `expression()` method passing JavaScript code to be directly executed.
+通常，从 CSS 上下文执行 JavaScript 需要将 `javascript:attackCode()` 传递给 CSS `url()` 方法，或调用 CSS `expression()` 方法传递要直接执行的 JavaScript 代码。
 
-From my experience, calling the `expression()` function from an execution context (JavaScript) has been disabled. In order to mitigate against the CSS `url()` method, ensure that you are URL encoding the data passed to the CSS `url()` method.
+根据我的经验，从执行上下文（JavaScript）调用 `expression()` 函数已被禁用。为了缓解 CSS `url()` 方法，请确保对传递给 CSS `url()` 方法的数据进行 URL 编码。
 
 ```javascript
 var ESAPI = require('node-esapi');
 document.body.style.backgroundImage = "url(<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForURL(companyName))%>)";
 ```
 
-## RULE \#5 - URL Escape then JavaScript Escape Before Inserting Untrusted Data into URL Attribute Subcontext within the Execution Context
+## 规则 \#5 - URL 转义后再 JavaScript 转义，在将不可信数据插入执行上下文中的 URL 属性解析上下文之前
 
-The logic which parses URLs in both execution and rendering contexts looks to be the same. Therefore there is little change in the encoding rules for URL attributes in an execution (DOM) context.
+解析执行和渲染上下文中的 URL 的逻辑看起来是相同的。因此，执行（DOM）上下文中 URL 属性的编码规则变化不大。
 
 ```javascript
 var ESAPI = require('node-esapi');
 var x = document.createElement("a");
 x.setAttribute("href", '<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForURL(userRelativePath))%>');
-var y = document.createTextElement("Click Me To Test");
+var y = document.createTextElement("点击测试");
 x.appendChild(y);
 document.body.appendChild(x);
 ```
 
-If you utilize fully qualified URLs then this will break the links as the colon in the protocol identifier (`http:` or `javascript:`) will be URL encoded preventing the `http` and `javascript` protocols from being invoked.
+如果使用完全限定的 URL，这将破坏链接，因为协议标识符中的冒号（`http:` 或 `javascript:`）将被 URL 编码，阻止调用 `http` 和 `javascript` 协议。
 
-## RULE \#6 - Populate the DOM using safe JavaScript functions or properties
+## 规则 \#6 - 使用安全的 JavaScript 函数或属性填充 DOM
 
-The most fundamental safe way to populate the DOM with untrusted data is to use the safe assignment property `textContent`.
+使用不可信数据填充 DOM 最基本的安全方法是使用安全的赋值属性 `textContent`。
 
-Here is an example of safe usage.
+以下是安全使用的示例：
 
 ```html
 <script>
-element.textContent = untrustedData;  //does not execute code
+element.textContent = untrustedData;  // 不执行代码
 </script>
 ```
 
-## RULE \#7 - Fixing DOM Cross-site Scripting Vulnerabilities
+## 规则 \#7 - 修复 DOM 跨站脚本漏洞
 
-The best way to fix DOM based cross-site scripting is to use the right output method (sink). For example if you want to use user input to write in a `div tag` element don't use `innerHtml`, instead use `innerText` or `textContent`. This will solve the problem, and it is the right way to re-mediate DOM based XSS vulnerabilities.
+修复基于 DOM 的跨站脚本的最佳方法是使用正确的输出方法（接收器）。例如，如果要使用用户输入写入 `div` 标签元素，不要使用 `innerHtml`，而是使用 `innerText` 或 `textContent`。这将解决问题，并且是修复基于 DOM 的 XSS 漏洞的正确方法。
 
-**It is always a bad idea to use a user-controlled input in dangerous sources such as eval. 99% of the time it is an indication of bad or lazy programming practice, so simply don't do it instead of trying to sanitize the input.**
+**在诸如 eval 之类的危险来源中使用用户控制的输入始终是一个坏主意。99% 的情况下，这表明编程实践糟糕或懒惰，所以根本不要这样做，而不是尝试净化输入。**
 
-Finally, to fix the problem in our initial code, instead of trying to encode the output correctly which is a hassle and can easily go wrong we would simply use `element.textContent` to write it in a content like this:
+最后，要修复我们最初代码中的问题，与其尝试正确编码输出（这很麻烦且容易出错），不如简单地使用 `element.textContent` 像这样写入内容：
 
 ```html
-<b>Current URL:</b> <span id="contentholder"></span>
+<b>当前 URL：</b> <span id="contentholder"></span>
 ...
 <script>
 document.getElementById("contentholder").textContent = document.baseURI;
 </script>
 ```
 
-It does the same thing but this time it is not vulnerable to DOM based cross-site scripting vulnerabilities.
+它做了相同的事情，但这次不会受到基于 DOM 的跨站脚本漏洞的影响。
 
-## Guidelines for Developing Secure Applications Utilizing JavaScript
+## 开发安全 JavaScript 应用程序的指南
 
-DOM based XSS is extremely difficult to mitigate against because of its large attack surface and lack of standardization across browsers.
+基于 DOM 的 XSS 极难缓解，因为其攻击面广泛，且浏览器间缺乏标准化。
 
-The guidelines below are an attempt to provide guidelines for developers when developing Web based JavaScript applications (Web 2.0) such that they can avoid XSS.
+以下指南旨在为开发基于 Web 的 JavaScript 应用程序（Web 2.0）的开发者提供指导，以避免 XSS。
 
-### GUIDELINE \#1 - Untrusted data should only be treated as displayable text
+### 指南 \#1 - 不可信数据应仅被视为可显示文本
 
-Avoid treating untrusted data as code or markup within JavaScript code.
+避免在 JavaScript 代码中将不可信数据视为代码或标记。
 
-### GUIDELINE \#2 - Always JavaScript encode and delimit untrusted data as quoted strings when entering the application when building templated JavaScript
+### 指南 \#2 - 在构建模板化 JavaScript 时，始终对不可信数据进行 JavaScript 编码并用引号分隔
 
-Always JavaScript encode and delimit untrusted data as quoted strings when entering the application as illustrated in the following example.
+始终对不可信数据进行 JavaScript 编码并用引号分隔，如下例所示：
 
 ```javascript
 var x = "<%= Encode.forJavaScript(untrustedData) %>";
 ```
 
-### GUIDELINE \#3 - Use document.createElement("..."), element.setAttribute("...","value"), element.appendChild(...) and similar to build dynamic interfaces
+### 指南 \#3 - 使用 `document.createElement("...")`, `element.setAttribute("...","value")`, `element.appendChild(...)` 等构建动态接口
 
-`document.createElement("...")`, `element.setAttribute("...","value")`, `element.appendChild(...)` and similar are safe ways to build dynamic interfaces.
+`document.createElement("...")`, `element.setAttribute("...","value")`, `element.appendChild(...)` 等是构建动态接口的安全方法。
 
-Please note, `element.setAttribute` is only safe for a limited number of attributes.
+请注意，`element.setAttribute` 仅对有限数量的属性是安全的。
 
-Dangerous attributes include any attribute that is a command execution context, such as `onclick` or `onblur`.
+危险属性包括任何命令执行上下文的属性，如 `onclick` 或 `onblur`。
 
-Examples of safe attributes includes: `align`, `alink`, `alt`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `color`, `cols`, `colspan`, `coords`, `dir`, `face`, `height`, `hspace`, `ismap`, `lang`, `marginheight`, `marginwidth`, `multiple`, `nohref`, `noresize`, `noshade`, `nowrap`, `ref`, `rel`, `rev`, `rows`, `rowspan`, `scrolling`, `shape`, `span`, `summary`, `tabindex`, `title`, `usemap`, `valign`, `value`, `vlink`, `vspace`, `width`.
+安全属性的示例包括：`align`, `alink`, `alt`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `color`, `cols`, `colspan`, `coords`, `dir`, `face`, `height`, `hspace`, `ismap`, `lang`, `marginheight`, `marginwidth`, `multiple`, `nohref`, `noresize`, `noshade`, `nowrap`, `ref`, `rel`, `rev`, `rows`, `rowspan`, `scrolling`, `shape`, `span`, `summary`, `tabindex`, `title`, `usemap`, `valign`, `value`, `vlink`, `vspace`, `width`。
 
-### GUIDELINE \#4 - Avoid sending untrusted data into HTML rendering methods
+### 指南 \#4 - 避免将不可信数据发送到 HTML 渲染方法
 
-Avoid populating the following methods with untrusted data.
+避免使用不可信数据填充以下方法：
 
 1. `element.innerHTML = "...";`
 2. `element.outerHTML = "...";`
 3. `document.write(...);`
 4. `document.writeln(...);`
 
-### GUIDELINE \#5 - Avoid the numerous methods which implicitly eval() data passed to it
+### 指南 \#5 - 避免隐式 `eval()` 传递给它的数据的众多方法
 
-There are numerous methods which implicitly `eval()` data passed to it that must be avoided.
+必须避免众多隐式 `eval()` 传递给它的数据的方法。
 
-Make sure that any untrusted data passed to these methods is:
+确保传递给这些方法的任何不可信数据：
 
-1. Delimited with string delimiters
-2. Enclosed within a closure or JavaScript encoded to N-levels based on usage
-3. Wrapped in a custom function.
+1. 用字符串分隔符分隔
+2. 封装在闭包中或根据使用情况进行 N 级 JavaScript 编码
+3. 包装在自定义函数中
 
-Ensure to follow step 3 above to make sure that the untrusted data is not sent to dangerous methods within the custom function or handle it by adding an extra layer of encoding.
+确保遵循上述第 3 步，以确保不可信数据不会在自定义函数中发送到危险方法，或通过添加额外的编码层来处理。
 
-#### Utilizing an Enclosure (as suggested by Gaz)
+## DOM 基于 XSS 的常见问题
 
-The example that follows illustrates using closures to avoid double JavaScript encoding.
+### 复杂的上下文
 
-```javascript
- var ESAPI = require('node-esapi');
- setTimeout((function(param) { return function() {
-          customFunction(param);
-        }
- })("<%=ESAPI.encoder().encodeForJavascript(untrustedData)%>"), y);
-```
-
-The other alternative is using N-levels of encoding.
-
-#### N-Levels of Encoding
-
-If your code looked like the following, you would need to only double JavaScript encode input data.
-
-```javascript
-setTimeout("customFunction('<%=doubleJavaScriptEncodedData%>', y)");
-function customFunction (firstName, lastName)
-     alert("Hello" + firstName + " " + lastNam);
-}
-```
-
-The `doubleJavaScriptEncodedData` has its first layer of JavaScript encoding reversed (upon execution) in the single quotes.
-
-Then the implicit `eval` of `setTimeout` reverses another layer of JavaScript encoding to pass the correct value to `customFunction`
-
-The reason why you only need to double JavaScript encode is that the `customFunction` function did not itself pass the input to another method which implicitly or explicitly called `eval` If *firstName* was passed to another JavaScript method which implicitly or explicitly called `eval()` then `<%=doubleJavaScriptEncodedData%>` above would need to be changed to `<%=tripleJavaScriptEncodedData%>`.
-
-An important implementation note is that if the JavaScript code tries to utilize the double or triple encoded data in string comparisons, the value may be interpreted as different values based on the number of `evals()` the data has passed through before being passed to the if comparison and the number of times the value was JavaScript encoded.
-
-If **A** is double JavaScript encoded then the following **if** check will return false.
-
-``` javascript
- var x = "doubleJavaScriptEncodedA";  //\u005c\u0075\u0030\u0030\u0034\u0031
- if (x == "A") {
-    alert("x is A");
- } else if (x == "\u0041") {
-    alert("This is what pops");
- }
-```
-
-This brings up an interesting design point. Ideally, the correct way to apply encoding and avoid the problem stated above is to server-side encode for the output context where data is introduced into the application.
-
-Then client-side encode (using a JavaScript encoding library such as [node-esapi](https://github.com/ESAPI/node-esapi/)) for the individual subcontext (DOM methods) which untrusted data is passed to.
-
-Here are some examples of how they are used:
-
-```javascript
-//server-side encoding
-var ESAPI = require('node-esapi');
-var input = "<%=ESAPI.encoder().encodeForJavascript(untrustedData)%>";
-```
-
-```javascript
-//HTML encoding is happening in JavaScript
-var ESAPI = require('node-esapi');
-document.writeln(ESAPI.encoder().encodeForHTML(input));
-```
-
-One option is utilize ECMAScript 5 immutable properties in the JavaScript library.
-Another option provided by Gaz (Gareth) was to use a specific code construct to limit mutability with anonymous closures.
-
-An example follows:
-
-```javascript
-function escapeHTML(str) {
-     str = str + "''";
-     var out = "''";
-     for(var i=0; i<str.length; i++) {
-         if(str[i] === '<') {
-             out += '&lt;';
-         } else if(str[i] === '>') {
-             out += '&gt;';
-         } else if(str[i] === "'") {
-             out += '&#39;';
-         } else if(str[i] === '"') {
-             out += '&quot;';
-         } else {
-             out += str[i];
-         }
-     }
-     return out;
-}
-```
-
-### GUIDELINE \#6 - Use untrusted data on only the right side of an expression
-
-Use untrusted data on only the right side of an expression, especially data that looks like code and may be passed to the application (e.g., `location` and `eval()`).
-
-```javascript
-window[userDataOnLeftSide] = "userDataOnRightSide";
-```
-
-Using untrusted user data on the left side of the expression allows an attacker to subvert internal and external attributes of the window object, whereas using user input on the right side of the expression doesn't allow direct manipulation.
-
-### GUIDELINE \#7 - When URL encoding in DOM be aware of character set issues
-
-When URL encoding in DOM be aware of character set issues as the character set in JavaScript DOM is not clearly defined (Mike Samuel).
-
-### GUIDELINE \#8 - Limit access to object properties when using object\[x\] accessors
-
-Limit access to object properties when using `object[x]` accessors (Mike Samuel). In other words, add a level of indirection between untrusted input and specified object properties.
-
-Here is an example of the problem using map types:
-
-```javascript
-var myMapType = {};
-myMapType[<%=untrustedData%>] = "moreUntrustedData";
-```
-
-The developer writing the code above was trying to add additional keyed elements to the `myMapType` object. However, this could be used by an attacker to subvert internal and external attributes of the `myMapType` object.
-
-A better approach would be to use the following:
-
-```javascript
-if (untrustedData === 'location') {
-  myMapType.location = "moreUntrustedData";
-}
-```
-
-### GUIDELINE \#9 - Run your JavaScript in a ECMAScript 5 canopy or sandbox
-
-Run your JavaScript in a ECMAScript 5 [canopy](https://github.com/jcoglan/canopy) or sandbox to make it harder for your JavaScript API to be compromised (Gareth Heyes and John Stevens).
-
-Examples of some JavaScript sandbox / sanitizers:
-
-- [js-xss](https://github.com/leizongmin/js-xss)
-- [sanitize-html](https://github.com/apostrophecms/sanitize-html)
-- [DOMPurify](https://github.com/cure53/DOMPurify)
-- [MDN - HTML Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Sanitizer_API)
-- [OWASP Summit 2011 - DOM Sandboxing](https://owasp.org/www-pdf-archive/OWASPSummit2011DOMSandboxingBrowserSecurityTrack.pdf)
-
-### GUIDELINE \#10 - Don't eval() JSON to convert it to native JavaScript objects
-
-Don't `eval()` JSON to convert it to native JavaScript objects. Instead use `JSON.toJSON()` and `JSON.parse()` (Chris Schmidt).
-
-## Common Problems Associated with Mitigating DOM Based XSS
-
-### Complex Contexts
-
-In many cases the context isn't always straightforward to discern.
+在许多情况下，上下文并不总是直接明了。
 
 ```html
-<a href="javascript:myFunction('<%=untrustedData%>', 'test');">Click Me</a>
+<a href="javascript:myFunction('<%=untrustedData%>', 'test');">点击我</a>
  ...
 <script>
 Function myFunction (url,name) {
@@ -482,55 +315,55 @@ Function myFunction (url,name) {
 </script>
 ```
 
-In the above example, untrusted data started in the rendering URL context (`href` attribute of an `a` tag) then changed to a JavaScript execution context (`javascript:` protocol handler) which passed the untrusted data to an execution URL subcontext (`window.location` of `myFunction`).
+在上面的示例中，不可信数据从渲染 URL 上下文（`a` 标签的 `href` 属性）开始，然后变为 JavaScript 执行上下文（`javascript:` 协议处理程序），并将不可信数据传递给执行 URL 子上下文（`myFunction` 的 `window.location`）。
 
-Because the data was introduced in JavaScript code and passed to a URL subcontext the appropriate server-side encoding would be the following:
+因为数据是在 JavaScript 代码中引入并传递到 URL 子上下文，所以适当的服务器端编码应该是以下形式：
 
 ```html
 <a href="javascript:myFunction('<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForURL(untrustedData)) %>', 'test');">
-Click Me</a>
+点击我</a>
  ...
 ```
 
-Or if you were using ECMAScript 5 with an immutable JavaScript client-side encoding libraries you could do the following:
+或者，如果您使用带有不可变 JavaScript 客户端编码库的 ECMAScript 5，则可以执行以下操作：
 
 ```html
-<!-- server side URL encoding has been removed.  Now only JavaScript encoding on server side. -->
-<a href="javascript:myFunction('<%=ESAPI.encoder().encodeForJavascript(untrustedData)%>', 'test');">Click Me</a>
+<!-- 服务器端 URL 编码已删除。现在仅在服务器端进行 JavaScript 编码。 -->
+<a href="javascript:myFunction('<%=ESAPI.encoder().encodeForJavascript(untrustedData)%>', 'test');">点击我</a>
  ...
 <script>
 Function myFunction (url,name) {
-    var encodedURL = ESAPI.encoder().encodeForURL(url);  //URL encoding using client-side scripts
+    var encodedURL = ESAPI.encoder().encodeForURL(url);  // 使用客户端脚本进行 URL 编码
     window.location = encodedURL;
 }
 </script>
 ```
 
-### Inconsistencies of Encoding Libraries
+### 编码库的不一致性
 
-There are a number of open source encoding libraries out there:
+市面上有许多开源编码库：
 
 1. OWASP [ESAPI](https://owasp.org/www-project-enterprise-security-api/)
 2. OWASP [Java Encoder](https://owasp.org/www-project-java-encoder/)
-3. Apache Commons Text [StringEscapeUtils](https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringEscapeUtils.html), replace one from [Apache Commons Lang3](https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/StringEscapeUtils.html)
+3. Apache Commons Text [StringEscapeUtils](https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringEscapeUtils.html)，替换 [Apache Commons Lang3](https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/StringEscapeUtils.html) 中的
 4. [Jtidy](http://jtidy.sourceforge.net/)
-5. Your company's custom implementation.
+5. 公司的自定义实现。
 
-Some work on a denylist while others ignore important characters like "&lt;" and "&gt;".
+有些基于拒绝列表工作，而其他一些则忽略重要字符如 "&lt;" 和 "&gt;"。
 
-Java Encoder is an active project providing supports for HTML, CSS and JavaScript encoding.
+Java Encoder 是一个活跃的项目，提供 HTML、CSS 和 JavaScript 编码支持。
 
-ESAPI is one of the few which works on an allowlist and encodes all non-alphanumeric characters. It is important to use an encoding library that understands which characters can be used to exploit vulnerabilities in their respective contexts. Misconceptions abound related to the proper encoding that is required.
+ESAPI 是少数几个基于允许列表并对所有非字母数字字符进行编码的库之一。使用一个能理解在各自上下文中可用于利用漏洞的字符的编码库非常重要。关于所需的正确编码存在许多误解。
 
-### Encoding Misconceptions
+### 编码误解
 
-Many security training curriculums and papers advocate the blind usage of HTML encoding to resolve XSS.
+许多安全培训课程和论文提倡盲目使用 HTML 编码来解决 XSS。
 
-This logically seems to be prudent advice as the JavaScript parser does not understand HTML encoding.
+从逻辑上看，这似乎是明智的建议，因为 JavaScript 解析器不理解 HTML 编码。
 
-However, if the pages returned from your web application utilize a content type of `text/xhtml` or the file type extension of `*.xhtml` then HTML encoding may not work to mitigate against XSS.
+然而，如果从 Web 应用程序返回的页面使用 `text/xhtml` 内容类型或 `*.xhtml` 文件类型扩展名，则 HTML 编码可能无法缓解 XSS。
 
-For example:
+例如：
 
 ```html
 <script>
@@ -538,9 +371,9 @@ For example:
 </script>
 ```
 
-The HTML encoded value above is still executable. If that isn't enough to keep in mind, you have to remember that encodings are lost when you retrieve them using the value attribute of a DOM element.
+上面的 HTML 编码值仍然是可执行的。如果这还不够让人记住，您还必须记住，当使用 DOM 元素的 value 属性检索编码时，编码会丢失。
 
-Let's look at the sample page and script:
+让我们看看示例页面和脚本：
 
 ```html
 <form name="myForm" ...>
@@ -548,37 +381,37 @@ Let's look at the sample page and script:
  ...
 </form>
 <script>
-  var x = document.myForm.lName.value;  //when the value is retrieved the encoding is reversed
-  document.writeln(x);  //any code passed into lName is now executable.
+  var x = document.myForm.lName.value;  // 检索值时编码被还原
+  document.writeln(x);  // 现在可以执行传入 lName 的任何代码。
 </script>
 ```
 
-Finally there is the problem that certain methods in JavaScript which are usually safe can be unsafe in certain contexts.
+最后，还有一个问题是 JavaScript 中通常安全的某些方法在某些上下文中可能不安全。
 
-### Usually Safe Methods
+### 通常被认为安全的方法
 
-One example of an attribute which is thought to be safe is `innerText`.
+一个被认为安全的属性示例是 `innerText`。
 
-Some papers or guides advocate its use as an alternative to `innerHTML` to mitigate against XSS in `innerHTML`. However, depending on the tag which `innerText` is applied, code can be executed.
+一些论文或指南建议使用它作为缓解 `innerHTML` 中 XSS 的替代方案。然而，根据应用 `innerText` 的标签，代码仍可能被执行。
 
 ```html
 <script>
  var tag = document.createElement("script");
- tag.innerText = "<%=untrustedData%>";  //executes code
+ tag.innerText = "<%=untrustedData%>";  // 执行代码
 </script>
 ```
 
-The `innerText` feature was originally introduced by Internet Explorer, and was formally specified in the HTML standard in 2016 after being adopted by all major browser vendors.
+`innerText` 功能最初由 Internet Explorer 引入，并在 2016 年在所有主要浏览器供应商采用后正式纳入 HTML 标准。
 
-### Detect DOM XSS using variant analysis
+### 使用变体分析检测 DOM XSS
 
-**Vulnerable code:**
+**易受攻击的代码：**
 
-```
+```javascript
 <script>
 var x = location.hash.split("#")[1];
 document.write(x);
 </script>
 ```
 
-Semgrep rule to identify above dom xss [link](https://semgrep.dev/s/we30).
+用于识别上述 DOM XSS 的 Semgrep 规则 [链接](https://semgrep.dev/s/we30)。
