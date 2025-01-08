@@ -1,191 +1,191 @@
-# Cryptographic Storage Cheat Sheet
+# 加密存储备忘录
 
-## Introduction
+## 引言
 
-This article provides a simple model to follow when implementing solutions to protect data at rest.
+本文提供了在实施保护静态数据解决方案时可遵循的简单模型。
 
-Passwords should not be stored using reversible encryption - secure password hashing algorithms should be used instead. The [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md) contains further guidance on storing passwords.
+密码不应使用可逆加密存储 - 应改用安全的密码哈希算法。[密码存储备忘录](Password_Storage_Cheat_Sheet.md)包含有关存储密码的进一步指导。
 
-## Architectural Design
+## 架构设计
 
-The first step in designing any application is to consider the overall architecture of the system, as this will have a huge impact on the technical implementation.
+设计任何应用程序的第一步是考虑系统的整体架构，因为这将对技术实施产生巨大影响。
 
-This process should begin with considering the [threat model](Threat_Modeling_Cheat_Sheet.md) of the application (i.e, who you are trying to protect that data against).
+这个过程应从考虑应用程序的[威胁模型](Threat_Modeling_Cheat_Sheet.md)开始（即，你试图保护数据免受谁的攻击）。
 
-The use of dedicated secret or key management systems can provide an additional layer of security protection, as well as making the management of secrets significantly easier - however it comes at the cost of additional complexity and administrative overhead - so may not be feasible for all applications. Note that many cloud environments provide these services, so these should be taken advantage of where possible. The [Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md) contains further guidance on this topic.
+使用专用的秘密或密钥管理系统可以提供额外的安全保护，并使秘密管理变得更加容易 - 但代价是增加了复杂性和管理开销 - 因此并非对所有应用程序都可行。请注意，许多云环境都提供这些服务，因此应尽可能利用这些服务。[秘密管理速查表](Secrets_Management_Cheat_Sheet.md)包含有关此主题的进一步指导。
 
-### Where to Perform Encryption
+### 在何处执行加密
 
-Encryption can be performed on a number of levels in the application stack, such as:
+加密可以在应用程序堆栈的多个层级执行，例如：
 
-- At the application level.
-- At the database level (e.g, [SQL Server TDE](https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/transparent-data-encryption?view=sql-server-ver15))
-- At the filesystem level (e.g, BitLocker or LUKS)
-- At the hardware level (e.g, encrypted RAID cards or SSDs)
+- 应用程序级别
+- 数据库级别（例如，[SQL Server TDE](https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/transparent-data-encryption?view=sql-server-ver15)）
+- 文件系统级别（例如，BitLocker 或 LUKS）
+- 硬件级别（例如，加密的 RAID 卡或 SSD）
 
-Which layer(s) are most appropriate will depend on the threat model. For example, hardware level encryption is effective at protecting against the physical theft of the server, but will provide no protection if an attacker is able to compromise the server remotely.
+哪些层级最合适将取决于威胁模型。例如，硬件级加密对防止服务器物理盗窃很有效，但如果攻击者能够远程入侵服务器，则无法提供保护。
 
-### Minimise the Storage of Sensitive Information
+### 最小化敏感信息存储
 
-The best way to protect sensitive information is to not store it in the first place. Although this applies to all kinds of information, it is most often applicable to credit card details, as they are highly desirable for attackers, and PCI DSS has such stringent requirements for how they must be stored. Wherever possible, the storage of sensitive information should be avoided.
+保护敏感信息的最佳方法是一开始就不存储它。虽然这适用于所有类型的信息，但最常见的是信用卡详细信息，因为它们对攻击者非常有吸引力，并且 PCI DSS 对其存储方式有严格的要求。在可能的情况下，应避免存储敏感信息。
 
-## Algorithms
+## 算法
 
-For symmetric encryption **AES** with a key that's at least **128 bits** (ideally **256 bits**) and a secure [mode](#cipher-modes) should be used as the preferred algorithm.
+对于对称加密，应使用 **AES**，密钥至少 **128 位**（理想情况下 **256 位**），并使用安全的[模式](#密码模式)。
 
-For asymmetric encryption, use elliptical curve cryptography (ECC) with a secure curve such as **Curve25519** as a preferred algorithm. If ECC is not available and  **RSA** must be used, then ensure that the key is at least **2048 bits**.
+对于非对称加密，使用椭圆曲线密码学（ECC）和安全曲线，如 **Curve25519** 作为首选算法。如果 ECC 不可用且必须使用 **RSA**，则确保密钥至少为 **2048 位**。
 
-Many other symmetric and asymmetric algorithms are available which have their own pros and cons, and they may be better or worse than AES or Curve25519 in specific use cases. When considering these, a number of factors should be taken into account, including:
+还有许多其他对称和非对称算法，它们各有优缺点，在特定用例中可能比 AES 或 Curve25519 更好或更差。在考虑这些算法时，应考虑以下因素：
 
-- Key size.
-- Known attacks and weaknesses of the algorithm.
-- Maturity of the algorithm.
-- Approval by third parties such as [NIST's algorithmic validation program](https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program).
-- Performance (both for encryption and decryption).
-- Quality of the libraries available.
-- Portability of the algorithm (i.e, how widely supported is it).
+- 密钥大小
+- 算法的已知攻击和弱点
+- 算法的成熟度
+- 第三方（如 [NIST 算法验证程序](https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program)）的批准
+- 性能（加密和解密）
+- 可用库的质量
+- 算法的可移植性（即支持程度）
 
-In some cases there may be regulatory requirements that limit the algorithms that can be used, such as [FIPS 140-2](https://csrc.nist.gov/csrc/media/publications/fips/140/2/final/documents/fips1402annexa.pdf) or [PCI DSS](https://www.pcisecuritystandards.org/pci_security/glossary#Strong%20Cryptography).
+在某些情况下，可能有限制可使用算法的监管要求，如 [FIPS 140-2](https://csrc.nist.gov/csrc/media/publications/fips/140/2/final/documents/fips1402annexa.pdf) 或 [PCI DSS](https://www.pcisecuritystandards.org/pci_security/glossary#Strong%20Cryptography)。
 
-### Custom Algorithms
+### 自定义算法
 
-Don't do this.
+不要这样做。
 
-### Cipher Modes
+### 密码模式
 
-There are various [modes](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation) that can be used to allow block ciphers (such as AES) to encrypt arbitrary amounts of data, in the same way that a stream cipher would. These modes have different security and performance characteristics, and a full discussion of them is outside the scope of this cheat sheet. Some of the modes have requirements to generate secure initialisation vectors (IVs) and other attributes, but these should be handled automatically by the library.
+有各种[模式](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation)可用于允许分组密码（如 AES）加密任意数量的数据，就像流密码一样。这些模式具有不同的安全性和性能特征，对它们的全面讨论超出了本速查表的范围。某些模式要求生成安全的初始化向量（IV）和其他属性，但这些应由库自动处理。
 
-Where available, authenticated modes should always be used. These provide guarantees of the integrity and authenticity of the data, as well as confidentiality. The most commonly used authenticated modes are **[GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode)** and **[CCM](https://en.wikipedia.org/wiki/CCM_mode)**, which should be used as a first preference.
+在可用的情况下，应始终使用经过身份验证的模式。这些模式提供数据的完整性和真实性以及机密性的保证。最常用的经过身份验证的模式是 **[GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode)** 和 **[CCM](https://en.wikipedia.org/wiki/CCM_mode)**，应作为首选。
 
-If GCM or CCM are not available, then [CTR](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_%28CTR%29) mode or [CBC](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Block_Chaining_%28CBC%29) mode should be used. As these do not provide any guarantees about the authenticity of the data, separate authentication should be implemented, such as using the [Encrypt-then-MAC](https://en.wikipedia.org/wiki/Authenticated_encryption#Encrypt-then-MAC_%28EtM%29) technique. Care needs to be taken when using this method with [variable length messages](https://en.wikipedia.org/wiki/CBC-MAC#Security_with_fixed_and_variable-length_messages)
+如果 GCM 或 CCM 不可用，则应使用 [CTR](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_%28CTR%29) 模式或 [CBC](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Block_Chaining_%28CBC%29) 模式。由于这些模式不提供关于数据真实性的任何保证，应实施单独的身份验证，例如使用 [Encrypt-then-MAC](https://en.wikipedia.org/wiki/Authenticated_encryption#Encrypt-then-MAC_%28EtM%29) 技术。使用此方法时需要注意[可变长度消息](https://en.wikipedia.org/wiki/CBC-MAC#Security_with_fixed_and_variable-length_messages)。
 
-[ECB](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#ECB) should not be used outside of very specific circumstances.
+[ECB](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#ECB) 不应在非常特定的情况外使用。
 
-### Random Padding
+### 随机填充
 
-For RSA, it is essential to enable Random Padding. Random Padding is also known as OAEP or Optimal Asymmetric Encryption Padding. This class of defense protects against Known Plain Text Attacks by adding randomness at the beginning of the payload.
+对于 RSA，启用随机填充至关重要。随机填充也称为 OAEP 或最优非对称加密填充。这类防御通过在有效载荷开头添加随机性来防止已知明文攻击。
 
-The Padding Schema of [PKCS#1](https://wikipedia.org/wiki/RSA_(cryptosystem)#Padding_schemes) is typically used in this case.
+在这种情况下，通常使用 [PKCS#1](https://wikipedia.org/wiki/RSA_(cryptosystem)#Padding_schemes) 填充方案。
 
-### Secure Random Number Generation
+### 安全随机数生成
 
-Random numbers (or strings) are needed for various security critical functionality, such as generating encryption keys, IVs, session IDs, CSRF tokens or password reset tokens. As such, it is important that these are generated securely, and that it is not possible for an attacker to guess and predict them.
+在各种安全关键功能中需要随机数（或字符串），如生成加密密钥、IV、会话 ID、CSRF 令牌或密码重置令牌。因此，重要的是这些随机数应安全生成，并且攻击者无法猜测和预测它们。
 
-It is generally not possible for computers to generate truly random numbers (without special hardware), so most systems and languages provide two different types of randomness.
+通常，计算机无法生成真正的随机数（没有特殊硬件），因此大多数系统和语言提供两种不同类型的随机性。
 
-Pseudo-Random Number Generators (PRNG) provide low-quality randomness that are much faster, and can be used for non-security related functionality (such as ordering results on a page, or randomising UI elements). However, they **must not** be used for anything security critical, as it is often possible for attackers to guess or predict the output.
+伪随机数生成器（PRNG）提供低质量的随机性，速度更快，可用于非安全相关的功能（如对页面结果排序或随机化 UI 元素）。但是，它们**绝不**能用于任何安全关键功能，因为攻击者通常可以猜测或预测输出。
 
-Cryptographically Secure Pseudo-Random Number Generators (CSPRNG) are designed to produce a much higher quality of randomness (more strictly, a greater amount of entropy), making them safe to use for security-sensitive functionality. However, they are slower and more CPU intensive, can end up blocking in some circumstances when large amounts of random data are requested. As such, if large amounts of non-security related randomness are needed, they may not be appropriate.
+密码学安全伪随机数生成器（CSPRNG）旨在产生更高质量的随机性（更严格地说，是更多的熵），使其可安全用于安全敏感的功能。但是，它们速度较慢，CPU 密集，在请求大量随机数据时可能会阻塞。因此，如果需要大量非安全相关的随机性，它们可能不合适。
 
-The table below shows the recommended algorithms for each language, as well as insecure functions that should not be used.
+下表显示了每种语言推荐的算法，以及不应使用的不安全函数。
 
-| Language    | Unsafe Functions                                                                                                                   | Cryptographically Secure Functions                                                                                                                                                                                                                                                                                                                                         |
-|-------------|------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| C           | `random()`, `rand()`                                                                                                               | [getrandom(2)](http://man7.org/linux/man-pages/man2/getrandom.2.html) |
-| Java        | `Math.random()`, `StrictMath.random()`, `java.util.Random`, `java.util.SplittableRandom`, `java.util.concurrent.ThreadLocalRandom` | [java.security.SecureRandom](https://docs.oracle.com/javase/8/docs/api/java/security/SecureRandom.html), [java.util.UUID.randomUUID()](https://docs.oracle.com/javase/8/docs/api/java/util/UUID.html#randomUUID--) |
-| PHP         | `array_rand()`, `lcg_value()`, `mt_rand()`, `rand()`, `uniqid()`                                                                   | [random_bytes()](https://www.php.net/manual/en/function.random-bytes.php), [Random\Engine\Secure](https://www.php.net/manual/en/class.random-engine-secure.php) in PHP 8, [random_int()](https://www.php.net/manual/en/function.random-int.php) in PHP 7, [openssl_random_pseudo_bytes()](https://www.php.net/manual/en/function.openssl-random-pseudo-bytes.php) in PHP 5 |
-| .NET/C#     | `Random()`                                                                                                                         | [RandomNumberGenerator](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator?view=net-6.0) |
-| Objective-C | `arc4random()`/`arc4random_uniform()` (Uses RC4 Cipher), subclasses of`GKRandomSource`, rand(), random()                           | [SecRandomCopyBytes](https://developer.apple.com/documentation/security/1399291-secrandomcopybytes?language=objc) |
-| Python      | `random()`                                                                                                                         | [secrets()](https://docs.python.org/3/library/secrets.html#module-secrets) |
-| Ruby        | `rand()`, `Random`                                                                                                                 | [SecureRandom](https://ruby-doc.org/stdlib-2.5.1/libdoc/securerandom/rdoc/SecureRandom.html) |
-| Go          | `rand` using `math/rand` package                                                                                                   | [crypto.rand](https://golang.org/pkg/crypto/rand/) package |
-| Rust        | `rand::prng::XorShiftRng`                                                                                                          | [rand::prng::chacha::ChaChaRng](https://docs.rs/rand/0.5.0/rand/prng/chacha/struct.ChaChaRng.html) and the rest of the Rust library [CSPRNGs.](https://docs.rs/rand/0.5.0/rand/prng/index.html#cryptographically-secure-pseudo-random-number-generators-csprngs) |
-| Node.js     | `Math.random()`                                                                                                                    | [crypto.randomBytes()](https://nodejs.org/api/crypto.html#cryptorandombytessize-callback), [crypto.randomInt()](https://nodejs.org/api/crypto.html#cryptorandomintmin-max-callback), [crypto.randomUUID()](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions) |
+| 语言       | 不安全函数                                                                                                                         | 密码学安全函数                                                                                                                                                                                                                                                                                                                                                             |
+|------------|------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| C          | `random()`, `rand()`                                                                                                               | [getrandom(2)](http://man7.org/linux/man-pages/man2/getrandom.2.html) |
+| Java       | `Math.random()`, `StrictMath.random()`, `java.util.Random`, `java.util.SplittableRandom`, `java.util.concurrent.ThreadLocalRandom` | [java.security.SecureRandom](https://docs.oracle.com/javase/8/docs/api/java/security/SecureRandom.html), [java.util.UUID.randomUUID()](https://docs.oracle.com/javase/8/docs/api/java/util/UUID.html#randomUUID--) |
+| PHP        | `array_rand()`, `lcg_value()`, `mt_rand()`, `rand()`, `uniqid()`                                                                   | [random_bytes()](https://www.php.net/manual/en/function.random-bytes.php), [Random\Engine\Secure](https://www.php.net/manual/en/class.random-engine-secure.php) in PHP 8, [random_int()](https://www.php.net/manual/en/function.random-int.php) in PHP 7, [openssl_random_pseudo_bytes()](https://www.php.net/manual/en/function.openssl-random-pseudo-bytes.php) in PHP 5 |
+| .NET/C#    | `Random()`                                                                                                                         | [RandomNumberGenerator](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator?view=net-6.0) |
+| Objective-C| `arc4random()`/`arc4random_uniform()` (使用 RC4 密码), `GKRandomSource` 的子类, `rand()`, `random()`                                | [SecRandomCopyBytes](https://developer.apple.com/documentation/security/1399291-secrandomcopybytes?language=objc) |
+| Python     | `random()`                                                                                                                         | [secrets()](https://docs.python.org/3/library/secrets.html#module-secrets) |
+| Ruby       | `rand()`, `Random`                                                                                                                 | [SecureRandom](https://ruby-doc.org/stdlib-2.5.1/libdoc/securerandom/rdoc/SecureRandom.html) |
+| Go         | 使用 `math/rand` 包的 `rand`                                                                                                       | [crypto.rand](https://golang.org/pkg/crypto/rand/) 包 |
+| Rust       | `rand::prng::XorShiftRng`                                                                                                          | [rand::prng::chacha::ChaChaRng](https://docs.rs/rand/0.5.0/rand/prng/chacha/struct.ChaChaRng.html) 和 Rust 库的其余 [CSPRNGs](https://docs.rs/rand/0.5.0/rand/prng/index.html#cryptographically-secure-pseudo-random-number-generators-csprngs) |
+| Node.js    | `Math.random()`                                                                                                                    | [crypto.randomBytes()](https://nodejs.org/api/crypto.html#cryptorandombytessize-callback), [crypto.randomInt()](https://nodejs.org/api/crypto.html#cryptorandomintmin-max-callback), [crypto.randomUUID()](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions) |
 
-#### UUIDs and GUIDs
+#### UUID 和 GUID
 
-Universally unique identifiers (UUIDs or GUIDs) are sometimes used as a quick way to generate random strings. Although they can provide a reasonable source of randomness, this will depend on the [type or version](https://en.wikipedia.org/wiki/Universally_unique_identifier#Versions) of the UUID that is created.
+通用唯一标识符（UUID 或 GUID）有时被用作快速生成随机字符串的方法。尽管它们可以提供合理的随机性来源，但这取决于所创建的 UUID 的[类型或版本](https://en.wikipedia.org/wiki/Universally_unique_identifier#Versions)。
 
-Specifically, version 1 UUIDs are comprised of a high precision timestamp and the MAC address of the system that generated them, so are **not random** (although they may be hard to guess, given the timestamp is to the nearest 100ns). Type 4 UUIDs are randomly generated, although whether this is done using a CSPRNG will depend on the implementation. Unless this is known to be secure in the specific language or framework, the randomness of UUIDs should not be relied upon.
+具体来说，第 1 版 UUID 由高精度时间戳和生成它们的系统的 MAC 地址组成，因此**不是随机的**（尽管考虑到时间戳精确到最近的 100ns，可能很难猜测）。第 4 版 UUID 是随机生成的，尽管这是否使用 CSPRNG 取决于具体实现。除非在特定语言或框架中已知是安全的，否则不应依赖 UUID 的随机性。
 
-### Defence in Depth
+### 纵深防御
 
-Applications should be designed to still be secure even if cryptographic controls fail. Any information that is stored in an encrypted form should also be protected by additional layers of security. Application should also not rely on the security of encrypted URL parameters, and should enforce strong access control to prevent unauthorised access to information.
+即使加密控制失败，应用程序也应设计为仍然安全。任何以加密形式存储的信息都应受到额外的安全层保护。应用程序也不应依赖加密 URL 参数的安全性，并应强制执行严格的访问控制以防止未经授权访问信息。
 
-## Key Management
+## 密钥管理
 
-### Processes
+### 流程
 
-Formal processes should be implemented (and tested) to cover all aspects of key management, including:
+应实施（并测试）正式流程，涵盖密钥管理的所有方面，包括：
 
-- Generating and storing new keys.
-- Distributing keys to the required parties.
-- Deploying keys to application servers.
-- Rotating and decommissioning old keys
+- 生成和存储新密钥
+- 将密钥分发给所需方
+- 将密钥部署到应用程序服务器
+- 轮换和退役旧密钥
 
-### Key Generation
+### 密钥生成
 
-Keys should be randomly generated using a cryptographically secure function, such as those discussed in the [Secure Random Number Generation](#secure-random-number-generation) section. Keys **should not** be based on common words or phrases, or on "random" characters generated by mashing the keyboard.
+应使用密码学安全函数随机生成密钥，如[安全随机数生成](#安全随机数生成)部分所讨论。密钥**不应**基于常用词或短语，或通过乱敲键盘生成的"随机"字符。
 
-Where multiple keys are used (such as data separate data-encrypting and key-encrypting keys), they should be fully independent from each other.
+在使用多个密钥（如单独的数据加密密钥和密钥加密密钥）时，它们应完全彼此独立。
 
-### Key Lifetimes and Rotation
+### 密钥生命周期和轮换
 
-Encryption keys should be changed (or rotated) based on a number of different criteria:
+应根据多个不同标准更改（或轮换）加密密钥：
 
-- If the previous key is known (or suspected) to have been compromised.
-    - This could also be caused by a someone who had access to the key leaving the organisation.
-- After a specified period of time has elapsed (known as the cryptoperiod).
-    - There are many factors that could affect what an appropriate cryptoperiod is, including the size of the key, the sensitivity of the data, and the threat model of the system. See section 5.3 of [NIST SP 800-57](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r4.pdf) for further guidance.
-- After the key has been used to encrypt a specific amount of data.
-    - This would typically be `2^35` bytes (~34GB) for 64-bit keys and `2^68` bytes (~295 exabytes) for 128-bit block size.
-- If there is a significant change to the security provided by the algorithm (such as a new attack being announced).
+- 如果先前的密钥已知（或怀疑）被泄露
+    - 这也可能由拥有密钥访问权的人离开组织引起
+- 经过指定的时间段（称为加密周期）
+    - 影响适当加密周期的因素很多，包括密钥大小、数据敏感性和系统的威胁模型。有关进一步指导，请参见 [NIST SP 800-57](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r4.pdf) 第 5.3 节
+- 在使用密钥加密特定数量的数据后
+    - 对于 64 位密钥通常是 `2^35` 字节（~34GB），对于 128 位块大小则是 `2^68` 字节（~295 艾字节）
+- 如果算法提供的安全性发生重大变化（如宣布新的攻击）
 
-Once one of these criteria have been met, a new key should be generated and used for encrypting any new data. There are two main approaches for how existing data that was encrypted with the old key(s) should be handled:
+满足这些标准之一后，应生成新密钥并用于加密任何新数据。对于如何处理使用旧密钥加密的现有数据，主要有两种方法：
 
-1. Decrypting it and re-encrypting it with the new key.
-2. Marking each item with the ID of the key that was used to encrypt it, and storing multiple keys to allow the old data to be decrypted.
+1. 解密并使用新密钥重新加密。
+2. 使用加密该数据的密钥的 ID 标记每个项目，并存储多个密钥以允许解密旧数据。
 
-The first option should generally be preferred, as it greatly simplifies both the application code and key management processes; however, it may not always be feasible. Note that old keys should generally be stored for a certain period after they have been retired, in case old backups of copies of the data need to be decrypted.
+通常应优先选择第一种方案，因为它极大地简化了应用程序代码和密钥管理流程；但并非总是可行。请注意，通常应在退役后保留旧密钥一段时间，以防需要解密旧备份或数据副本。
 
-It is important that the code and processes required to rotate a key are in place **before** they are required, so that keys can be quickly rotated in the event of a compromise. Additionally, processes should also be implemented to allow the encryption algorithm or library to be changed, in case a new vulnerability is found in the algorithm or implementation.
+重要的是，在需要之前就已准备好用于轮换密钥的代码和流程，以便在发生泄露时可以快速轮换密钥。此外，还应实施流程以允许更改加密算法或库，以防在算法或实现中发现新的漏洞。
 
-## Key Storage
+## 密钥存储
 
-Securely storing cryptographic keys is one of the hardest problems to solve, as the application always needs to have some level of access to the keys in order to decrypt the data. While it may not be possible to fully protect the keys from an attacker who has fully compromised the application, a number of steps can be taken to make it harder for them to obtain the keys.
+安全存储加密密钥是最难解决的问题之一，因为应用程序总是需要某种程度的密钥访问权限才能解密数据。虽然可能无法完全保护已完全入侵应用程序的攻击者获取密钥，但可以采取多个步骤使其更难获取密钥。
 
-Where available, the secure storage mechanisms provided by the operating system, framework or cloud service provider should be used. These include:
+在可用的情况下，应使用操作系统、框架或云服务提供商提供的安全存储机制。这些包括：
 
-- A physical Hardware Security Module (HSM).
-- A virtual HSM.
-- Key vaults such as [Amazon KMS](https://aws.amazon.com/kms/) or [Azure Key Vault](https://azure.microsoft.com/en-gb/services/key-vault/).
-- An external secrets management service such as [Conjur](https://github.com/cyberark/conjur) or [HashiCorp Vault](https://github.com/hashicorp/vault).
-- Secure storage APIs provided by the [ProtectedData](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.protecteddata?redirectedfrom=MSDN&view=netframework-4.8) class in the .NET framework.
+- 物理硬件安全模块（HSM）
+- 虚拟 HSM
+- 密钥保险库，如 [Amazon KMS](https://aws.amazon.com/kms/) 或 [Azure Key Vault](https://azure.microsoft.com/en-gb/services/key-vault/)
+- 外部秘密管理服务，如 [Conjur](https://github.com/cyberark/conjur) 或 [HashiCorp Vault](https://github.com/hashicorp/vault)
+- .NET 框架中 [ProtectedData](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.protecteddata?redirectedfrom=MSDN&view=netframework-4.8) 类提供的安全存储 API
 
-There are many advantages to using these types of secure storage over simply putting keys in configuration files. The specifics of these will vary depending on the solution used, but they include:
+与简单地将密钥放在配置文件中相比，使用这些类型的安全存储有许多优势。具体优势取决于所使用的解决方案，但包括：
 
-- Central management of keys, especially in containerised environments.
-- Easy key rotation and replacement.
-- Secure key generation.
-- Simplifying compliance with regulatory standards such as FIPS 140 or PCI DSS.
-- Making it harder for an attacker to export or steal keys.
+- 在容器化环境中集中管理密钥
+- 轻松轮换和替换密钥
+- 安全的密钥生成
+- 简化遵守 FIPS 140 或 PCI DSS 等监管标准
+- 使攻击者更难导出或窃取密钥
 
-In some cases none of these will be available, such as in a shared hosting environment, meaning that it is not possible to obtain a high degree of protection for any encryption keys. However, the following basic rules can still be followed:
+在某些情况下，如共享托管环境，这些方法都不可用，意味着无法为任何加密密钥获得高度保护。但仍可遵循以下基本规则：
 
-- Do not hard-code keys into the application source code.
-- Do not check keys into version control systems.
-- Protect the configuration files containing the keys with restrictive permissions.
-- Avoid storing keys in environment variables, as these can be accidentally exposed through functions such as [phpinfo()](https://www.php.net/manual/en/function.phpinfo.php) or through the `/proc/self/environ` file.
+- 不要将密钥硬编码到应用程序源代码中
+- 不要将密钥签入版本控制系统
+- 使用限制性权限保护包含密钥的配置文件
+- 避免将密钥存储在环境变量中，因为它们可能通过 [phpinfo()](https://www.php.net/manual/en/function.phpinfo.php) 等函数或 `/proc/self/environ` 文件意外暴露
 
-The [Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md) provides more details on securely storing secrets.
+[秘密管理速查表](Secrets_Management_Cheat_Sheet.md)提供了有关安全存储秘密的更多详细信息。
 
-### Separation of Keys and Data
+### 密钥和数据分离
 
-Where possible, encryption keys should be stored in a separate location from encrypted data. For example, if the data is stored in a database, the keys should be stored in the filesystem. This means that if an attacker only has access to one of these (for example through directory traversal or SQL injection), they cannot access both the keys and the data.
+在可能的情况下，加密密钥应存储在与加密数据不同的位置。例如，如果数据存储在数据库中，则密钥应存储在文件系统中。这意味着如果攻击者只能访问其中一个（例如通过目录遍历或 SQL 注入），他们就无法同时访问密钥和数据。
 
-Depending on the architecture of the environment, it may be possible to store the keys and data on separate systems, which would provide a greater degree of isolation.
+根据环境架构，可能可以将密钥和数据存储在不同的系统上，这将提供更高程度的隔离。
 
-### Encrypting Stored Keys
+### 加密存储的密钥
 
-Where possible, encryption keys should themselves be stored in an encrypted form. At least two separate keys are required for this:
+在可能的情况下，加密密钥本身应以加密形式存储。至少需要两个单独的密钥：
 
-- The Data Encryption Key (DEK) is used to encrypt the data.
-- The Key Encryption Key (KEK) is used to encrypt the DEK.
+- 数据加密密钥（DEK）用于加密数据
+- 密钥加密密钥（KEK）用于加密 DEK
 
-For this to be effective, the KEK must be stored separately from the DEK. The encrypted DEK can be stored with the data, but will only be usable if an attacker is able to also obtain the KEK, which is stored on another system.
+要使其有效，KEK 必须与 DEK 分开存储。加密的 DEK 可以与数据一起存储，但只有在攻击者能够同时获取 KEK（存储在另一个系统上）时才可用。
 
-The KEK should also be at least as strong as the DEK. The [envelope encryption](https://cloud.google.com/kms/docs/envelope-encryption) guidance from Google contains further details on how to manage DEKs and KEKs.
+KEK 应至少与 DEK 一样强。Google 的[信封加密](https://cloud.google.com/kms/docs/envelope-encryption)指南包含有关如何管理 DEK 和 KEK 的更多详细信息。
 
-In simpler application architectures (such as shared hosting environments) where the KEK and DEK cannot be stored separately, there is limited value to this approach, as an attacker is likely to be able to obtain both of the keys at the same time. However, it can provide an additional barrier to unskilled attackers.
+在更简单的应用程序架构（如共享托管环境）中，无法单独存储 KEK 和 DEK，这种方法的价值有限，因为攻击者可能同时获取两个密钥。但是，它可以为非熟练的攻击者提供额外的屏障。
 
-A key derivation function (KDF) could be used to generate a KEK from user-supplied input (such a passphrase), which would then be used to encrypt a randomly generated DEK. This allows the KEK to be easily changed (when the user changes their passphrase), without needing to re-encrypt the data (as the DEK remains the same).
+可以使用密钥派生函数（KDF）从用户提供的输入（如密码）生成 KEK，然后用于加密随机生成的 DEK。这允许 KEK 易于更改（当用户更改其密码时），而无需重新加密数据（因为 DEK 保持不变）。
