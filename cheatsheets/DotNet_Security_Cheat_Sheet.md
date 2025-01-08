@@ -1,62 +1,59 @@
-# DotNet Security Cheat Sheet
+# .NET 安全备忘录
 
-## Introduction
+## 简介
 
-This page intends to provide quick basic .NET security tips for developers.
+本页面旨在为开发者提供快速的 .NET 安全基本技巧。
 
-### The .NET Framework
+### .NET Framework
 
-The .NET Framework is Microsoft's principal platform for enterprise development. It is the supporting API for ASP.NET, Windows Desktop applications, Windows Communication Foundation services, SharePoint, Visual Studio Tools for Office and other technologies.
+.NET Framework 是微软企业开发的主要平台。它是 ASP.NET、Windows 桌面应用程序、Windows Communication Foundation 服务、SharePoint、Visual Studio Office 工具和其他技术的支持 API。
 
-The .NET Framework constitutes a collection of APIs that facilitate the usage of an advanced type system, managing data, graphics, networking, file operations, and more - essentially covering the vast majority of requirements for developing enterprise applications within the Microsoft ecosystem. It is a nearly ubiquitous library that is strongly named and versioned at the assembly level.
+.NET Framework 由一系列 API 组成，便于使用高级类型系统、管理数据、图形、网络、文件操作等，基本涵盖了在微软生态系统中开发企业应用程序的绝大多数需求。它是一个几乎无处不在的库，在程序集级别具有强名称和版本控制。
 
-### Updating the Framework
+### 更新框架
 
-The .NET Framework is kept up-to-date by Microsoft with the Windows Update service. Developers do not normally need to run separate updates to the Framework. Windows Update can be accessed at [Windows Update](http://windowsupdate.microsoft.com/) or from the Windows Update program on a Windows computer.
+.NET Framework 由微软通过 Windows Update 服务保持最新。开发者通常不需要单独运行框架更新。可以通过 [Windows Update](http://windowsupdate.microsoft.com/) 或 Windows 计算机上的 Windows Update 程序访问。
 
-Individual frameworks can be kept up to date using [NuGet](https://docs.microsoft.com/en-us/nuget/). As Visual Studio prompts for updates, build it into your lifecycle.
+可以使用 [NuGet](https://docs.microsoft.com/en-us/nuget/) 保持单个框架最新。随着 Visual Studio 提示更新，将其纳入生命周期。
 
-Remember that third-party libraries have to be updated separately and not all of them use NuGet. ELMAH for instance, requires a separate update effort.
+请记住，第三方库需要单独更新，并非所有库都使用 NuGet。例如，ELMAH 需要单独的更新工作。
 
-### Security Announcements
+### 安全公告
 
-Receive security notifications by selecting the "Watch" button at the following repositories:
+通过在以下仓库选择"Watch"按钮来接收安全通知：
 
-- [.NET Core Security Announcements](https://github.com/dotnet/announcements/issues?q=is%3Aopen+is%3Aissue+label%3ASecurity)
-- [ASP.NET Core & Entity Framework Core Security Announcements](https://github.com/aspnet/Announcements/issues?q=is%3Aopen+is%3Aissue+label%3ASecurity)
+- [.NET Core 安全公告](https://github.com/dotnet/announcements/issues?q=is%3Aopen+is%3Aissue+label%3ASecurity)
+- [ASP.NET Core & Entity Framework Core 安全公告](https://github.com/aspnet/Announcements/issues?q=is%3Aopen+is%3Aissue+label%3ASecurity)
 
-## .NET General Guidance
+## .NET 通用指南
 
-This section contains general guidance for .NET applications.
-This applies to all .NET applications, including ASP.NET, WPF, WinForms, and others.
+本节包含 .NET 应用程序的通用指南。
+这适用于所有 .NET 应用程序，包括 ASP.NET、WPF、WinForms 等。
 
-The OWASP Top 10 lists the most prevalent and dangerous threats to web security in the world today and is reviewed every few years
-and updated with the latest threat data. This section of the cheat sheet is based on this list.
-Your approach to securing your web application should be to start at the top threat A1 below and work down;
-this will ensure that any time spent on security will be spent most effectively and
-cover the top threats first and lesser threats afterwards. After covering the Top 10 it is generally advisable
-to assess for other threats or get a professionally completed Penetration Test.
+OWASP Top 10 列出了当今世界上对 Web 安全最普遍和最危险的威胁，每隔几年就会被审查和更新。本备忘录基于这个列表。
+保护 Web 应用程序的方法应该从下面的 A1 顶级威胁开始，逐步向下；
+这将确保在安全方面花费的任何时间都是最有效的，首先覆盖最重要的威胁，然后再处理较小的威胁。覆盖 Top 10 后，通常建议评估其他威胁或进行专业的渗透测试。
 
-### A01 Broken Access Control
+### A01 访问控制失效
 
-#### Weak Account management
+#### 弱账户管理
 
-Ensure cookies are sent with the HttpOnly flag set to prevent client side scripts from accessing the cookie:
+确保 Cookie 设置了 HttpOnly 标志，以防止客户端脚本访问 Cookie：
 
 ```csharp
-CookieHttpOnly = true,
+CookieHttpOnly = true,
 ```
 
-Reduce the time period a session can be stolen in by reducing session timeout and removing sliding expiration:
+通过减少会话超时时间和删除滑动过期来缩短会话可被窃取的时间：
 
 ```csharp
-ExpireTimeSpan = TimeSpan.FromMinutes(60),
-SlidingExpiration = false
+ExpireTimeSpan = TimeSpan.FromMinutes(60),
+SlidingExpiration = false
 ```
 
-See [here](https://github.com/johnstaveley/SecurityEssentials/blob/master/SecurityEssentials/App_Start/Startup.Auth.cs) for an example of a full startup code snippet.
+请参见[此处](https://github.com/johnstaveley/SecurityEssentials/blob/master/SecurityEssentials/App_Start/Startup.Auth.cs)获取完整的启动代码片段示例。
 
-Ensure cookies are sent over HTTPS in production. This should be enforced in the config transforms:
+确保在生产环境中通过 HTTPS 发送 Cookie。这应在配置转换中强制执行：
 
 ```xml
 <httpCookies requireSSL="true" />
@@ -65,121 +62,114 @@ Ensure cookies are sent over HTTPS in production. This should be enforced in the
 </authentication>
 ```
 
-Protect LogOn, Registration and password reset methods against brute force attacks by throttling requests (see code below). Consider also using ReCaptcha.
+通过限制请求来保护登录、注册和密码重置方法，防止暴力攻击（见下面的代码）。还可以考虑使用 ReCaptcha。
 
 ```csharp
 [HttpPost]
 [AllowAnonymous]
 [ValidateAntiForgeryToken]
 [AllowXRequestsEveryXSecondsAttribute(Name = "LogOn",
-Message = "You have performed this action more than {x} times in the last {n} seconds.",
+Message = "您在最近 {n} 秒内执行此操作超过 {x} 次。",
 Requests = 3, Seconds = 60)]
-public async Task<ActionResult> LogOn(LogOnViewModel model, string returnUrl)
+public async Task<ActionResult> LogOn(LogOnViewModel model, string returnUrl)
 ```
 
-DO NOT: Roll your own authentication or session management. Use the one provided by .NET.
+禁止：自行开发身份验证或会话管理。使用 .NET 提供的方法。
 
-DO NOT: Tell someone if the account exists on LogOn, Registration or Password reset. Say something like 'Either the username or password was incorrect', or 'If this account exists then a reset token will be sent to the registered email address'. This protects against account enumeration.
+禁止：在登录、注册或密码重置时告知账户是否存在。说类似"用户名或密码不正确"，或"如果此账户存在，重置令牌将发送到注册的电子邮件地址"。这可以防止账户枚举。
 
-The feedback to the user should be identical whether or not the account exists, both in terms of content and behavior. E.g., if the response takes 50% longer when the account is real then membership information can be guessed and tested.
+无论账户是否存在，用户反馈都应该相同，包括内容和行为。例如，如果响应在账户真实存在时耗时 50% 更长，则可以猜测和测试成员信息。
 
-#### Missing function-level access control
+#### 缺少功能级访问控制
 
-DO: Authorize users on all externally facing endpoints. The .NET framework has many ways to authorize a user, use them at method level:
+执行：在所有面向外部的端点上授权用户。.NET 框架有多种授权用户的方法，在方法级别使用：
 
 ```csharp
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
 [HttpGet]
-public ActionResult Index(int page = 1)
+public ActionResult Index(int page = 1)
 ```
 
-or better yet, at controller level:
+或更好的是，在控制器级别：
 
 ```csharp
 [Authorize]
-public class UserController
+public class UserController
 ```
 
-You can also check roles in code using identity features in .net: `System.Web.Security.Roles.IsUserInRole(userName, roleName)`
+还可以使用 .NET 的身份特性在代码中检查角色：`System.Web.Security.Roles.IsUserInRole(userName, roleName)`
 
-You can find more information in the [Authorization Cheat Sheet](Authorization_Cheat_Sheet.md) and
-[Authorization Testing Automation Cheat Sheet](Authorization_Testing_Automation_Cheat_Sheet.md).
+可以在[授权备忘录](Authorization_Cheat_Sheet.md)和[授权测试自动化备忘录](Authorization_Testing_Automation_Cheat_Sheet.md)中找到更多信息。
 
-#### Insecure Direct object references
+#### 不安全的直接对象引用
 
-When you have a resource (object) which can be accessed by a reference (in the sample below this is the `id`), you need to ensure that the user is intended to have access to that resource.
+当有一个可以通过引用访问的资源（对象）时（在下面的示例中是 `id`），需要确保用户intended 访问该资源。
 
 ```csharp
-// Insecure
-public ActionResult Edit(int id)
+// 不安全
+public ActionResult Edit(int id)
 {
-  var user = _context.Users.FirstOrDefault(e => e.Id == id);
-  return View("Details", new UserViewModel(user);
+  var user = _context.Users.FirstOrDefault(e => e.Id == id);
+  return View("Details", new UserViewModel(user);
 }
 
-// Secure
-public ActionResult Edit(int id)
+// 安全
+public ActionResult Edit(int id)
 {
-  var user = _context.Users.FirstOrDefault(e => e.Id == id);
-  // Establish user has right to edit the details
-  if (user.Id != _userIdentity.GetUserId())
-  {
-        HandleErrorInfo error = new HandleErrorInfo(
-            new Exception("INFO: You do not have permission to edit these details"));
-        return View("Error", error);
-  }
-  return View("Edit", new UserViewModel(user);
+  var user = _context.Users.FirstOrDefault(e => e.Id == id);
+  // 确认用户有权编辑这些详细信息
+  if (user.Id != _userIdentity.GetUserId())
+  {
+        HandleErrorInfo error = new HandleErrorInfo(
+            new Exception("提示：您没有权限编辑这些详细信息"));
+        return View("Error", error);
+  }
+  return View("Edit", new UserViewModel(user);
 }
 ```
 
-More information can be found in the [Insecure Direct Object Reference Prevention Cheat Sheet](Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.md).
+更多信息可以在[不安全直接对象引用预防备忘录](Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.md)中找到。
 
-### A02 Cryptographic Failures
+### A02 加密失败
 
-#### General cryptography guidance
+#### 常规加密指南
 
-- **Never, ever write your own cryptographic functions.**
-- Wherever possible, try and avoid writing any cryptographic code at all. Instead try and either use pre-existing secrets management solutions or the secret management solution provided by your cloud provider. For more information, see the [OWASP Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md).
-- If you cannot use a pre-existing secrets management solution, try and use a trusted and well known implementation library rather than using the libraries built into .NET as it is far too easy to make cryptographic errors with them.
-- Make sure your application or protocol can easily support a future change of cryptographic algorithms.
+- **绝不要编写自己的加密函数。**
+- 尽可能避免编写任何加密代码。相反，尝试使用现有的秘密管理解决方案或云提供商提供的秘密管理解决方案。更多信息请参见 [OWASP 秘密管理备忘录](Secrets_Management_Cheat_Sheet.md)。
+- 如果无法使用现有的秘密管理解决方案，请尝试使用知名可信的实现库，而不是使用内置在 .NET 中的库，因为使用内置库很容易犯加密错误。
+- 确保您的应用程序或协议可以轻松支持未来更改加密算法。
 
-#### Hashing
+#### 哈希
 
-DO: Use a strong hashing algorithm.
+执行：使用强哈希算法。
 
-- In .NET (both Framework and Core), the strongest hashing algorithm for general hashing requirements is
-  [System.Security.Cryptography.SHA512](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha512).
-- In .NET Framework 4.6 and earlier, the strongest algorithm for password hashing is PBKDF2, implemented as
-  [System.Security.Cryptography.Rfc2898DeriveBytes](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.rfc2898derivebytes).
-- In .NET Framework 4.6.1 and later and .NET Core, the strongest algorithm for password hashing is PBKDF2, implemented as
-  [Microsoft.AspNetCore.Cryptography.KeyDerivation.Pbkdf2](https://docs.microsoft.com/en-us/aspnet/core/security/data-protection/consumer-apis/password-hashing)
-  which has several significant advantages over `Rfc2898DeriveBytes`.
-- When using a hashing function to hash non-unique inputs such as passwords, use a salt value added to the original value before hashing.
-- Refer to the [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md) for more information.
+- 在 .NET（Framework 和 Core），对于常规哈希需求，最强的哈希算法是 [System.Security.Cryptography.SHA512](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha512)。
+- 在 .NET Framework 4.6 及更早版本中，密码哈希的最强算法是 PBKDF2，实现为 [System.Security.Cryptography.Rfc2898DeriveBytes](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.rfc2898derivebytes)。
+- 在 .NET Framework 4.6.1 及更高版本和 .NET Core 中，密码哈希的最强算法是 PBKDF2，实现为 [Microsoft.AspNetCore.Cryptography.KeyDerivation.Pbkdf2](https://docs.microsoft.com/en-us/aspnet/core/security/data-protection/consumer-apis/password-hashing)，相比 `Rfc2898DeriveBytes` 有几个显著优势。
+- 在使用哈希函数哈希非唯一输入（如密码）时，在原始值哈希之前添加盐值。
+- 更多信息请参见[密码存储备忘录](Password_Storage_Cheat_Sheet.md)。
 
-#### Passwords
+#### 密码
 
-DO: Enforce passwords with a minimum complexity that will survive a dictionary attack; i.e. longer passwords that use the full character set (numbers, symbols and letters) to increase entropy.
+执行：强制使用能够抵御字典攻击的最低复杂度密码；即使用完整字符集（数字、符号和字母）的更长密码以增加熵。
 
-#### Encryption
+#### 加密
 
-DO: Use a strong encryption algorithm such as AES-512 where personally identifiable data needs to be restored to it's original format.
+执行：对需要恢复为原始格式的个人可识别数据使用强加密算法，如 AES-512。
 
-DO: Protect encryption keys more than any other asset. Find more information about storing encryption keys at rest in the
-  [Key Management Cheat Sheet](Key_Management_Cheat_Sheet.md#storage).
+执行：保护加密密钥比保护任何其他资产更重要。有关在静态存储加密密钥的更多信息，请参见[密钥管理备忘录](Key_Management_Cheat_Sheet.md#storage)。
 
-DO: Use TLS 1.2+ for your entire site. Get a free certificate [LetsEncrypt.org](https://letsencrypt.org/) and automate renewals.
+执行：为整个站点使用 TLS 1.2+。获取免费证书 [LetsEncrypt.org](https://letsencrypt.org/) 并自动续期。
 
-DO NOT: [Allow SSL, this is now obsolete](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices).
+禁止：[允许 SSL，这已经过时](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices)。
 
-DO: Have a strong TLS policy (see [SSL Best Practices](https://www.ssllabs.com/projects/best-practices/index.html)), use TLS 1.2+ wherever possible. Then check the configuration using [SSL Test](https://www.ssllabs.com/ssltest/) or [TestSSL](https://testssl.sh/).
+执行：制定强大的 TLS 策略（参见 [SSL 最佳实践](https://www.ssllabs.com/projects/best-practices/index.html)），尽可能使用 TLS 1.2+。然后使用 [SSL 测试](https://www.ssllabs.com/ssltest/) 或 [TestSSL](https://testssl.sh/) 检查配置。
 
-More information on Transport Layer Protection can be found in the
-[Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md).
+传输层保护的更多信息可以在[传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)中找到。
 
-DO: Ensure headers are not disclosing information about your application. See [HttpHeaders.cs](https://github.com/johnstaveley/SecurityEssentials/blob/master/SecurityEssentials/Core/HttpHeaders.cs), [Dionach StripHeaders](https://github.com/Dionach/StripHeaders/), disable via `web.config` or [Startup.cs](https://medium.com/bugbountywriteup/security-headers-1c770105940b).
+执行：确保标头不会泄露关于应用程序的信息。参见 [HttpHeaders.cs](https://github.com/johnstaveley/SecurityEssentials/blob/master/SecurityEssentials/Core/HttpHeaders.cs)、[Dionach StripHeaders](https://github.com/Dionach/StripHeaders/)，通过 `web.config` 或 [Startup.cs](https://medium.com/bugbountywriteup/security-headers-1c770105940b) 禁用。
 
-e.g Web.config
+例如 Web.config：
 
 ```xml
 <system.web>
@@ -201,9 +191,9 @@ e.g Web.config
 </system.webServer>
 ```
 
-e.g Startup.cs
+例如 Startup.cs：
 
-``` csharp
+```csharp
 app.UseHsts(hsts => hsts.MaxAge(365).IncludeSubdomains());
 app.UseXContentTypeOptions();
 app.UseReferrerPolicy(opts => opts.NoReferrer());
@@ -222,79 +212,74 @@ app.UseCsp(opts => opts
  );
 ```
 
-More information about headers can be found at the [OWASP Secure Headers Project](https://owasp.org/www-project-secure-headers/).
+有关标头的更多信息可以在 [OWASP 安全标头项目](https://owasp.org/www-project-secure-headers/)中找到。
 
-#### Encryption for storage
+#### 存储加密
 
-- Use the [Windows Data Protection API (DPAPI)](https://docs.microsoft.com/en-us/dotnet/standard/security/how-to-use-data-protection) for secure local storage of sensitive data.
-- Where DPAPI cannot be used, follow the algorithm guidance in the [OWASP Cryptographic Storage Cheat Sheet](Cryptographic_Storage_Cheat_Sheet.md#algorithms).
+- 对敏感数据的安全本地存储使用 [Windows 数据保护 API (DPAPI)](https://docs.microsoft.com/en-us/dotnet/standard/security/how-to-use-data-protection)。
+- 无法使用 DPAPI 时，遵循 [OWASP 加密存储备忘录](Cryptographic_Storage_Cheat_Sheet.md#algorithms)中的算法指南。
 
-The following code snippet shows an example of using AES-GCM to perform encryption/decryption of data. It is strongly recommended to have a cryptography expert review your final design and code, as even the most trivial error can severely weaken your encryption.
+下面的代码片段展示了使用 AES-GCM 执行数据加密/解密的示例。强烈建议让密码学专家审查您的最终设计和代码，因为即使是最微不足道的错误也可能严重削弱您的加密。
 
-The code is based on example from here: [https://www.scottbrady91.com/c-sharp/aes-gcm-dotnet](https://www.scottbrady91.com/c-sharp/aes-gcm-dotnet)
+代码基于此示例：[https://www.scottbrady91.com/c-sharp/aes-gcm-dotnet](https://www.scottbrady91.com/c-sharp/aes-gcm-dotnet)
 
-A few constraints/pitfalls with this code:
+关于此代码的一些约束/陷阱：
 
-- It does not take into account key rotation or management which is a whole topic in itself.
-- It is important to use a different nonce for every encryption operation, even if the same key is used.
-- The key will need to be stored securely.
+- 它没有考虑密钥轮换或管理，这本身就是一个完整的主题。
+- 即使使用相同的密钥，每次加密操作也必须使用不同的随机数。
+- 密钥需要安全存储。
 
 <details>
-  <summary>Click here to view the "AES-GCM symmetric encryption" code snippet.</summary>
+  <summary>点击查看"AES-GCM 对称加密"代码片段。</summary>
 
 ```csharp
-// Code based on example from here:
+// 代码基于此示例：
 // https://www.scottbrady91.com/c-sharp/aes-gcm-dotnet
 
 public class AesGcmSimpleTest
 {
     public static void Main()
     {
-
-        // Key of 32 bytes / 256 bits for AES
+        // AES 的 32 字节 / 256 位密钥
         var key = new byte[32];
         RandomNumberGenerator.Fill(key);
 
-        // MaxSize = 12 bytes / 96 bits and this size should always be used.
+        // 最大大小 = 12 字节 / 96 位，并且应始终使用此大小。
         var nonce = new byte[AesGcm.NonceByteSizes.MaxSize];
         RandomNumberGenerator.Fill(nonce);
 
-        // Tag for authenticated encryption
+        // 用于认证加密的标签
         var tag = new byte[AesGcm.TagByteSizes.MaxSize];
 
-        var message = "This message to be encrypted";
+        var message = "这是要加密的消息";
         Console.WriteLine(message);
 
-        // Encrypt the message
+        // 加密消息
         var cipherText = AesGcmSimple.Encrypt(message, nonce, out tag, key);
         Console.WriteLine(Convert.ToBase64String(cipherText));
 
-        // Decrypt the message
+        // 解密消息
         var message2 = AesGcmSimple.Decrypt(cipherText, nonce, tag, key);
         Console.WriteLine(message2);
-
-
     }
 }
 
-
 public static class AesGcmSimple
 {
-
     public static byte[] Encrypt(string plaintext, byte[] nonce, out byte[] tag, byte[] key)
     {
         using(var aes = new AesGcm(key))
         {
-            // Tag for authenticated encryption
+            // 用于认证加密的标签
             tag = new byte[AesGcm.TagByteSizes.MaxSize];
 
-            // Create a byte array from the message to encrypt
+            // 创建要加密的消息的字节数组
             var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
 
-            // Ciphertext will be same length in bytes as plaintext
+            // 密文字节长度将与明文相同
             var ciphertext = new byte[plaintextBytes.Length];
 
-            // perform the actual encryption
+            // 执行实际加密
             aes.Encrypt(nonce, plaintextBytes, ciphertext, tag);
             return ciphertext;
         }
@@ -304,87 +289,83 @@ public static class AesGcmSimple
     {
         using(var aes = new AesGcm(key))
         {
-            // Plaintext will be same length in bytes as Ciphertext
+            // 明文字节长度将与密文相同
             var plaintextBytes = new byte[ciphertext.Length];
 
-            // perform the actual decryption
+            // 执行实际解密
             aes.Decrypt(nonce, ciphertext, tag, plaintextBytes);
 
             return Encoding.UTF8.GetString(plaintextBytes);
         }
     }
 }
-
 ```
 
 </details>
 
-#### Encryption for transmission
+#### 传输加密
 
-- Again, follow the algorithm guidance in the [OWASP Cryptographic Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#algorithms).
+- 再次遵循 [OWASP 加密存储备忘录](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#algorithms) 中的算法指南。
 
-The following code snippet shows an example of using Eliptic Curve/Diffie Helman (ECDH) together with AES-GCM to perform encryption/decryption of data between two different sides without the need the transfer the symmetric key between the two sides. Instead, the sides exchange public keys and can then use ECDH to generate a shared secret which can be used for the symmetric encryption.
+下面的代码片段展示了使用椭圆曲线/迪菲-赫尔曼（ECDH）与 AES-GCM 一起执行数据加密/解密的示例，无需在双方之间传输对称密钥。相反，双方交换公钥，然后可以使用 ECDH 生成共享密钥，用于对称加密。
 
-Again, it is strongly recommended to have a cryptography expert review your final design and code, as even the most trivial error can severely weaken your encryption.
+再次强烈建议让密码学专家审查您的最终设计和代码，因为即使是最微不足道的错误也可能严重削弱您的加密。
 
-Note that this code sample relies on the `AesGcmSimple` class from the [previous section](#encryption-for-storage).
+请注意，此代码示例依赖于[上一节](#存储加密)中的 `AesGcmSimple` 类。
 
-A few constraints/pitfalls with this code:
+关于此代码的一些约束/陷阱：
 
-- It does not take into account key rotation or management which is a whole topic in itself.
-- The code deliberately enforces a new nonce for every encryption operation but this must be managed as a separate data item alongside the ciphertext.
-- The private keys will need to be stored securely.
-- The code does not consider the validation of public keys before use.
-- Overall, there is no verification of authenticity between the two sides.
+- 它没有考虑密钥轮换或管理，这本身就是一个完整的主题。
+- 代码故意为每次加密操作强制使用新的随机数，但必须将其作为密文旁边的单独数据项进行管理。
+- 私钥需要安全存储。
+- 代码没有考虑在使用前验证公钥。
+- 总体而言，双方之间没有真实性验证。
 
 <details>
-  <summary>Click here to view the "ECDH asymmetric encryption" code snippet.</summary>
+  <summary>点击查看"ECDH非对称加密"代码片段。</summary>
 
 ```csharp
 public class ECDHSimpleTest
 {
     public static void Main()
     {
-        // Generate ECC key pair for Alice
+        // 为 Alice 生成 ECC 密钥对
         var alice = new ECDHSimple();
         byte[] alicePublicKey = alice.PublicKey;
 
-        // Generate ECC key pair for Bob
+        // 为 Bob 生成 ECC 密钥对
         var bob = new ECDHSimple();
         byte[] bobPublicKey = bob.PublicKey;
 
-        string plaintext = "Hello, Bob! How are you?";
-        Console.WriteLine("Secret being sent from Alice to Bob: " + plaintext);
+        string plaintext = "你好，Bob！你好吗？";
+        Console.WriteLine("Alice 发送的秘密：" + plaintext);
 
-        // Note that a new nonce is generated with every encryption operation in line with
-        // in line with the AES GCM security
+        // 注意，每次加密操作都会生成新的随机数，符合 AES GCM 安全性要求
         byte[] tag;
         byte[] nonce;
         var cipherText = alice.Encrypt(bobPublicKey, plaintext, out nonce, out tag);
-        Console.WriteLine("Ciphertext, nonce, and tag being sent from Alice to Bob: " + Convert.ToBase64String(cipherText) + " " + Convert.ToBase64String(nonce) + " " + Convert.ToBase64String(tag));
+        Console.WriteLine("发送给 Bob 的密文、随机数和标签：" + Convert.ToBase64String(cipherText) + " " + Convert.ToBase64String(nonce) + " " + Convert.ToBase64String(tag));
 
         var decrypted = bob.Decrypt(alicePublicKey, cipherText, nonce, tag);
-        Console.WriteLine("Secret received by Bob from Alice: " + decrypted);
+        Console.WriteLine("Bob 收到的秘密：" + decrypted);
 
         Console.WriteLine();
 
-        string plaintext2 = "Hello, Alice! I'm good, how are you?";
-        Console.WriteLine("Secret being sent from Bob to Alice: " + plaintext2);
+        string plaintext2 = "你好，Alice！我很好，你呢？";
+        Console.WriteLine("Bob 发送的秘密：" + plaintext2);
 
         byte[] tag2;
         byte[] nonce2;
         var cipherText2 = bob.Encrypt(alicePublicKey, plaintext2, out nonce2, out tag2);
-        Console.WriteLine("Ciphertext, nonce, and tag being sent from Bob to Alice: " + Convert.ToBase64String(cipherText2) + " " + Convert.ToBase64String(nonce2) + " " + Convert.ToBase64String(tag2));
+        Console.WriteLine("发送给 Alice 的密文、随机数和标签：" + Convert.ToBase64String(cipherText2) + " " + Convert.ToBase64String(nonce2) + " " + Convert.ToBase64String(tag2));
 
         var decrypted2 = alice.Decrypt(bobPublicKey, cipherText2, nonce2, tag2);
-        Console.WriteLine("Secret received by Alice from Bob: " + decrypted2);
+        Console.WriteLine("Alice 收到的秘密：" + decrypted2);
     }
 }
 
-
 public class ECDHSimple
 {
-
     private ECDiffieHellmanCng ecdh = new ECDiffieHellmanCng();
 
     public byte[] PublicKey
@@ -397,39 +378,37 @@ public class ECDHSimple
 
     public byte[] Encrypt(byte[] partnerPublicKey, string message, out byte[] nonce, out byte[] tag)
     {
-        // Generate the AES Key and Nonce
+        // 生成 AES 密钥和随机数
         var aesKey = GenerateAESKey(partnerPublicKey);
 
-        // Tag for authenticated encryption
+        // 用于认证加密的标签
         tag = new byte[AesGcm.TagByteSizes.MaxSize];
 
-        // MaxSize = 12 bytes / 96 bits and this size should always be used.
-        // A new nonce is generated with every encryption operation in line with
-        // the AES GCM security model
+        // 最大大小 = 12 字节 / 96 位，并且应始终使用此大小。
+        // 每次加密操作都会生成新的随机数，符合 AES GCM 安全模型
         nonce = new byte[AesGcm.NonceByteSizes.MaxSize];
         RandomNumberGenerator.Fill(nonce);
 
-        // return the encrypted value
+        // 返回加密值
         return AesGcmSimple.Encrypt(message, nonce, out tag, aesKey);
     }
 
-
     public string Decrypt(byte[] partnerPublicKey, byte[] ciphertext, byte[] nonce, byte[] tag)
     {
-        // Generate the AES Key and Nonce
+        // 生成 AES 密钥和随机数
         var aesKey = GenerateAESKey(partnerPublicKey);
 
-        // return the decrypted value
+        // 返回解密值
         return AesGcmSimple.Decrypt(ciphertext, nonce, tag, aesKey);
     }
 
     private byte[] GenerateAESKey(byte[] partnerPublicKey)
     {
-        // Derive the secret based on this side's private key and the other side's public key
+        // 基于此方的私钥和另一方的公钥推导出秘密
         byte[] secret = ecdh.DeriveKeyMaterial(CngKey.Import(partnerPublicKey, CngKeyBlobFormat.EccPublicBlob));
 
-        byte[] aesKey = new byte[32]; // 256-bit AES key
-        Array.Copy(secret, 0, aesKey, 0, 32); // Copy first 32 bytes as the key
+        byte[] aesKey = new byte[32]; // 256 位 AES 密钥
+        Array.Copy(secret, 0, aesKey, 0, 32); // 复制前 32 字节作为密钥
 
         return aesKey;
     }
@@ -438,47 +417,45 @@ public class ECDHSimple
 
 </details>
 
-### A03 Injection
+### A03 注入攻击
 
-#### SQL Injection
+#### SQL 注入
 
-DO: Using an object relational mapper (ORM) or stored procedures is the most effective way of countering the SQL Injection vulnerability.
+执行：使用对象关系映射器（ORM）或存储过程是对抗 SQL 注入漏洞最有效的方法。
 
-DO: Use parameterized queries where a direct SQL query must be used. More Information can be found in the
-[Query Parameterization Cheat Sheet](Query_Parameterization_Cheat_Sheet.md).
+执行：在必须使用直接 SQL 查询时，使用参数化查询。更多信息可以在[查询参数化备忘录](Query_Parameterization_Cheat_Sheet.md)中找到。
 
-E.g., using Entity Framework:
+例如，使用 Entity Framework：
 
 ```csharp
-var sql = @"Update [User] SET FirstName = @FirstName WHERE Id = @Id";
+var sql = @"Update [User] SET FirstName = @FirstName WHERE Id = @Id";
 context.Database.ExecuteSqlCommand(
     sql,
-    new SqlParameter("@FirstName", firstname),
-    new SqlParameter("@Id", id));
+    new SqlParameter("@FirstName", firstname),
+    new SqlParameter("@Id", id));
 ```
 
-DO NOT: Concatenate strings anywhere in your code and execute them against your database (Known as *dynamic SQL*).
+禁止：在代码中的任何位置拼接字符串并对数据库执行（称为*动态 SQL*）。
 
-Note: You can still accidentally do this with ORMs or Stored procedures so check everywhere. For example:
+注意：即使使用 ORM 或存储过程，仍可能意外地这样做，所以请到处检查。例如：
 
 ```csharp
-string sql = "SELECT * FROM Users WHERE UserName='" + txtUser.Text + "' AND Password='"
-                + txtPassword.Text + "'";
-context.Database.ExecuteSqlCommand(sql); // SQL Injection vulnerability!
+string sql = "SELECT * FROM Users WHERE UserName='" + txtUser.Text + "' AND Password='"
+                + txtPassword.Text + "'";
+context.Database.ExecuteSqlCommand(sql); // SQL 注入漏洞！
 ```
 
-DO: Practice Least Privilege - connect to the database using an account with a minimum set of permissions required
-to do its job, not the database administrator account.
+执行：最小权限原则 - 使用具有执行任务所需最小权限集的账户连接数据库，而不是数据库管理员账户。
 
-#### OS Injection
+#### 操作系统命令注入
 
-General guidance about OS Injection can be found in the [OS Command Injection Defense Cheat Sheet](OS_Command_Injection_Defense_Cheat_Sheet.md).
+关于操作系统命令注入的一般指导可以在[操作系统命令注入防御备忘录](OS_Command_Injection_Defense_Cheat_Sheet.md)中找到。
 
-DO: Use [System.Diagnostics.Process.Start](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.start?view=netframework-4.7.2) to call underlying OS functions.
+执行：使用 [System.Diagnostics.Process.Start](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.start?view=netframework-4.7.2) 调用底层操作系统函数。
 
-e.g
+例如：
 
-``` csharp
+```csharp
 var process = new System.Diagnostics.Process();
 var startInfo = new System.Diagnostics.ProcessStartInfo();
 startInfo.FileName = "validatedCommand";
@@ -487,107 +464,103 @@ process.StartInfo = startInfo;
 process.Start();
 ```
 
-DO NOT: Assume that this mechanism will protect against malicious input designed to break out of one argument and then tamper with another argument to the process. This will still be possible.
+禁止：假设这种机制可以防止设计用于突破一个参数并篡改进程另一个参数的恶意输入。这仍然是可能的。
 
-DO: Use allowlist validation on all user supplied input wherever possible. Input validation prevents improperly formed data from entering an information system. For more information please see the [Input Validation Cheat Sheet](Input_Validation_Cheat_Sheet.md).
+执行：尽可能对所有用户提供的输入使用白名单验证。输入验证可防止格式不正确的数据进入信息系统。更多信息请参见[输入验证备忘录](Input_Validation_Cheat_Sheet.md)。
 
-e.g Validating user input using [IPAddress.TryParse Method](https://docs.microsoft.com/en-us/dotnet/api/system.net.ipaddress.tryparse?view=netframework-4.8)
+例如，使用 [IPAddress.TryParse 方法](https://docs.microsoft.com/en-us/dotnet/api/system.net.ipaddress.tryparse?view=netframework-4.8)验证用户输入：
 
-``` csharp
-//User input
+```csharp
+// 用户输入
 string ipAddress = "127.0.0.1";
 
-//check to make sure an ip address was provided
+// 检查是否提供了 IP 地址
 if (!string.IsNullOrEmpty(ipAddress))
 {
- // Create an instance of IPAddress for the specified address string (in
- // dotted-quad, or colon-hexadecimal notation).
+ // 为指定的地址字符串创建 IPAddress 实例（点分十进制或冒号十六进制表示法）
  if (IPAddress.TryParse(ipAddress, out var address))
  {
-  // Display the address in standard notation.
+  // 以标准表示法显示地址
   return address.ToString();
  }
  else
  {
-  //ipAddress is not of type IPAddress
+  // ipAddress 不是 IPAddress 类型
   ...
  }
     ...
 }
 ```
 
-DO: Try to only accept characters which are simple alphanumeric.
+执行：尽量只接受简单的字母数字字符。
 
-DO NOT: Assume you can sanitize special characters without actually removing them. Various combinations of ```\```, ```'``` and ```@``` may have an unexpected impact on sanitization attempts.
+禁止：假设可以在不实际删除特殊字符的情况下对其进行净化。```\```、```'``` 和 ```@``` 的各种组合可能会对净化尝试产生意外影响。
 
-DO NOT: Rely on methods without a security guarantee.
+禁止：依赖没有安全保证的方法。
 
-e.g. .NET Core 2.2 and greater and .NET 5 and greater support [ProcessStartInfo.ArgumentList](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.argumentlist) which performs some character escaping but the object includes [a disclaimer that it is not safe with untrusted input](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.argumentlist#remarks).
+例如：.NET Core 2.2 及更高版本和 .NET 5 及更高版本支持 [ProcessStartInfo.ArgumentList](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.argumentlist)，它执行一些字符转义，但该对象[包含不适用于不受信任输入的免责声明](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.argumentlist#remarks)。
 
-DO: Look at alternatives to passing raw untrusted arguments via command-line parameters such as encoding using Base64 (which would safely encode any special characters as well) and then decode the parameters in the receiving application.
+执行：寻找通过命令行参数传递原始不受信任参数的替代方案，例如使用 Base64 编码（这将安全地对任何特殊字符进行编码），然后在接收应用程序中解码参数。
 
-#### LDAP injection
+#### LDAP 注入
 
-Almost any characters can be used in Distinguished Names. However, some must be escaped with the backslash `\` escape character.
-A table showing which characters that should be escaped for Active Directory can be found at the in the
-[LDAP Injection Prevention Cheat Sheet](LDAP_Injection_Prevention_Cheat_Sheet.md).
+几乎任何字符都可以在可分辨名称中使用。但是，某些字符必须使用反斜杠 `\` 转义字符进行转义。
+在[LDAP 注入预防备忘录](LDAP_Injection_Prevention_Cheat_Sheet.md)中可以找到显示应为 Active Directory 转义的字符的表格。
 
-Note: The space character must be escaped only if it is the leading or trailing character in a component name, such as a Common Name.
-Embedded spaces should not be escaped.
+注意：空格字符只有在组件名称（如公共名称）的开头或结尾时才需要转义。
+嵌入的空格不应转义。
 
-More information can be found in the [LDAP Injection Prevention Cheat Sheet](LDAP_Injection_Prevention_Cheat_Sheet.md).
+更多信息可以在[LDAP 注入预防备忘录](LDAP_Injection_Prevention_Cheat_Sheet.md)中找到。
 
-### A04 Insecure Design
+### A04 不安全设计
 
-Insecure design refers to security failures in the design of the application or system. This is different than the other items
-in the OWASP Top 10 list which refer to implementation failures. The topic of secure design is therefore not related to a specific
-technology or language and is therefore out of scope for this cheat sheet. See the [Secure Product Design Cheat Sheet](Secure_Product_Design_Cheat_Sheet.md) for more information.
+不安全设计指的是应用程序或系统设计中的安全失败。这与 OWASP Top 10 列表中的其他项目不同，后者指的是实现失败。因此，安全设计的主题与特定技术或语言无关，因此超出了本备忘录的范围。有关更多信息，请参见[安全产品设计备忘录](Secure_Product_Design_Cheat_Sheet.md)。
 
-### A05 Security Misconfiguration
+### A05 安全配置错误
 
-#### Debug and Stack Trace
+#### 调试和堆栈跟踪
 
-Ensure debug and trace are off in production. This can be enforced using web.config transforms:
+确保在生产环境中关闭调试和跟踪。可以使用 web.config 转换来强制执行：
 
 ```xml
 <compilation xdt:Transform="RemoveAttributes(debug)" />
 <trace enabled="false" xdt:Transform="Replace"/>
 ```
 
-DO NOT: Use default passwords
+禁止：使用默认密码
 
-DO: Redirect a request made over HTTP to HTTPS:
+推荐：将 HTTP 请求重定向到 HTTPS：
 
-E.g, Global.asax.cs:
+例如，Global.asax.cs：
 
 ```csharp
-protected void Application_BeginRequest()
+protected void Application_BeginRequest()
 {
-    #if !DEBUG
-    // SECURE: Ensure any request is returned over SSL/TLS in production
-    if (!Request.IsLocal && !Context.Request.IsSecureConnection) {
-        var redirect = Context.Request.Url.ToString()
+    #if !DEBUG
+    // 安全：确保在生产环境中任何请求都通过 SSL/TLS 返回
+    if (!Request.IsLocal && !Context.Request.IsSecureConnection) {
+        var redirect = Context.Request.Url.ToString()
                         .ToLower(CultureInfo.CurrentCulture)
-                        .Replace("http:", "https:");
+                        .Replace("http:", "https:");
         Response.Redirect(redirect);
     }
     #endif
 }
 ```
 
-E.g., Startup.cs in `Configure()`:
+例如，Startup.cs 中的 `Configure()` 方法：
 
 ``` csharp
   app.UseHttpsRedirection();
 ```
 
-#### Cross-site request forgery
+#### 跨站请求伪造（CSRF）
 
-DO NOT: Send sensitive data without validating Anti-Forgery-Tokens ([.NET](https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/preventing-cross-site-request-forgery-csrf-attacks) / [.NET Core](https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-7.0#aspnet-core-antiforgery-configuration)).
+禁止：在未验证防伪令牌的情况下发送敏感数据（[.NET](https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/preventing-cross-site-request-forgery-csrf-attacks) / [.NET Core](https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-7.0#aspnet-core-antiforgery-configuration)）。
 
-DO: Send the anti-forgery token with every POST/PUT request:
+推荐：在每个 POST/PUT 请求中发送防伪令牌：
 
-##### Using .NET Framework
+##### 使用 .NET Framework
 
 ```csharp
 using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm",
@@ -596,56 +569,56 @@ using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutFo
     @Html.AntiForgeryToken()
     <ul class="nav nav-pills">
         <li role="presentation">
-        Logged on as @User.Identity.Name
+        登录用户 @User.Identity.Name
         </li>
         <li role="presentation">
-        <a href="javascript:document.getElementById('logoutForm').submit()">Log off</a>
+        <a href="javascript:document.getElementById('logoutForm').submit()">注销</a>
         </li>
     </ul>
 }
 ```
 
-Then validate it at the method or preferably the controller level:
+然后在方法或控制器级别验证：
 
 ```csharp
 [HttpPost]
 [ValidateAntiForgeryToken]
-public ActionResult LogOff()
+public ActionResult LogOff()
 ```
 
-Make sure the tokens are removed completely for invalidation on logout.
+确保在注销时完全移除令牌。
 
 ```csharp
-/// <summary>
-/// SECURE: Remove any remaining cookies including Anti-CSRF cookie
-/// </summary>
-public void RemoveAntiForgeryCookie(Controller controller)
+/// <summary>
+/// 安全：移除所有剩余的 Cookie，包括防 CSRF Cookie
+/// </summary>
+public void RemoveAntiForgeryCookie(Controller controller)
 {
-    string[] allCookies = controller.Request.Cookies.AllKeys;
-    foreach (string cookie in allCookies)
+    string[] allCookies = controller.Request.Cookies.AllKeys;
+    foreach (string cookie in allCookies)
     {
-        if (controller.Response.Cookies[cookie] != null &&
-            cookie == "__RequestVerificationToken")
+        if (controller.Response.Cookies[cookie] != null &&
+            cookie == "__RequestVerificationToken")
         {
-            controller.Response.Cookies[cookie].Expires = DateTime.Now.AddDays(-1);
+            controller.Response.Cookies[cookie].Expires = DateTime.Now.AddDays(-1);
         }
     }
 }
 ```
 
-##### Using .NET Core 2.0 or later
+##### 使用 .NET Core 2.0 或更高版本
 
-Starting with .NET Core 2.0 it is possible to [automatically generate and verify the antiforgery token](https://docs.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-7.0#aspnet-core-antiforgery-configuration).
+从 .NET Core 2.0 开始，可以[自动生成和验证防伪令牌](https://docs.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-7.0#aspnet-core-antiforgery-configuration)。
 
-If you are using [tag-helpers](https://docs.microsoft.com/en-us/aspnet/core/mvc/views/tag-helpers/intro), which is the default for most web project templates, then all forms will automatically send the anti-forgery token. You can check if tag-helpers are enabled by checking if your main `_ViewImports.cshtml` file contains:
+如果使用[标签助手（tag-helpers）](https://docs.microsoft.com/en-us/aspnet/core/mvc/views/tag-helpers/intro)，这是大多数 Web 项目模板的默认设置，那么所有表单将自动发送防伪令牌。你可以通过检查主 `_ViewImports.cshtml` 文件是否包含以下内容来确认标签助手是否已启用：
 
 ```csharp
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 ```
 
-`IHtmlHelper.BeginForm` also sends anti-forgery-tokens automatically.
+`IHtmlHelper.BeginForm` 也会自动发送防伪令牌。
 
-If you are not using tag-helpers or `IHtmlHelper.BeginForm`, you must use the requisite helper on forms as seen here:
+如果未使用标签助手或 `IHtmlHelper.BeginForm`，则必须在表单上使用相应的帮助器，如下所示：
 
 ```html
 <form action="RelevantAction" >
@@ -653,7 +626,7 @@ If you are not using tag-helpers or `IHtmlHelper.BeginForm`, you must use the re
 </form>
 ```
 
-To automatically validate all requests other than GET, HEAD, OPTIONS and TRACE you need to add a global action filter with the [AutoValidateAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.autovalidateantiforgerytokenattribute?view=aspnetcore-7.0) attribute inside your `Startup.cs` as mentioned in the following [article](https://andrewlock.net/automatically-validating-anti-forgery-tokens-in-asp-net-core-with-the-autovalidateantiforgerytokenattribute/):
+要自动验证除 GET、HEAD、OPTIONS 和 TRACE 之外的所有请求，需要在 `Startup.cs` 中添加全局操作筛选器，并使用 [AutoValidateAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.autovalidateantiforgerytokenattribute?view=aspnetcore-7.0) 属性，详情请参见以下[文章](https://andrewlock.net/automatically-validating-anti-forgery-tokens-in-asp-net-core-with-the-autovalidateantiforgerytokenattribute/)：
 
 ```csharp
 services.AddMvc(options =>
@@ -662,7 +635,7 @@ services.AddMvc(options =>
 });
 ```
 
-If you need to disable the attribute validation for a specific method on a controller you can add the [IgnoreAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.ignoreantiforgerytokenattribute?view=aspnetcore-7.0) attribute to the controller method (for MVC controllers) or parent class (for Razor pages):
+如果需要为控制器上的特定方法禁用属性验证，可以为 MVC 控制器的方法或 Razor 页面的父类添加 [IgnoreAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.ignoreantiforgerytokenattribute?view=aspnetcore-7.0) 属性：
 
 ```csharp
 [IgnoreAntiforgeryToken]
@@ -675,7 +648,7 @@ public IActionResult Delete()
 public class UnsafeModel : PageModel
 ```
 
-If you need to also validate the token on GET, HEAD, OPTIONS and TRACE requests you can add the [ValidateAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.validateantiforgerytokenattribute?view=aspnetcore-7.0) attribute to the controller method (for MVC controllers) or parent class (for Razor pages):
+如果需要对 GET、HEAD、OPTIONS 和 TRACE 请求也进行令牌验证，可以为 MVC 控制器的方法或 Razor 页面的父类添加 [ValidateAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.validateantiforgerytokenattribute?view=aspnetcore-7.0) 属性：
 
 ```csharp
 [HttpGet]
@@ -689,7 +662,7 @@ public IActionResult DoSomethingDangerous()
 public class SafeModel : PageModel
 ```
 
-In case you can't use a global action filter, add the [AutoValidateAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.autovalidateantiforgerytokenattribute?view=aspnetcore-7.0) attribute to your controller classes or razor page models:
+如果无法使用全局操作筛选器，可以将 [AutoValidateAntiforgeryToken](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.autovalidateantiforgerytokenattribute?view=aspnetcore-7.0) 属性添加到控制器类或 Razor 页面模型：
 
 ```csharp
 [AutoValidateAntiforgeryToken]
@@ -701,11 +674,11 @@ public class UserController
 public class SafeModel : PageModel
 ```
 
-##### Using .Net Core or .NET Framework with AJAX
+##### 在 .NET Core 或 .NET Framework 中使用 AJAX
 
-You will need to attach the anti-forgery token to AJAX requests.
+需要将防伪令牌附加到 AJAX 请求。
 
-If you are using jQuery in an ASP.NET Core MVC view this can be achieved using this snippet:
+如果在 ASP.NET Core MVC 视图中使用 jQuery，可以使用以下代码片段：
 
 ```javascript
 @inject  Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgeryProvider
@@ -721,35 +694,33 @@ $.ajax(
 })
 ```
 
-If you are using the .NET Framework, you can find some code snippets [here](https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/preventing-cross-site-request-forgery-csrf-attacks#anti-csrf-and-ajax).
+如果使用 .NET Framework，可以在[此处](https://docs.microsoft.com/en-us/aspnet/web-api/overview/security/preventing-cross-site-request-forgery-csrf-attacks#anti-csrf-and-ajax)找到一些代码片段。
 
-More information can be found in the [Cross-Site Request Forgery Prevention Cheat Sheet](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md).
+更多信息可以在[跨站请求伪造预防备忘录](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md)中找到。
 
-### A06 Vulnerable and Outdated Components
+### A06 易受攻击和过时的组件
 
-DO: Keep the .NET framework updated with the latest patches
+推荐：保持 .NET 框架更新到最新补丁
 
-DO: Keep your [NuGet](https://docs.microsoft.com/en-us/nuget/) packages up to date
+推荐：保持 [NuGet](https://docs.microsoft.com/en-us/nuget/) 包为最新版本
 
-DO: Run the [OWASP Dependency Checker](Vulnerable_Dependency_Management_Cheat_Sheet.md#tools) against your application as part of your build process and act on any high or critical level vulnerabilities.
+推荐：在构建过程中运行 [OWASP 依赖检查器](Vulnerable_Dependency_Management_Cheat_Sheet.md#tools)，并对任何高级或关键级别的漏洞采取行动
 
-DO: Include SCA (software composition analysis) tools in your CI/CD pipeline to ensure that any new vulnerabilities
-in your dependencies are detected and acted upon.
+推荐：在 CI/CD 管道中包含 SCA（软件成分分析）工具，以确保及时检测和处理依赖项中的任何新漏洞
 
-### A07 Identification and Authentication Failures
+### A07 身份识别和认证失败
 
-DO: Use [ASP.NET Core Identity](https://docs.microsoft.com/en-us/aspnet/core/security/authentication/identity?view=aspnetcore-2.2&).
-ASP.NET Core Identity framework is well configured by default, where it uses secure password hashes and an individual salt. Identity uses the PBKDF2 hashing function for passwords, and generates a random salt per user.
+推荐：使用 [ASP.NET Core Identity](https://docs.microsoft.com/en-us/aspnet/core/security/authentication/identity?view=aspnetcore-2.2&)。ASP.NET Core Identity 框架默认配置良好，使用安全的密码哈希和单独的盐。Identity 使用 PBKDF2 哈希函数进行密码处理，并为每个用户生成随机盐。
 
-DO: Set secure password policy
+推荐：设置安全的密码策略
 
-e.g ASP.NET Core Identity
+例如 ASP.NET Core Identity：
 
 ``` csharp
 //Startup.cs
 services.Configure<IdentityOptions>(options =>
 {
- // Password settings
+ // 密码设置
  options.Password.RequireDigit = true;
  options.Password.RequiredLength = 8;
  options.Password.RequireNonAlphanumeric = true;
@@ -766,9 +737,9 @@ services.Configure<IdentityOptions>(options =>
 });
 ```
 
-DO: Set a cookie policy
+推荐：设置 Cookie 策略
 
-e.g
+例如：
 
 ``` csharp
 //Startup.cs
@@ -780,44 +751,42 @@ services.ConfigureApplicationCookie(options =>
 });
 ```
 
-### A08 Software and Data Integrity Failures
+### A08 软件和数据完整性失败
 
-DO: Digitally sign assemblies and executable files
+推荐：对程序集和可执行文件进行数字签名
 
-DO: Use Nuget package signing
+推荐：使用 Nuget 包签名
 
-DO: Review code and configuration changes to avoid malicious code
-or dependencies being introduced
+推荐：审查代码和配置更改，避免引入恶意代码或依赖项
 
-DO NOT: Send unsigned or unencrypted serialized objects over the network
+禁止：通过网络发送未签名或未加密的序列化对象
 
-DO: Perform integrity checks or validate digital signatures on serialized
-objects received from the network
+推荐：对从网络接收的序列化对象执行完整性检查或验证数字签名
 
-DO NOT: Use the BinaryFormatter type which is dangerous and [not recommended](https://learn.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide) for data processing.
-.NET offers several in-box serializers that can handle untrusted data safely:
+禁止：使用 BinaryFormatter 类型，该类型是危险的，[不推荐](https://learn.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide)用于数据处理。
+.NET 提供了几个可以安全处理不可信数据的内置序列化器：
 
-- XmlSerializer and DataContractSerializer to serialize object graphs into and from XML. Do not confuse DataContractSerializer with NetDataContractSerializer.
-- BinaryReader and BinaryWriter for XML and JSON.
-- The System.Text.Json APIs to serialize object graphs into JSON.
+- XmlSerializer 和 DataContractSerializer 用于将对象图序列化为 XML 和从 XML 反序列化。不要将 DataContractSerializer 与 NetDataContractSerializer 混淆。
+- BinaryReader 和 BinaryWriter 用于 XML 和 JSON。
+- System.Text.Json API 用于将对象图序列化为 JSON。
 
-### A09 Security Logging and Monitoring Failures
+### A09 安全日志记录和监控失败
 
-DO: Ensure all login, access control, and server-side input validation failures are logged with sufficient user context to identify suspicious or malicious accounts.
+推荐：确保记录所有登录、访问控制和服务器端输入验证失败，并提供足够的用户上下文以识别可疑或恶意账户。
 
-DO: Establish effective monitoring and alerting so suspicious activities are detected and responded to in a timely fashion.
+推荐：建立有效的监控和警报机制，及时检测和响应可疑活动。
 
-DO NOT: Log generic error messages such as: ```csharp Log.Error("Error was thrown");```. Instead, log the stack trace, error message and user ID who caused the error.
+禁止：记录通用错误消息，如：```csharp Log.Error("发生了错误");```。相反，应记录堆栈跟踪、错误消息和导致错误的用户 ID。
 
-DO NOT: Log sensitive data such as user's passwords.
+禁止：记录敏感数据，如用户密码。
 
-#### Logging
+#### 日志记录
 
-What logs to collect and more information about logging can be found in the [Logging Cheat Sheet](Logging_Cheat_Sheet.md).
+关于要收集的日志和更多日志记录信息，请参见[日志记录备忘录](Logging_Cheat_Sheet.md)。
 
-.NET Core comes with a LoggerFactory, which is in Microsoft.Extensions.Logging. More information about ILogger can be found [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.ilogger).
+.NET Core 自带 LoggerFactory，位于 Microsoft.Extensions.Logging 中。关于 ILogger 的更多信息可以在[此处](https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.ilogger)找到。
 
-Here's how to log all errors from the `Startup.cs`, so that anytime an error is thrown it will be logged:
+以下是如何在 `Startup.cs` 中记录所有错误，使得任何错误抛出时都会被记录：
 
 ``` csharp
 public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -828,7 +797,7 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         app.UseDeveloperExceptionPage();
     }
 
-    //Log all errors in the application
+    //记录应用程序中的所有错误
     app.UseExceptionHandler(errorApp =>
     {
         errorApp.Run(async context =>
@@ -836,7 +805,7 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env)
             var errorFeature = context.Features.Get<IExceptionHandlerFeature>();
             var exception = errorFeature.Error;
 
-            Log.Error(String.Format("Stacktrace of error: {0}",exception.StackTrace.ToString()));
+            Log.Error(String.Format("错误的堆栈跟踪: {0}",exception.StackTrace.ToString()));
         });
     });
 
@@ -846,7 +815,7 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env)
 }
 ```
 
-E.g. injecting into the class constructor, which makes writing unit test simpler. This is recommended if instances of the class will be created using dependency injection (e.g. MVC controllers). The below example shows logging of all unsuccessful login attempts.
+例如，在类构造函数中注入，这使得编写单元测试更简单。如果类的实例将使用依赖注入创建（例如 MVC 控制器），则推荐此方法。下面的示例展示了记录所有unsuccessful登录尝试。
 
 ``` csharp
 public class AccountsController : Controller
@@ -868,67 +837,64 @@ public class AccountsController : Controller
                 var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {
-                    //Log all successful log in attempts
-                    Log.Information(String.Format("User: {0}, Successfully Logged in", model.Email));
-                    //Code for successful login
+                    //记录所有成功的登录尝试
+                    Log.Information(String.Format("用户: {0}, 成功登录", model.Email));
+                    //成功登录的代码
                     //...
                 }
                 else
                 {
-                    //Log all incorrect log in attempts
-                    Log.Information(String.Format("User: {0}, Incorrect Password", model.Email));
+                    //记录所有不正确的登录尝试
+                    Log.Information(String.Format("用户: {0}, 密码不正确", model.Email));
                 }
              }
             ...
         }
 ```
 
-#### Monitoring
+#### 监控
 
-Monitoring allow us to validate the performance and health of a running system through key performance indicators.
+监控允许我们通过关键性能指标验证运行系统的性能和健康状况。
 
-In .NET a great option to add monitoring capabilities is [Application Insights](https://docs.microsoft.com/en-us/azure/azure-monitor/app/asp-net-core).
+在 .NET 中，添加监控功能的一个很好选择是 [Application Insights](https://docs.microsoft.com/en-us/azure/azure-monitor/app/asp-net-core)。
 
-More information about Logging and Monitoring can be found [here](https://github.com/microsoft/code-with-engineering-playbook/blob/main/docs/observability/README.md).
+关于日志记录和监控的更多信息可以在[此处](https://github.com/microsoft/code-with-engineering-playbook/blob/main/docs/observability/README.md)找到。
 
-### A10 Server-Side Request Forgery (SSRF)
+### A10 服务器端请求伪造（SSRF）
 
-DO: Validate and sanitize all user input before using it to make a request
+推荐：在使用用户输入发出请求之前验证和清理所有用户输入
 
-DO: Use an allowlist of allowed protocols and domains
+推荐：使用允许的协议和域白名单
 
-DO: Use `IPAddress.TryParse()` and `Uri.CheckHostName()` to ensure that IP addresses and domain names are valid
+推荐：使用 `IPAddress.TryParse()` 和 `Uri.CheckHostName()` 确保 IP 地址和域名有效
 
-DO NOT: Follow HTTP redirects
+禁止：跟随 HTTP 重定向
 
-DO NOT: Forward raw HTTP responses to the user
+禁止：将原始 HTTP 响应转发给用户
 
-For more information please see the [Server-Side Request Forgery Prevention Cheat Sheet](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md).
+更多信息请参见[服务器端请求伪造预防备忘录](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md)。
 
-### OWASP 2013 & 2017
+### OWASP 2013 和 2017
 
-Below are vulnerabilities that were included in the 2013 or 2017 OWASP Top 10 list
-that were not included in the 2021 list. These vulnerabilities are still relevant
-but were not included in the 2021 list because they have become less prevalent.
+以下是 2013 年或 2017 年 OWASP Top 10 列表中包含但未在 2021 年列表中出现的漏洞。这些漏洞仍然相关，但由于变得不太普遍而未被列入 2021 年列表。
 
-#### A04:2017 XML External Entities (XXE)
+#### A04:2017 XML 外部实体（XXE）
 
-XXE attacks occur when an XML parse does not properly process user input that contains external entity declarations in the doctype of an XML payload.
+当 XML 解析器未正确处理包含 doctype 中外部实体声明的用户输入时，会发生 XXE 攻击。
 
-[This article](https://docs.microsoft.com/en-us/dotnet/standard/data/xml/xml-processing-options) discusses the most common XML Processing Options for .NET.
+[本文](https://docs.microsoft.com/en-us/dotnet/standard/data/xml/xml-processing-options)讨论了 .NET 最常见的 XML 处理选项。
 
-Please refer to the [XXE cheat sheet](XML_External_Entity_Prevention_Cheat_Sheet.md#net) for more detailed information on preventing XXE and other XML Denial of Service attacks.
+请参阅 [XXE 备忘录](XML_External_Entity_Prevention_Cheat_Sheet.md#net)，了解更多关于防止 XXE 和其他 XML 拒绝服务攻击的详细信息。
 
-#### A07:2017 Cross-Site Scripting (XSS)
+#### A07:2017 跨站脚本（XSS）
 
-DO NOT: Trust any data the user sends you. Prefer allowlists (always safe) over denylists.
+禁止：信任用户发送的任何数据。优先使用白名单（始终安全）而非黑名单。
 
-You get encoding of all HTML content with MVC3. To properly encode all content whether HTML,
-JavaScript, CSS, LDAP, etc., use the Microsoft AntiXSS library:
+MVC3 会对所有 HTML 内容进行编码。要正确编码所有内容（无论是 HTML、JavaScript、CSS、LDAP 等），请使用 Microsoft AntiXSS 库：
 
-`Install-Package AntiXSS`
+`Install-Package AntiXSS`
 
-Then set in config:
+然后在配置中设置：
 
 ```xml
 <system.web>
@@ -938,10 +904,9 @@ encoderType="Microsoft.Security.Application.AntiXssEncoder, AntiXssLibrary"
 maxRequestLength="4096" />
 ```
 
-DO NOT: Use the `[AllowHTML]` attribute or helper class `@Html.Raw` unless you are absolutely
-sure that the content you are writing to the browser is safe and has been escaped properly.
+禁止：除非你绝对确定要写入浏览器的内容是安全的并已正确转义，否则不要使用 `[AllowHTML]` 属性或帮助器类 `@Html.Raw`。
 
-DO: Enable a [Content Security Policy](Content_Security_Policy_Cheat_Sheet.md#context). This will prevent your pages from accessing assets they should not be able to access (e.g. malicious scripts):
+推荐：启用[内容安全策略](Content_Security_Policy_Cheat_Sheet.md#context)。这将防止页面访问不应访问的资源（例如恶意脚本）：
 
 ```xml
 <system.webServer>
@@ -952,263 +917,261 @@ DO: Enable a [Content Security Policy](Content_Security_Policy_Cheat_Sheet.md#co
                 font-src 'self'; script-src 'self'" />
 ```
 
-More information can be found in the [Cross Site Scripting Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md).
+更多信息可以在[跨站脚本预防备忘录](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)中找到。
 
-#### A08:2017 Insecure Deserialization
+#### A08:2017 不安全的反序列化
 
-DO NOT: Accept Serialized Objects from Untrusted Sources
+禁止：接受来自不可信来源的序列化对象
 
-DO: Validate User Input
+推荐：验证用户输入
 
-Malicious users are able to use objects like cookies to insert malicious information to change user roles. In some cases, hackers are able to elevate their privileges to administrator rights by using a pre-existing or cached password hash from a previous session.
+恶意用户能够使用 Cookie 等对象插入恶意信息以更改用户角色。在某些情况下，黑客能够通过使用先前会话中的预先存在或缓存的密码哈希来提升其权限至管理员权限。
 
-DO: Prevent Deserialization of Domain Objects
+推荐：防止反序列化域对象
 
-DO: Run the Deserialization Code with Limited Access Permissions
-If a deserialized hostile object tries to initiate a system process or access a resource within the server or the host's OS, it will be denied access and a permission flag will be raised so that a system administrator is made aware of any anomalous activity on the server.
+推荐：使用有限的访问权限运行反序列化代码
+如果反序列化的恶意对象试图启动系统进程或访问服务器或主机操作系统中的资源，将被拒绝访问，并将引发权限标志，以便系统管理员能够了解服务器上的任何异常活动。
 
-More information about Insecure Deserialization can be found in the [Deserialization Cheat Sheet](Deserialization_Cheat_Sheet.md#net-csharp).
+关于不安全的反序列化的更多信息可以在[反序列化备忘录](Deserialization_Cheat_Sheet.md#net-csharp)中找到。
 
-#### A10:2013 Unvalidated redirects and forwards
+#### A10:2013 未验证的重定向和转发
 
-A protection against this was introduced in MVC 3 template. Here is the code:
+MVC 3 模板中引入了针对此问题的保护。以下是代码：
 
 ```csharp
-public async Task<ActionResult> LogOn(LogOnViewModel model, string returnUrl)
+public async Task<ActionResult> LogOn(LogOnViewModel model, string returnUrl)
 {
-    if (ModelState.IsValid)
+    if (ModelState.IsValid)
     {
-        var logonResult = await _userManager.TryLogOnAsync(model.UserName, model.Password);
-        if (logonResult.Success)
+        var logonResult = await _userManager.TryLogOnAsync(model.UserName, model.Password);
+        if (logonResult.Success)
         {
-            await _userManager.LogOnAsync(logonResult.UserName, model.RememberMe);  
-            return RedirectToLocal(returnUrl);
+            await _userManager.LogOnAsync(logonResult.UserName, model.RememberMe);  
+            return RedirectToLocal(returnUrl);
 ...
 ```
 
 ```csharp
-private ActionResult RedirectToLocal(string returnUrl)
+private ActionResult RedirectToLocal(string returnUrl)
 {
-    if (Url.IsLocalUrl(returnUrl))
+    if (Url.IsLocalUrl(returnUrl))
     {
-        return Redirect(returnUrl);
+        return Redirect(returnUrl);
     }
     else
     {
-        return RedirectToAction("Landing", "Account");
+        return RedirectToAction("Landing", "Account");
     }
 }
 ```
 
-### Other advice
+### 其他建议
 
-- Protect against Clickjacking and Man-in-the-Middle attack from capturing an initial Non-TLS request: Set the `X-Frame-Options` and `Strict-Transport-Security` (HSTS) headers. Full details [here](https://github.com/johnstaveley/SecurityEssentials/blob/master/SecurityEssentials/Core/HttpHeaders.cs)
-- Protect against a man-in-the-middle attack for a user who has never been to your site before. Register for [HSTS preload](https://hstspreload.org/)
-- Maintain security testing and analysis on Web API services. They are hidden inside MVC sites, and are public parts of a site that
-will be found by an attacker. All of the MVC guidance and much of the WCF guidance applies to Web API as well.
-- Also see the [Unvalidated Redirects and Forwards Cheat Sheet](Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md).
+- 防止点击劫持和中间人攻击捕获初始非 TLS 请求：设置 `X-Frame-Options` 和 `Strict-Transport-Security`（HSTS）标头。详细信息[在此](https://github.com/johnstaveley/SecurityEssentials/blob/master/SecurityEssentials/Core/HttpHeaders.cs)
+- 防止对从未访问过你网站的用户的中间人攻击。注册 [HSTS 预加载](https://hstspreload.org/)
+- 对 Web API 服务进行安全测试和分析。它们隐藏在 MVC 站点内部，是攻击者会发现的站点的公共部分。所有 MVC 指南和大部分 WCF 指南同样适用于 Web API。
+- 另请参见[未验证的重定向和转发备忘录](Unvalidated_Redirects_and_Forwards_Cheat_Sheet.md)。
 
-#### Sample project
+#### 示例项目
 
-For more information on all of the above and code samples incorporated into a sample MVC5 application with an enhanced security baseline
-go to [Security Essentials Baseline project](http://github.com/johnstaveley/SecurityEssentials/).
+有关上述所有内容和集成到增强安全基线的示例 MVC5 应用程序的代码示例，请访问 [安全基础项目](http://github.com/johnstaveley/SecurityEssentials/)。
 
-## Guidance for specific topics
+## 特定主题指南
 
-This section contains guidance for specific topics in .NET.
+本节包含 .NET 特定主题的指南。
 
-### Configuration and Deployment
+### 配置和部署
 
-- Lock down config files.
-    - Remove all aspects of configuration that are not in use.
-    - Encrypt sensitive parts of the `web.config` using `aspnet_regiis -pe` ([command line help](https://docs.microsoft.com/en-us/previous-versions/dotnet/netframework-2.0/k6h9cz8h(v=vs.80))).
-- For ClickOnce applications, the .NET Framework should be upgraded to use the latest version to ensure support of TLS 1.2 or later.
+- 锁定配置文件。
+    - 删除所有未使用的配置方面。
+    - 使用 `aspnet_regiis -pe` 加密 `web.config` 的敏感部分（[命令行帮助](https://docs.microsoft.com/en-us/previous-versions/dotnet/netframework-2.0/k6h9cz8h(v=vs.80))）。
+- 对于 ClickOnce 应用程序，.NET Framework 应升级到最新版本，以确保支持 TLS 1.2 或更高版本。
 
-### Data Access
+### 数据访问
 
-- Use [Parameterized SQL](https://docs.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlcommand.prepare?view=netframework-4.7.2) commands for all data access, without exception.
-- Do not use [SqlCommand](https://docs.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlcommand) with a string parameter made up of a [concatenated SQL String](https://docs.microsoft.com/en-gb/visualstudio/code-quality/ca2100-review-sql-queries-for-security-vulnerabilities?view=vs-2017).
-- List allowable values coming from the user. Use enums, [TryParse](https://docs.microsoft.com/en-us/dotnet/api/system.int32.tryparse#System_Int32_TryParse_System_String_System_Int32__) or lookup values to assure that the data coming from the user is as expected.
-    - Enums are still vulnerable to unexpected values because .NET only validates a successful cast to the underlying data type, integer by default. [Enum.IsDefined](https://docs.microsoft.com/en-us/dotnet/api/system.enum.isdefined) can validate whether the input value is valid within the list of defined constants.
-- Apply the principle of least privilege when setting up the Database User in your database of choice. The database user should only be able to access items that make sense for the use case.
-- Use of [Entity Framework](https://docs.microsoft.com/en-us/ef/) is a very effective [SQL injection](SQL_Injection_Prevention_Cheat_Sheet.md) prevention mechanism. **Remember that building your own ad hoc queries in Entity Framework is just as susceptible to SQLi as a plain SQL query**.
-- When using SQL Server, prefer [integrated authentication](https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/using-integrated-authentication?view=sql-server-ver16) over [SQL authentication](https://learn.microsoft.com/en-us/sql/relational-databases/security/choose-an-authentication-mode?view=sql-server-ver16#connecting-through-sql-server-authentication).
-- Use [Always Encrypted](https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/always-encrypted-database-engine) where possible for sensitive data (SQL Server 2016+ and Azure SQL)
+- 对所有数据访问使用[参数化 SQL](https://docs.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlcommand.prepare?view=netframework-4.7.2) 命令，没有例外。
+- 不要使用由[拼接 SQL 字符串](https://docs.microsoft.com/en-gb/visualstudio/code-quality/ca2100-review-sql-queries-for-security-vulnerabilities?view=vs-2017)组成的字符串参数的 [SqlCommand](https://docs.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlcommand)。
+- 列出来自用户的可接受值。使用枚举、[TryParse](https://docs.microsoft.com/en-us/dotnet/api/system.int32.tryparse#System_Int32_TryParse_System_String_System_Int32__) 或查找值，以确保来自用户的数据符合预期。
+    - 枚举仍然容易受到意外值的影响，因为 .NET 只验证对底层数据类型的成功转换，默认为整数。[Enum.IsDefined](https://docs.microsoft.com/en-us/dotnet/api/system.enum.isdefined) 可以验证输入值是否在定义的常量列表中有效。
+- 在设置数据库用户时应用最小权限原则。数据库用户应该只能访问对用例有意义的项目。
+- 使用 [Entity Framework](https://docs.microsoft.com/en-us/ef/) 是一种非常有效的 [SQL 注入](SQL_Injection_Prevention_Cheat_Sheet.md)预防机制。**请记住，在 Entity Framework 中构建自己的临时查询与普通 SQL 查询一样容易受到 SQLi 攻击**。
+- 使用 SQL Server 时，优先使用[集成身份验证](https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/using-integrated-authentication?view=sql-server-ver16)而非 [SQL 身份验证](https://learn.microsoft.com/en-us/sql/relational-databases/security/choose-an-authentication-mode?view=sql-server-ver16#connecting-through-sql-server-authentication)。
+- 尽可能对敏感数据使用[始终加密](https://docs.microsoft.com/en-us/sql/relational-databases/security/encryption/always-encrypted-database-engine)（SQL Server 2016+ 和 Azure SQL）
 
-## ASP NET Web Forms Guidance
+## ASP.NET Web Forms 指南
 
-ASP.NET Web Forms is the original browser-based application development API for the .NET Framework, and is still the most common enterprise platform for web application development.
+ASP.NET Web Forms 是 .NET Framework 的原始浏览器应用程序开发 API，仍然是 Web 应用程序开发最常见的企业平台。
 
-- Always use [HTTPS](http://support.microsoft.com/kb/324069).
-- Enable [requireSSL](https://docs.microsoft.com/en-us/dotnet/api/system.web.configuration.httpcookiessection.requiressl) on cookies and form elements and [HttpOnly](https://docs.microsoft.com/en-us/dotnet/api/system.web.configuration.httpcookiessection.httponlycookies) on cookies in the web.config.
-- Implement [customErrors](https://docs.microsoft.com/en-us/dotnet/api/system.web.configuration.customerror).
-- Make sure [tracing](http://www.iis.net/configreference/system.webserver/tracing) is turned off.
-- While ViewState isn't always appropriate for web development, using it can provide CSRF mitigation. To make the ViewState protect against CSRF attacks you need to set the [ViewStateUserKey](https://docs.microsoft.com/en-us/dotnet/api/system.web.ui.page.viewstateuserkey):
+- 始终使用 [HTTPS](http://support.microsoft.com/kb/324069)。
+- 在 web.config 中对 Cookie 和表单元素启用 [requireSSL](https://docs.microsoft.com/en-us/dotnet/api/system.web.configuration.httpcookiessection.requiressl)，对 Cookie 启用 [HttpOnly](https://docs.microsoft.com/en-us/dotnet/api/system.web.configuration.httpcookiessection.httponlycookies)。
+- 实施 [customErrors](https://docs.microsoft.com/en-us/dotnet/api/system.web.configuration.customerror)。
+- 确保[跟踪](http://www.iis.net/configreference/system.webserver/tracing)已关闭。
+- 虽然 ViewState 并不总是适合 Web 开发，但使用它可以提供 CSRF 缓解。要使 ViewState 防止 CSRF 攻击，需要设置 [ViewStateUserKey](https://docs.microsoft.com/en-us/dotnet/api/system.web.ui.page.viewstateuserkey)：
 
 ```csharp
-protected override OnInit(EventArgs e) {
-    base.OnInit(e);
-    ViewStateUserKey = Session.SessionID;
+protected override OnInit(EventArgs e) {
+    base.OnInit(e);
+    ViewStateUserKey = Session.SessionID;
 }
 ```
 
-If you don't use Viewstate, then look to the default main page of the ASP.NET Web Forms default template for a manual anti-CSRF token using a double-submit cookie.
+如果不使用 Viewstate，则查看 ASP.NET Web Forms 默认模板的主页面，使用双重提交 Cookie 的手动反 CSRF 令牌。
 
 ```csharp
-private const string AntiXsrfTokenKey = "__AntiXsrfToken";
-private const string AntiXsrfUserNameKey = "__AntiXsrfUserName";
-private string _antiXsrfTokenValue;
-protected void Page_Init(object sender, EventArgs e)
+private const string AntiXsrfTokenKey = "__AntiXsrfToken";
+private const string AntiXsrfUserNameKey = "__AntiXsrfUserName";
+private string _antiXsrfTokenValue;
+protected void Page_Init(object sender, EventArgs e)
 {
-    // The code below helps to protect against XSRF attacks
-    var requestCookie = Request.Cookies[AntiXsrfTokenKey];
-    Guid requestCookieGuidValue;
-    if (requestCookie != null && Guid.TryParse(requestCookie.Value, out requestCookieGuidValue))
-    {
-       // Use the Anti-XSRF token from the cookie
-       _antiXsrfTokenValue = requestCookie.Value;
-       Page.ViewStateUserKey = _antiXsrfTokenValue;
-    }
-    else
-    {
-       // Generate a new Anti-XSRF token and save to the cookie
-       _antiXsrfTokenValue = Guid.NewGuid().ToString("N");
-       Page.ViewStateUserKey = _antiXsrfTokenValue;
-       var responseCookie = new HttpCookie(AntiXsrfTokenKey)
-       {
-          HttpOnly = true,
-          Value = _antiXsrfTokenValue
-       };
-       if (FormsAuthentication.RequireSSL && Request.IsSecureConnection)
-       {
-          responseCookie.Secure = true;
-       }
-       Response.Cookies.Set(responseCookie);
-    }
-    Page.PreLoad += master_Page_PreLoad;
+    // 下面的代码有助于防止 XSRF 攻击
+    var requestCookie = Request.Cookies[AntiXsrfTokenKey];
+    Guid requestCookieGuidValue;
+    if (requestCookie != null && Guid.TryParse(requestCookie.Value, out requestCookieGuidValue))
+    {
+       // 使用 Cookie 中的防 XSRF 令牌
+       _antiXsrfTokenValue = requestCookie.Value;
+       Page.ViewStateUserKey = _antiXsrfTokenValue;
+    }
+    else
+    {
+       // 生成新的防 XSRF 令牌并保存到 Cookie
+       _antiXsrfTokenValue = Guid.NewGuid().ToString("N");
+       Page.ViewStateUserKey = _antiXsrfTokenValue;
+       var responseCookie = new HttpCookie(AntiXsrfTokenKey)
+       {
+          HttpOnly = true,
+          Value = _antiXsrfTokenValue
+       };
+       if (FormsAuthentication.RequireSSL && Request.IsSecureConnection)
+       {
+          responseCookie.Secure = true;
+       }
+       Response.Cookies.Set(responseCookie);
+    }
+    Page.PreLoad += master_Page_PreLoad;
 }
-protected void master_Page_PreLoad(object sender, EventArgs e)
+protected void master_Page_PreLoad(object sender, EventArgs e)
 {
-    if (!IsPostBack)
-    {
-       // Set Anti-XSRF token
-       ViewState[AntiXsrfTokenKey] = Page.ViewStateUserKey;
-       ViewState[AntiXsrfUserNameKey] = Context.User.Identity.Name ?? String.Empty;
-    }
-    else
-    {
-       // Validate the Anti-XSRF token
+    if (!IsPostBack)
+    {
+       // 设置防 XSRF 令牌
+       ViewState[AntiXsrfTokenKey] = Page.ViewStateUserKey;
+       ViewState[AntiXsrfUserNameKey] = Context.User.Identity.Name ?? String.Empty;
+    }
+    else
+    {
+       // 验证防 XSRF 令牌
        if ((string)ViewState[AntiXsrfTokenKey] != _antiXsrfTokenValue ||
-          (string)ViewState[AntiXsrfUserNameKey] != (Context.User.Identity.Name ?? String.Empty))
-       {
-          throw new InvalidOperationException("Validation of Anti-XSRF token failed.");
-       }
-    }
+          (string)ViewState[AntiXsrfUserNameKey] != (Context.User.Identity.Name ?? String.Empty))
+       {
+          throw new InvalidOperationException("防 XSRF 令牌验证失败。");
+       }
+    }
 }
 ```
 
-- Consider [HSTS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security) in IIS. See [here](https://support.microsoft.com/en-us/help/954002/how-to-add-a-custom-http-response-header-to-a-web-site-that-is-hosted) for the procedure.
-- This is a recommended `web.config` setup that handles HSTS among other things.
+- 考虑在 IIS 中使用 [HSTS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security)。参见[此处](https://support.microsoft.com/en-us/help/954002/how-to-add-a-custom-http-response-header-to-a-web-site-that-is-hosted)的过程。
+- 以下是处理 HSTS 等问题的推荐 `web.config` 设置。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
- <configuration>
-   <system.web>
-     <httpRuntime enableVersionHeader="false"/>
-   </system.web>
-   <system.webServer>
-     <security>
-       <requestFiltering removeServerHeader="true" />
-     </security>
-     <staticContent>
-       <clientCache cacheControlCustom="public"
+ <configuration>
+   <system.web>
+     <httpRuntime enableVersionHeader="false"/>
+   </system.web>
+   <system.webServer>
+     <security>
+       <requestFiltering removeServerHeader="true" />
+     </security>
+     <staticContent>
+       <clientCache cacheControlCustom="public"
             cacheControlMode="UseMaxAge"
             cacheControlMaxAge="1.00:00:00"
             setEtag="true" />
-     </staticContent>
-     <httpProtocol>
-       <customHeaders>
-         <add name="Content-Security-Policy"
+     </staticContent>
+     <httpProtocol>
+       <customHeaders>
+         <add name="Content-Security-Policy"
             value="default-src 'none'; style-src 'self'; img-src 'self'; font-src 'self'" />
-         <add name="X-Content-Type-Options" value="NOSNIFF" />
-         <add name="X-Frame-Options" value="DENY" />
-         <add name="X-Permitted-Cross-Domain-Policies" value="master-only"/>
-         <add name="X-XSS-Protection" value="0"/>
-         <remove name="X-Powered-By"/>
-       </customHeaders>
-     </httpProtocol>
-     <rewrite>
-       <rules>
-         <rule name="Redirect to https">
-           <match url="(.*)"/>
-           <conditions>
-             <add input="{HTTPS}" pattern="Off"/>
-             <add input="{REQUEST_METHOD}" pattern="^get$|^head$" />
-           </conditions>
-           <action type="Redirect" url="https://{HTTP_HOST}/{R:1}" redirectType="Permanent"/>
-         </rule>
-       </rules>
-       <outboundRules>
-         <rule name="Add HSTS Header" enabled="true">
-           <match serverVariable="RESPONSE_Strict_Transport_Security" pattern=".*" />
-           <conditions>
-             <add input="{HTTPS}" pattern="on" ignoreCase="true" />
-           </conditions>
-           <action type="Rewrite" value="max-age=15768000" />
-         </rule>
-       </outboundRules>
-     </rewrite>
-   </system.webServer>
- </configuration>
+         <add name="X-Content-Type-Options" value="NOSNIFF" />
+         <add name="X-Frame-Options" value="DENY" />
+         <add name="X-Permitted-Cross-Domain-Policies" value="master-only"/>
+         <add name="X-XSS-Protection" value="0"/>
+         <remove name="X-Powered-By"/>
+       </customHeaders>
+     </httpProtocol>
+     <rewrite>
+       <rules>
+         <rule name="Redirect to https">
+           <match url="(.*)"/>
+           <conditions>
+             <add input="{HTTPS}" pattern="Off"/>
+             <add input="{REQUEST_METHOD}" pattern="^get$|^head$" />
+           </conditions>
+           <action type="Redirect" url="https://{HTTP_HOST}/{R:1}" redirectType="Permanent"/>
+         </rule>
+       </rules>
+       <outboundRules>
+         <rule name="Add HSTS Header" enabled="true">
+           <match serverVariable="RESPONSE_Strict_Transport_Security" pattern=".*" />
+           <conditions>
+             <add input="{HTTPS}" pattern="on" ignoreCase="true" />
+           </conditions>
+           <action type="Rewrite" value="max-age=15768000" />
+         </rule>
+       </outboundRules>
+     </rewrite>
+   </system.webServer>
+ </configuration>
 ```
 
-- Remove the version header by adding the following line in `Machine.config` file:
+- 通过在 `Machine.config` 文件中添加以下行来删除版本标头：
 
 ```xml
 <httpRuntime enableVersionHeader="false" />
 ```
 
-- Also remove the Server header using the HttpContext Class in your code.
+- 使用代码中的 HttpContext 类也可以删除服务器标头。
 
 ```csharp
 HttpContext.Current.Response.Headers.Remove("Server");
 ```
 
-### HTTP validation and encoding
+### HTTP 验证和编码
 
-- Do not disable [validateRequest](http://www.asp.net/whitepapers/request-validation) in the `web.config` or the page setup. This value enables limited XSS protection in ASP.NET and should be left intact as it provides partial prevention of Cross Site Scripting. Complete request validation is recommended in addition to the built-in protections.
-- The 4.5 version of the .NET Frameworks includes the [AntiXssEncoder](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.antixss.antixssencoder?view=netframework-4.7.2) library, which has a comprehensive input encoding library for the prevention of XSS. Use it.
-- List allowable values anytime user input is accepted.
-- Validate the format of URIs using [Uri.IsWellFormedUriString](https://docs.microsoft.com/en-us/dotnet/api/system.uri.iswellformeduristring).
+- 不要在 `web.config` 或页面设置中禁用 [validateRequest](http://www.asp.net/whitepapers/request-validation)。此值在 ASP.NET 中启用有限的 XSS 保护，应保持不变，因为它提供了部分防止跨站脚本攻击的功能。建议除了内置保护外，还要进行完整的请求验证。
+- .NET Framework 4.5 版本包含 [AntiXssEncoder](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.antixss.antixssencoder?view=netframework-4.7.2) 库，它有一个全面的输入编码库，用于防止 XSS。请使用它。
+- 每当接受用户输入时，列出可接受的值。
+- 使用 [Uri.IsWellFormedUriString](https://docs.microsoft.com/en-us/dotnet/api/system.uri.iswellformeduristring) 验证 URI 的格式。
 
-### Forms authentication
+### 表单身份验证
 
-- Use cookies for persistence when possible. `Cookieless` auth will default to [UseDeviceProfile](https://docs.microsoft.com/en-us/dotnet/api/system.web.httpcookiemode?view=netframework-4.7.2).
-- Don't trust the URI of the request for persistence of the session or authorization. It can be easily faked.
-- Reduce the Forms Authentication timeout from the default of *20 minutes* to the shortest period appropriate for your application. If [slidingExpiration](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication.slidingexpiration?view=netframework-4.7.2) is used this timeout resets after each request, so active users won't be affected.
-- If HTTPS is not used, [slidingExpiration](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication.slidingexpiration?view=netframework-4.7.2) should be disabled. Consider disabling [slidingExpiration](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication.slidingexpiration?view=netframework-4.7.2) even with HTTPS.
-- Always implement proper access controls.
-    - Compare user provided username with `User.Identity.Name`.
-    - Check roles against `User.Identity.IsInRole`.
-- Use the [ASP.NET Membership provider and role provider](https://docs.microsoft.com/en-us/dotnet/framework/wcf/samples/membership-and-role-provider), but review the password storage. The default storage hashes the password with a single iteration of SHA-1 which is rather weak. The ASP.NET MVC4 template uses [ASP.NET Identity](http://www.asp.net/identity/overview/getting-started/introduction-to-aspnet-identity) instead of ASP.NET Membership, and ASP.NET Identity uses PBKDF2 by default which is better. Review the OWASP [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md) for more information.
-- Explicitly authorize resource requests.
-- Leverage role based authorization using `User.Identity.IsInRole`.
+- 尽可能使用 Cookie 进行持久化。`Cookieless` 身份验证将默认为 [UseDeviceProfile](https://docs.microsoft.com/en-us/dotnet/api/system.web.httpcookiemode?view=netframework-4.7.2)。
+- 不要信任请求的 URI 用于会话或授权的持久化。它可以很容易被伪造。
+- 将表单身份验证超时从默认的 *20 分钟* 减少到适合你应用程序的最短时间。如果使用 [slidingExpiration](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication.slidingexpiration?view=netframework-4.7.2)，此超时将在每次请求后重置，因此活跃用户不会受到影响。
+- 如果未使用 HTTPS，应禁用 [slidingExpiration](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication.slidingexpiration?view=netframework-4.7.2)。即使使用 HTTPS，也要考虑禁用 [slidingExpiration](https://docs.microsoft.com/en-us/dotnet/api/system.web.security.formsauthentication.slidingexpiration?view=netframework-4.7.2)。
+- 始终实施适当的访问控制。
+    - 将用户提供的用户名与 `User.Identity.Name` 进行比较。
+    - 使用 `User.Identity.IsInRole` 检查角色。
+- 使用 [ASP.NET 成员资格提供程序和角色提供程序](https://docs.microsoft.com/en-us/dotnet/framework/wcf/samples/membership-and-role-provider)，但要审查密码存储。默认存储使用单次迭代的 SHA-1 哈希，这相当弱。ASP.NET MVC4 模板使用 [ASP.NET Identity](http://www.asp.net/identity/overview/getting-started/introduction-to-aspnet-identity)，而不是 ASP.NET 成员资格，并且 ASP.NET Identity 默认使用 PBKDF2，这更好。有关更多信息，请查看 OWASP [密码存储备忘录](Password_Storage_Cheat_Sheet.md)。
+- 明确授权资源请求。
+- 利用基于角色的授权，使用 `User.Identity.IsInRole`。
 
-## XAML Guidance
+## XAML 指南
 
-- Work within the constraints of Internet Zone security for your application.
-- Use ClickOnce deployment. For enhanced permissions, use permission elevation at runtime or trusted application deployment at install time.
+- 在应用程序的 Internet 区域安全约束内工作。
+- 使用 ClickOnce 部署。对于增强的权限，可以在运行时使用权限提升或在安装时使用可信应用程序部署。
 
-## Windows Forms Guidance
+## Windows Forms 指南
 
-- Use partial trust when possible. Partially trusted Windows applications reduce the attack surface of an application. Manage a list of what permissions your app must use, and what it may use, and then make the request for those permissions declaratively at runtime.
-- Use ClickOnce deployment. For enhanced permissions, use permission elevation at runtime or trusted application deployment at install time.
+- 尽可能使用部分信任。部分信任的 Windows 应用程序可以减少应用程序的攻击面。管理应用程序必须使用的权限列表，以及可能使用的权限，然后在运行时以声明方式请求这些权限。
+- 使用 ClickOnce 部署。对于增强的权限，可以在运行时使用权限提升或在安装时使用可信应用程序部署。
 
-## WCF Guidance
+## WCF 指南
 
-- Keep in mind that the only safe way to pass a request in RESTful services is via `HTTP POST`, with TLS enabled.
-Using `HTTP GET` necessitates putting the data in the URL (e.g. the query string) which is visible to the user and will
-be logged and stored in their browser history.
-- Avoid [BasicHttpBinding](https://docs.microsoft.com/en-us/dotnet/api/system.servicemodel.basichttpbinding?view=netframework-4.7.2). It has no default security configuration. Use [WSHttpBinding](https://docs.microsoft.com/en-us/dotnet/api/system.servicemodel.wshttpbinding?view=netframework-4.7.2) instead.
-- Use at least two security modes for your binding. Message security includes security provisions in the headers. Transport security means use of SSL. [TransportWithMessageCredential](https://docs.microsoft.com/en-us/dotnet/framework/wcf/samples/ws-transport-with-message-credential) combines the two.
-- Test your WCF implementation with a fuzzer like [ZAP](https://www.zaproxy.org/).
+- 请记住，在 RESTful 服务中传递请求的唯一安全方式是通过启用了 TLS 的 `HTTP POST`。
+使用 `HTTP GET` 需要将数据放在 URL（例如查询字符串）中，这对用户可见，并且
+将被记录并存储在他们的浏览器历史记录中。
+- 避免使用 [BasicHttpBinding](https://docs.microsoft.com/en-us/dotnet/api/system.servicemodel.basichttpbinding?view=netframework-4.7.2)。它没有默认的安全配置。改用 [WSHttpBinding](https://docs.microsoft.com/en-us/dotnet/api/system.servicemodel.wshttpbinding?view=netframework-4.7.2)。
+- 为你的绑定使用至少两种安全模式。消息安全在标头中包含安全规定。传输安全意味着使用 SSL。[TransportWithMessageCredential](https://docs.microsoft.com/en-us/dotnet/framework/wcf/samples/ws-transport-with-message-credential) 将两者结合。
+- 使用像 [ZAP](https://www.zaproxy.org/) 这样的模糊测试器测试你的 WCF 实现。
