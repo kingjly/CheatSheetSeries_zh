@@ -1,22 +1,22 @@
-# JSON Web Token Cheat Sheet for Java
+# Java JSON Web Token 备忘录
 
-## Introduction
+## 引言
 
-Many applications use **JSON Web Tokens** (JWT) to allow the client to indicate its identity for further exchange after authentication.
+许多应用程序使用 **JSON Web Tokens**（JWT）允许客户端在认证后为进一步交换指示其身份。
 
-From [JWT.IO](https://jwt.io/introduction):
+来自 [JWT.IO](https://jwt.io/introduction)：
 
-> JSON Web Token (JWT) is an open standard (RFC 7519) that defines a compact and self-contained way for securely transmitting information between parties as a JSON object. This information can be verified and trusted because it is digitally signed. JWTs can be signed using a secret (with the HMAC algorithm) or a public/private key pair using RSA.
+> JSON Web Token（JWT）是一个开放标准（RFC 7519），定义了一种紧凑且自包含的方式，用于在各方之间以 JSON 对象安全地传输信息。这些信息可以被验证和信任，因为它们是数字签名的。JWT 可以使用秘密（使用 HMAC 算法）或使用 RSA 的公钥/私钥对进行签名。
 
-JSON Web Token is used to carry information related to the identity and characteristics (claims) of a client. This information is signed by the server in order for it to detect whether it was tampered with after sending it to the client. This will prevent an attacker from changing the identity or any characteristics (for example, changing the role from simple user to admin or change the client login).
+JSON Web Token 用于携带与客户端身份和特征（声明）相关的信息。服务器对这些信息进行签名，以便检测在发送给客户端后是否被篡改。这将防止攻击者更改身份或任何特征（例如，将角色从普通用户更改为管理员或更改客户端登录）。
 
-This token is created during authentication (is provided in case of successful authentication) and is verified by the server before any processing. It is used by an application to allow a client to present a token representing the user's "identity card" to the server and allow the server to verify the validity and integrity of the token in a secure way, all of this in a stateless and portable approach (portable in the way that client and server technologies can be different including also the transport channel even if HTTP is the most often used).
+此令牌在认证期间创建（在成功认证的情况下提供），并在任何处理之前由服务器验证。应用程序使用它允许客户端向服务器出示代表用户"身份证"的令牌，并允许服务器以安全的方式验证令牌的有效性和完整性，所有这些都以无状态和可移植的方式进行（可移植意味着客户端和服务器技术可以不同，传输通道也可以不同，尽管 HTTP 是最常用的）。
 
-## Token Structure
+## 令牌结构
 
-Token structure example taken from [JWT.IO](https://jwt.io/#debugger):
+来自 [JWT.IO](https://jwt.io/#debugger) 的令牌结构示例：
 
-`[Base64(HEADER)].[Base64(PAYLOAD)].[Base64(SIGNATURE)]`
+`[Base64(头部)].[Base64(有效载荷)].[Base64(签名)]`
 
 ```text
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
@@ -24,7 +24,7 @@ eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.
 TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ
 ```
 
-Chunk 1: **Header**
+第一部分：**头部**
 
 ```json
 {
@@ -33,7 +33,7 @@ Chunk 1: **Header**
 }
 ```
 
-Chunk 2: **Payload**
+第二部分：**有效载荷**
 
 ```json
 {
@@ -43,107 +43,103 @@ Chunk 2: **Payload**
 }
 ```
 
-Chunk 3: **Signature**
+第三部分：**签名**
 
 ```javascript
-HMACSHA256( base64UrlEncode(header) + "." + base64UrlEncode(payload), KEY )
+HMACSHA256( base64UrlEncode(头部) + "." + base64UrlEncode(有效载荷), 密钥 )
 ```
 
-## Objective
+## 目标
 
-This cheatsheet provides tips to prevent common security issues when using JSON Web Tokens (JWT) with Java.
+本备忘录提供了在使用 Java 处理 JSON Web Tokens（JWT）时防止常见安全问题的建议。
 
-The tips presented in this article are part of a Java project that was created to show the correct way to handle creation and validation of JSON Web Tokens.
+本文中介绍的建议是 Java 项目的一部分，该项目旨在展示正确处理 JSON Web Tokens 的创建和验证方法。
 
-You can find the Java project [here](https://github.com/righettod/poc-jwt), it uses the official [JWT library](https://jwt.io/#libraries).
+你可以在[这里](https://github.com/righettod/poc-jwt)找到 Java 项目，它使用官方 [JWT 库](https://jwt.io/#libraries)。
 
-In the rest of the article, the term **token** refers to the **JSON Web Tokens** (JWT).
+在本文的其余部分，术语**令牌**指的是 **JSON Web Tokens**（JWT）。
 
-## Consideration about Using JWT
+## 关于使用 JWT 的考虑
 
-Even if a JWT is "easy" to use and allow to expose services (mostly REST style) in a stateless way, it's not the solution that fits for all applications because it comes with some caveats, like for example the question of the storage of the token (tackled in this cheatsheet) and others...
+即使 JWT 使用"简单"且允许以无状态方式公开服务（主要是 REST 风格），但它并不适合所有应用程序，因为它带有一些注意事项，例如令牌存储问题（在本备忘录中讨论）等。
 
-If your application does not need to be fully stateless, you can consider using traditional session system provided by all web frameworks and follow the advice from the dedicated [session management cheat sheet](Session_Management_Cheat_Sheet.md). However, for stateless applications, when well implemented, it's a good candidate.
+如果你的应用程序不需要完全无状态，可以考虑使用所有 Web 框架提供的传统会话系统，并遵循[会话管理备忘录](Session_Management_Cheat_Sheet.md)中的建议。但是，对于无状态应用程序，当正确实施时，它是一个很好的候选方案。
 
-## Issues
+## 问题
 
-### None Hashing Algorithm
+### 无哈希算法
 
-#### Symptom
+#### 症状
 
-This attack, described [here](https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/), occurs when an attacker alters the token and changes the hashing algorithm to indicate, through the *none* keyword, that the integrity of the token has already been verified. As explained in the link above *some libraries treated tokens signed with the none algorithm as a valid token with a verified signature*, so an attacker can alter the token claims and the modified token will still be trusted by the application.
+这种攻击在[此处](https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/)有描述，当攻击者更改令牌并将哈希算法更改为通过 *none* 关键字指示令牌完整性已被验证时发生。正如上面链接中解释的，*一些库将使用 none 算法签名的令牌视为具有已验证签名的有效令牌*，因此攻击者可以更改令牌声明，修改后的令牌仍将被应用程序信任。
 
-#### How to Prevent
+#### 如何预防
 
-First, use a JWT library that is not exposed to this vulnerability.
+首先，使用不受此漏洞影响的 JWT 库。
 
-Last, during token validation, explicitly request that the expected algorithm was used.
+最后，在令牌验证期间，明确要求使用预期的算法。
 
-#### Implementation Example
+#### 实现示例
 
 ``` java
-// HMAC key - Block serialization and storage as String in JVM memory
+// HMAC 密钥 - 阻止在 JVM 内存中序列化和存储为字符串
 private transient byte[] keyHMAC = ...;
 
 ...
 
-//Create a verification context for the token requesting
-//explicitly the use of the HMAC-256 hashing algorithm
+//为令牌创建验证上下文，明确要求使用 HMAC-256 哈希算法
 JWTVerifier verifier = JWT.require(Algorithm.HMAC256(keyHMAC)).build();
 
-//Verify the token, if the verification fail then a exception is thrown
+//验证令牌，如果验证失败则抛出异常
 DecodedJWT decodedToken = verifier.verify(token);
 ```
 
-### Token Sidejacking
+### 令牌劫持
 
-#### Symptom
+#### 症状
 
-This attack occurs when a token has been intercepted/stolen by an attacker and they use it to gain access to the system using targeted user identity.
+当令牌被攻击者拦截/窃取并用于使用目标用户身份访问系统时，会发生此攻击。
 
-#### How to Prevent
+#### 如何预防
 
-A way to prevent it is to add a "user context" in the token. A user context will be composed of the following information:
+防止这种攻击的一种方法是在令牌中添加"用户上下文"。用户上下文将由以下信息组成：
 
-- A random string that will be generated during the authentication phase. It will be sent to the client as an hardened cookie (flags: [HttpOnly + Secure](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies) + [SameSite](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#SameSite_cookies) + [Max-Age](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie) + [cookie prefixes](https://googlechrome.github.io/samples/cookie-prefixes/)). Avoid setting *expires* header so that the cookie is cleared when the browser is closed. Set *Max-Age* to a value smaller or equal to the value of JWT expiry, but never more.
-- A SHA256 hash of the random string will be stored in the token (instead of the raw value) in order to prevent any XSS issues allowing the attacker to read the random string value and setting the expected cookie.
+- 在认证阶段生成的随机字符串。它将作为强化 cookie 发送给客户端（标志：[HttpOnly + Secure](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies) + [SameSite](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#SameSite_cookies) + [Max-Age](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie) + [cookie 前缀](https://googlechrome.github.io/samples/cookie-prefixes/)）。避免设置 *expires* 标头，以便在浏览器关闭时清除 cookie。将 *Max-Age* 设置为小于或等于 JWT 到期值的值，但永远不要超过。
+- 随机字符串的 SHA256 哈希值将存储在令牌中（而不是原始值），以防止任何允许攻击者读取随机字符串值并设置预期 cookie 的 XSS 问题。
 
-IP addresses should not be used because there are some legitimate situations in which the IP address can change during the same session. For example, when an user accesses an application through their mobile device and the mobile operator changes during the exchange, then the IP address may (often) change. Moreover, using the IP address can potentially cause issues with [European GDPR](https://gdpr.eu/) compliance.
+不应使用 IP 地址，因为在某些合法情况下，IP 地址可能在同一会话期间发生变化。例如，当用户通过移动设备访问应用程序，并且移动运营商在交换期间发生变化时，IP 地址可能（经常）会更改。此外，使用 IP 地址可能会导致与[欧洲 GDPR](https://gdpr.eu/) 合规性相关的潜在问题。
 
-During token validation, if the received token does not contain the right context (for example, if it has been replayed), then it must be rejected.
+在令牌验证期间，如果收到的令牌不包含正确的上下文（例如，如果它已被重放），则必须拒绝该令牌。
 
-#### Implementation example
+#### 实现示例
 
-Code to create the token after successful authentication.
+认证成功后创建令牌的代码。
 
 ``` java
-// HMAC key - Block serialization and storage as String in JVM memory
+// HMAC 密钥 - 阻止在 JVM 内存中序列化和存储为字符串
 private transient byte[] keyHMAC = ...;
-// Random data generator
+// 随机数据生成器
 private SecureRandom secureRandom = new SecureRandom();
 
 ...
 
-//Generate a random string that will constitute the fingerprint for this user
+//生成将构成此用户指纹的随机字符串
 byte[] randomFgp = new byte[50];
 secureRandom.nextBytes(randomFgp);
 String userFingerprint = DatatypeConverter.printHexBinary(randomFgp);
 
-//Add the fingerprint in a hardened cookie - Add cookie manually because
-//SameSite attribute is not supported by javax.servlet.http.Cookie class
+//在强化 cookie 中添加指纹 - 手动添加 cookie，因为 javax.servlet.http.Cookie 类不支持 SameSite 属性
 String fingerprintCookie = "__Secure-Fgp=" + userFingerprint
                            + "; SameSite=Strict; HttpOnly; Secure";
 response.addHeader("Set-Cookie", fingerprintCookie);
 
-//Compute a SHA256 hash of the fingerprint in order to store the
-//fingerprint hash (instead of the raw value) in the token
-//to prevent an XSS to be able to read the fingerprint and
-//set the expected cookie itself
+//计算指纹的 SHA256 哈希值，以便在令牌中存储指纹哈希（而不是原始值）
+//防止 XSS 攻击读取指纹并设置预期 cookie
 MessageDigest digest = MessageDigest.getInstance("SHA-256");
 byte[] userFingerprintDigest = digest.digest(userFingerprint.getBytes("utf-8"));
 String userFingerprintHash = DatatypeConverter.printHexBinary(userFingerprintDigest);
 
-//Create the token with a validity of 15 minutes and client context (fingerprint) information
+//创建有效期为 15 分钟的令牌，并包含客户端上下文（指纹）信息
 Calendar c = Calendar.getInstance();
 Date now = c.getTime();
 c.add(Calendar.MINUTE, 15);
@@ -160,15 +156,15 @@ String token = JWT.create().withSubject(login)
    .sign(Algorithm.HMAC256(this.keyHMAC));
 ```
 
-Code to validate the token.
+验证令牌的代码。
 
 ``` java
-// HMAC key - Block serialization and storage as String in JVM memory
+// HMAC 密钥 - 阻止在 JVM 内存中序列化和存储为字符串
 private transient byte[] keyHMAC = ...;
 
 ...
 
-//Retrieve the user fingerprint from the dedicated cookie
+//从专用 cookie 中检索用户指纹
 String userFingerprint = null;
 if (request.getCookies() != null && request.getCookies().length > 0) {
  List<Cookie> cookies = Arrays.stream(request.getCookies()).collect(Collectors.toList());
@@ -179,85 +175,83 @@ if (request.getCookies() != null && request.getCookies().length > 0) {
  }
 }
 
-//Compute a SHA256 hash of the received fingerprint in cookie in order to compare
-//it to the fingerprint hash stored in the token
+//计算 cookie 中接收到的指纹的 SHA256 哈希值，以便与令牌中存储的指纹哈希进行比较
 MessageDigest digest = MessageDigest.getInstance("SHA-256");
 byte[] userFingerprintDigest = digest.digest(userFingerprint.getBytes("utf-8"));
 String userFingerprintHash = DatatypeConverter.printHexBinary(userFingerprintDigest);
 
-//Create a verification context for the token
+//为令牌创建验证上下文
 JWTVerifier verifier = JWT.require(Algorithm.HMAC256(keyHMAC))
                               .withIssuer(issuerID)
                               .withClaim("userFingerprint", userFingerprintHash)
                               .build();
 
-//Verify the token, if the verification fail then an exception is thrown
+//验证令牌，如果验证失败则抛出异常
 DecodedJWT decodedToken = verifier.verify(token);
 ```
 
-### No Built-In Token Revocation by the User
+### 用户无法内置令牌撤销
 
-#### Symptom
+#### 症状
 
-This problem is inherent to JWT because a token only becomes invalid when it expires. The user has no built-in feature to explicitly revoke the validity of a token. This means that if it is stolen, a user cannot revoke the token itself thereby blocking the attacker.
+这个问题是 JWT 固有的，因为令牌只有在过期时才会失效。用户没有明确撤销令牌有效性的内置功能。这意味着如果令牌被盗，用户无法自行撤销令牌，从而阻止攻击者。
 
-#### How to Prevent
+#### 如何预防
 
-Since JWTs are stateless, There is no session maintained on the server(s) serving client requests. As such, there is no session to invalidate on the server side. A well implemented Token Sidejacking solution (as explained above) should alleviate the need for maintaining denylist on server side. This is because a hardened cookie used in the Token Sidejacking can be considered as secure as a session ID used in the traditional session system, and unless both the cookie and the JWT are intercepted/stolen, the JWT is unusable. A logout can thus be 'simulated' by clearing the JWT from session storage. If the user chooses to close the browser instead, then both the cookie and sessionStorage are cleared automatically.
+由于 JWT 是无状态的，服务器不会维护处理客户端请求的会话。因此，服务器端没有可以使会话无效的会话。上面解释的令牌劫持解决方案应该可以缓解在服务器端维护拒绝列表的需要。这是因为令牌劫持中使用的强化 cookie 可以被视为与传统会话系统中使用的会话 ID 一样安全，除非同时拦截/窃取 cookie 和 JWT，否则 JWT 是不可用的。因此，注销可以通过从会话存储中清除 JWT 来"模拟"。如果用户选择关闭浏览器，则 cookie 和 sessionStorage 会自动清除。
 
-Another way to protect against this is to implement a token denylist that will be used to mimic the "logout" feature that exists with traditional session management system.
+另一种防护方法是实现一个令牌拒绝列表，用于模仿传统会话管理系统中存在的"注销"功能。
 
-The denylist will keep a digest (SHA-256 encoded in HEX) of the token with a revocation date. This entry must endure at least until the expiration of the token.
+拒绝列表将保留令牌的摘要（十六进制编码的 SHA-256）和撤销日期。此条目必须至少持续到令牌过期。
 
-When the user wants to "logout" then it call a dedicated service that will add the provided user token to the denylist resulting in an immediate invalidation of the token for further usage in the application.
+当用户想要"注销"时，调用专门的服务，将提供的用户令牌添加到拒绝列表中，从而立即使令牌在应用程序中进一步使用无效。
 
-#### Implementation Example
+#### 实现示例
 
-##### Block List Storage
+##### 黑名单存储
 
-A database table with the following structure will be used as the central denylist storage.
+将使用以下结构的数据库表作为中央拒绝列表存储。
 
 ``` sql
 create table if not exists revoked_token(jwt_token_digest varchar(255) primary key,
 revocation_date timestamp default now());
 ```
 
-##### Token Revocation Management
+##### 令牌撤销管理
 
-Code in charge of adding a token to the denylist and checking if a token is revoked.
+负责将令牌添加到拒绝列表并检查令牌是否被撤销的代码。
 
 ``` java
 /**
-* Handle the revocation of the token (logout).
-* Use a DB in order to allow multiple instances to check for revoked token
-* and allow cleanup at centralized DB level.
+* 处理令牌撤销（注销）。
+* 使用数据库以允许多个实例检查被撤销的令牌
+* 并允许在中央数据库级别进行清理。
 */
 public class TokenRevoker {
 
- /** DB Connection */
+ /** 数据库连接 */
  @Resource("jdbc/storeDS")
  private DataSource storeDS;
 
  /**
-  * Verify if a digest encoded in HEX of the ciphered token is present
-  * in the revocation table
+  * 验证十六进制编码的密文令牌摘要是否存在于撤销表中
   *
-  * @param jwtInHex Token encoded in HEX
-  * @return Presence flag
-  * @throws Exception If any issue occur during communication with DB
+  * @param jwtInHex 十六进制编码的令牌
+  * @return 存在标志
+  * @throws Exception 与数据库通信期间发生任何问题
   */
  public boolean isTokenRevoked(String jwtInHex) throws Exception {
      boolean tokenIsPresent = false;
      if (jwtInHex != null && !jwtInHex.trim().isEmpty()) {
-         //Decode the ciphered token
+         //解码密文令牌
          byte[] cipheredToken = DatatypeConverter.parseHexBinary(jwtInHex);
 
-         //Compute a SHA256 of the ciphered token
+         //计算密文令牌的 SHA256
          MessageDigest digest = MessageDigest.getInstance("SHA-256");
          byte[] cipheredTokenDigest = digest.digest(cipheredToken);
          String jwtTokenDigestInHex = DatatypeConverter.printHexBinary(cipheredTokenDigest);
 
-         //Search token digest in HEX in DB
+         //在数据库中搜索十六进制的令牌摘要
          try (Connection con = this.storeDS.getConnection()) {
              String query = "select jwt_token_digest from revoked_token where jwt_token_digest = ?";
              try (PreparedStatement pStatement = con.prepareStatement(query)) {
@@ -274,22 +268,22 @@ public class TokenRevoker {
 
 
  /**
-  * Add a digest encoded in HEX of the ciphered token to the revocation token table
+  * 将十六进制编码的密文令牌摘要添加到令牌撤销表
   *
-  * @param jwtInHex Token encoded in HEX
-  * @throws Exception If any issue occur during communication with DB
+  * @param jwtInHex 十六进制编码的令牌
+  * @throws Exception 与数据库通信期间发生任何问题
   */
  public void revokeToken(String jwtInHex) throws Exception {
      if (jwtInHex != null && !jwtInHex.trim().isEmpty()) {
-         //Decode the ciphered token
+         //解码密文令牌
          byte[] cipheredToken = DatatypeConverter.parseHexBinary(jwtInHex);
 
-         //Compute a SHA256 of the ciphered token
+         //计算密文令牌的 SHA256
          MessageDigest digest = MessageDigest.getInstance("SHA-256");
          byte[] cipheredTokenDigest = digest.digest(cipheredToken);
          String jwtTokenDigestInHex = DatatypeConverter.printHexBinary(cipheredTokenDigest);
 
-         //Check if the token digest in HEX is already in the DB and add it if it is absent
+         //检查十六进制的令牌摘要是否已在数据库中，如果不存在则添加
          if (!this.isTokenRevoked(jwtInHex)) {
              try (Connection con = this.storeDS.getConnection()) {
                  String query = "insert into revoked_token(jwt_token_digest) values(?)";
@@ -299,118 +293,116 @@ public class TokenRevoker {
                      insertedRecordCount = pStatement.executeUpdate();
                  }
                  if (insertedRecordCount != 1) {
-                     throw new IllegalStateException("Number of inserted record is invalid," +
-                     " 1 expected but is " + insertedRecordCount);
+                     throw new IllegalStateException("插入记录数无效，" +
+                     "预期为 1，但实际为 " + insertedRecordCount);
                  }
              }
          }
 
      }
  }
+}
 ```
 
-### Token Information Disclosure
+### 令牌信息泄露
 
-#### Symptom
+#### 症状
 
-This attack occurs when an attacker has access to a token (or a set of tokens) and extracts information stored in it (the contents of JWTs are base64 encoded, but is not encrypted by default) in order to obtain information about the system. Information can be for example the security roles, login format...
+当攻击者获取令牌（或一组令牌）并提取其中存储的信息（JWT 的内容是 base64 编码，但默认情况下未加密）以获取关于系统的信息时，会发生此攻击。信息可以是例如安全角色、登录格式等。
 
-#### How to Prevent
+#### 如何预防
 
-A way to protect against this attack is to cipher the token using, for example, a symmetric algorithm.
+防止此攻击的一种方法是使用对称算法对令牌进行加密。
 
-It's also important to protect the ciphered data against attack like [Padding Oracle](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/02-Testing_for_Padding_Oracle.html) or any other attack using cryptanalysis.
+同时，保护加密数据免受[填充预言攻击](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/02-Testing_for_Padding_Oracle.html)或任何使用密码分析的攻击也很重要。
 
-In order to achieve all these goals, the *AES-[GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode)* algorithm is used which provides *Authenticated Encryption with Associated Data*.
+为了实现所有这些目标，使用了 *AES-[GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode)* 算法，它提供了*带关联数据的认证加密*。
 
-More details from [here](https://github.com/google/tink/blob/master/docs/PRIMITIVES.md#deterministic-authenticated-encryption-with-associated-data):
+更多详情来自[此处](https://github.com/google/tink/blob/master/docs/PRIMITIVES.md#deterministic-authenticated-encryption-with-associated-data)：
 
 ```text
-AEAD primitive (Authenticated Encryption with Associated Data) provides functionality of symmetric
-authenticated encryption.
+AEAD 原语（带关联数据的认证加密）提供对称认证加密的功能。
 
-Implementations of this primitive are secure against adaptive chosen ciphertext attacks.
+该原语的实现对自适应选择密文攻击是安全的。
 
-When encrypting a plaintext one can optionally provide associated data that should be authenticated
-but not encrypted.
+加密明文时，可以选择性地提供应被认证但不加密的关联数据。
 
-That is, the encryption with associated data ensures authenticity (ie. who the sender is) and
-integrity (ie. data has not been tampered with) of that data, but not its secrecy.
+也就是说，带关联数据的加密确保了该数据的真实性（即发送者是谁）和完整性（即数据未被篡改），但不保证其保密性。
 
-See RFC5116: https://tools.ietf.org/html/rfc5116
+参见 RFC5116：https://tools.ietf.org/html/rfc5116
 ```
 
-**Note:**
+**注意：**
 
-Here ciphering is added mainly to hide internal information but it's very important to remember that the first protection against tampering of the JWT is the signature. So, the token signature and its verification must be always in place.
+这里添加加密主要是为了隐藏内部信息，但重要的是要记住，防止 JWT 篡改的首要保护是签名。因此，令牌签名及其验证必须始终存在。
 
-#### Implementation Example
+#### 实现示例
 
-##### Token Ciphering
+##### 令牌加密
 
-Code in charge of managing the ciphering. [Google Tink](https://github.com/google/tink) dedicated crypto library is used to handle ciphering operations in order to use built-in best practices provided by this library.
+负责管理加密的代码。使用 [Google Tink](https://github.com/google/tink) 专用加密库来处理加密操作，以使用该库提供的内置最佳实践。
 
 ``` java
 /**
- * Handle ciphering and deciphering of the token using AES-GCM.
+ * 使用 AES-GCM 处理令牌的加密和解密。
  *
  * @see "https://github.com/google/tink/blob/master/docs/JAVA-HOWTO.md"
  */
 public class TokenCipher {
 
     /**
-     * Constructor - Register AEAD configuration
+     * 构造函数 - 注册 AEAD 配置
      *
-     * @throws Exception If any issue occur during AEAD configuration registration
+     * @throws Exception 在 AEAD 配置注册期间发生任何问题
      */
     public TokenCipher() throws Exception {
         AeadConfig.register();
     }
 
     /**
-     * Cipher a JWT
+     * 加密 JWT
      *
-     * @param jwt          Token to cipher
-     * @param keysetHandle Pointer to the keyset handle
-     * @return The ciphered version of the token encoded in HEX
-     * @throws Exception If any issue occur during token ciphering operation
+     * @param jwt          要加密的令牌
+     * @param keysetHandle 密钥集句柄的指针
+     * @return 十六进制编码的令牌加密版本
+     * @throws Exception 在令牌加密操作期间发生任何问题
      */
     public String cipherToken(String jwt, KeysetHandle keysetHandle) throws Exception {
-        //Verify parameters
+        //验证参数
         if (jwt == null || jwt.isEmpty() || keysetHandle == null) {
-            throw new IllegalArgumentException("Both parameters must be specified!");
+            throw new IllegalArgumentException("必须指定两个参数！");
         }
 
-        //Get the primitive
+        //获取原语
         Aead aead = AeadFactory.getPrimitive(keysetHandle);
 
-        //Cipher the token
+        //加密令牌
         byte[] cipheredToken = aead.encrypt(jwt.getBytes(), null);
 
         return DatatypeConverter.printHexBinary(cipheredToken);
     }
 
     /**
-     * Decipher a JWT
+     * 解密 JWT
      *
-     * @param jwtInHex     Token to decipher encoded in HEX
-     * @param keysetHandle Pointer to the keyset handle
-     * @return The token in clear text
-     * @throws Exception If any issue occur during token deciphering operation
+     * @param jwtInHex     十六进制编码的要解密的令牌
+     * @param keysetHandle 密钥集句柄的指针
+     * @return 明文令牌
+     * @throws Exception 在令牌解密操作期间发生任何问题
      */
     public String decipherToken(String jwtInHex, KeysetHandle keysetHandle) throws Exception {
-        //Verify parameters
+        //验证参数
         if (jwtInHex == null || jwtInHex.isEmpty() || keysetHandle == null) {
-            throw new IllegalArgumentException("Both parameters must be specified !");
+            throw new IllegalArgumentException("必须指定两个参数！");
         }
 
-        //Decode the ciphered token
+        //解码加密令牌
         byte[] cipheredToken = DatatypeConverter.parseHexBinary(jwtInHex);
 
-        //Get the primitive
+        //获取原语
         Aead aead = AeadFactory.getPrimitive(keysetHandle);
 
-        //Decipher the token
+        //解密令牌
         byte[] decipheredToken = aead.decrypt(cipheredToken, null);
 
         return new String(decipheredToken);
@@ -418,74 +410,74 @@ public class TokenCipher {
 }
 ```
 
-##### Creation / Validation of the Token
+##### 令牌的创建/验证
 
-Use the token ciphering handler during the creation and the validation of the token.
+在令牌的创建和验证期间使用令牌加密处理程序。
 
-Load keys (ciphering key was generated and stored using [Google Tink](https://github.com/google/tink/blob/master/docs/JAVA-HOWTO.md#generating-new-keysets)) and setup cipher.
+加载密钥（使用 [Google Tink](https://github.com/google/tink/blob/master/docs/JAVA-HOWTO.md#generating-new-keysets) 生成并存储加密密钥）并设置加密。
 
 ``` java
-//Load keys from configuration text/json files in order to avoid to storing keys as a String in JVM memory
+//从配置文本/json文件加载密钥，以避免在 JVM 内存中将密钥存储为字符串
 private transient byte[] keyHMAC = Files.readAllBytes(Paths.get("src", "main", "conf", "key-hmac.txt"));
 private transient KeysetHandle keyCiphering = CleartextKeysetHandle.read(JsonKeysetReader.withFile(
 Paths.get("src", "main", "conf", "key-ciphering.json").toFile()));
 
 ...
 
-//Init token ciphering handler
+//初始化令牌加密处理程序
 TokenCipher tokenCipher = new TokenCipher();
 ```
 
-Token creation.
+令牌创建。
 
 ``` java
-//Generate the JWT token using the JWT API...
-//Cipher the token (String JSON representation)
+//使用 JWT API 生成 JWT 令牌...
+//加密令牌（字符串 JSON 表示）
 String cipheredToken = tokenCipher.cipherToken(token, this.keyCiphering);
-//Send the ciphered token encoded in HEX to the client in HTTP response...
+//在 HTTP 响应中将十六进制编码的加密令牌发送给客户端...
 ```
 
-Token validation.
+令牌验证。
 
 ``` java
-//Retrieve the ciphered token encoded in HEX from the HTTP request...
-//Decipher the token
+//从 HTTP 请求中检索十六进制编码的加密令牌...
+//解密令牌
 String token = tokenCipher.decipherToken(cipheredToken, this.keyCiphering);
-//Verify the token using the JWT API...
-//Verify access...
+//使用 JWT API 验证令牌...
+//验证访问...
 ```
 
-### Token Storage on Client Side
+### 客户端令牌存储
 
-#### Symptom
+#### 症状
 
-This occurs when an application stores the token in a manner exhibiting the following behavior:
+当应用程序以以下行为方式存储令牌时发生：
 
-- Automatically sent by the browser (*Cookie* storage).
-- Retrieved even if the browser is restarted (Use of browser *localStorage* container).
-- Retrieved in case of [XSS](Cross_Site_Scripting_Prevention_Cheat_Sheet.md) issue (Cookie accessible to JavaScript code or Token stored in browser local/session storage).
+- 浏览器自动发送（*Cookie* 存储）。
+- 即使浏览器重新启动也能检索（使用浏览器 *localStorage* 容器）。
+- 在 [XSS](Cross_Site_Scripting_Prevention_Cheat_Sheet.md) 问题的情况下可检索（Cookie 可被 JavaScript 代码访问，或令牌存储在浏览器本地/会话存储中）。
 
-#### How to Prevent
+#### 如何预防
 
-1. Store the token using the browser *sessionStorage* container, or use JavaScript *closures* with *private* variables
-1. Add it as a *Bearer* HTTP `Authentication` header with JavaScript when calling services.
-1. Add [fingerprint](JSON_Web_Token_for_Java_Cheat_Sheet.md#token-sidejacking) information to the token.
+1. 使用浏览器 *sessionStorage* 容器存储令牌，或使用带有 *私有* 变量的 JavaScript *闭包*。
+2. 调用服务时使用 JavaScript 将其作为 *Bearer* HTTP `Authentication` 标头添加。
+3. 向令牌添加[指纹](JSON_Web_Token_for_Java_Cheat_Sheet.md#token-sidejacking)信息。
 
-By storing the token in browser *sessionStorage* container it exposes the token to being stolen through a XSS attack. However, fingerprints added to the token prevent reuse of the stolen token by the attacker on their machine. To close a maximum of exploitation surfaces for an attacker, add a browser [Content Security Policy](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html) to harden the execution context.
+在浏览器 *sessionStorage* 容器中存储令牌会使令牌暴露于通过 XSS 攻击被盗的风险。然而，添加到令牌的指纹可以防止攻击者在其机器上重复使用被盗令牌。为了最大程度地减少攻击者的利用面，添加浏览器[内容安全策略](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html)以加强执行上下文。
 
-An alternative to storing token in browser *sessionStorage* is to use JavaScript private variable or Closures. In this, access to all web requests are routed through a JavaScript module that encapsulates the token in a private variable which can not be accessed other than from within the module.
+存储令牌在浏览器 *sessionStorage* 的替代方案是使用 JavaScript 私有变量或闭包。在这种情况下，所有 Web 请求的访问都通过一个 JavaScript 模块路由，该模块将令牌封装在一个私有变量中，除了模块内部，其他地方无法访问。
 
-*Note:*
+*注意：*
 
-- The remaining case is when an attacker uses the user's browsing context as a proxy to use the target application through the legitimate user but the Content Security Policy can prevent communication with non expected domains.
-- It's also possible to implement the authentication service in a way that the token is issued within a hardened cookie, but in this case, protection against a [Cross-Site Request Forgery](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md) attack must be implemented.
+- 剩余的情况是攻击者使用用户的浏览上下文作为代理，通过合法用户使用目标应用程序，但内容安全策略可以防止与非预期域的通信。
+- 还可以以这样的方式实现身份验证服务：令牌在强化的 Cookie 中发出，但在这种情况下，必须实现防止[跨站请求伪造](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md)攻击的保护。
 
-#### Implementation Example
+#### 实现示例
 
-JavaScript code to store the token after authentication.
+认证后存储令牌的 JavaScript 代码。
 
 ``` javascript
-/* Handle request for JWT token and local storage*/
+/* 处理 JWT 令牌和本地存储的请求 */
 function authenticate() {
     const login = $("#login").val();
     const postData = "login=" + encodeURIComponent(login) + "&password=test";
@@ -507,17 +499,17 @@ function authenticate() {
 }
 ```
 
-JavaScript code to add the token as a *Bearer* HTTP Authentication header when calling a service, for example a service to validate token here.
+调用服务时将令牌作为 *Bearer* HTTP 认证标头添加的 JavaScript 代码，例如这里验证令牌的服务。
 
 ``` javascript
-/* Handle request for JWT token validation */
+/* 处理 JWT 令牌验证的请求 */
 function validateToken() {
     var token = sessionStorage.getItem("token");
 
     if (token == undefined || token == "") {
         $("#infoZone").removeClass();
         $("#infoZone").addClass("alert alert-warning");
-        $("#infoZone").text("Obtain a JWT token first :)");
+        $("#infoZone").text("请先获取 JWT 令牌 :)");
         return;
     }
 
@@ -537,11 +529,11 @@ function validateToken() {
 }
 ```
 
-JavaScript code to implement closures with private variables:
+使用私有变量实现闭包的 JavaScript 代码：
 
 ``` javascript
 function myFetchModule() {
-    // Protect the original 'fetch' from getting overwritten via XSS
+    // 保护原始的 'fetch' 不被 XSS 覆盖
     const fetch = window.fetch;
 
     const authOrigins = ["https://yourorigin", "http://localhost"];
@@ -563,7 +555,7 @@ function myFetchModule() {
 
 ...
 
-// usage:
+// 使用：
 const myFetch = new myFetchModule()
 
 function login() {
@@ -577,14 +569,14 @@ function login() {
       })
       .then(data => {
           myFetch.setToken(data.token)
-          console.log("Token received and stored.")
+          console.log("令牌已接收并存储。")
       })
       .catch(console.error)
 }
 
 ...
 
-// after login, subsequent api calls:
+// 登录后，后续 API 调用：
 function makeRequest() {
     myFetch.fetch("/api/hello", {headers: {"MyHeader": "foobar"}})
         .then((res) => {
@@ -598,23 +590,23 @@ function makeRequest() {
 }
 ```
 
-### Weak Token Secret
+### 弱令牌密钥
 
-#### Symptom
+#### 风险描述
 
-When the token is protected using an HMAC based algorithm, the security of the token is entirely dependent on the strength of the secret used with the HMAC. If an attacker can obtain a valid JWT, they can then carry out an offline attack and attempt to crack the secret using tools such as [John the Ripper](https://github.com/magnumripper/JohnTheRipper) or [Hashcat](https://github.com/hashcat/hashcat).
+当使用基于 HMAC 的算法保护令牌时，令牌的安全性完全取决于与 HMAC 一起使用的密钥的强度。如果攻击者获得了一个有效的 JWT，他们可以进行离线攻击，并尝试使用诸如 [John the Ripper](https://github.com/magnumripper/JohnTheRipper) 或 [Hashcat](https://github.com/hashcat/hashcat) 等工具破解密钥。
 
-If they are successful, they would then be able to modify the token and re-sign it with the key they had obtained. This could let them escalate their privileges, compromise other users' accounts, or perform other actions depending on the contents of the JWT.
+如果攻击成功，他们将能够修改令牌并使用获得的密钥重新签名。这可能使他们能够提升权限、破坏其他用户的账户，或根据 JWT 的内容执行其他操作。
 
-There are a number of [guides](https://www.notsosecure.com/crafting-way-json-web-tokens/) that document this process in greater detail.
+有许多[指南](https://www.notsosecure.com/crafting-way-json-web-tokens/)详细记录了这一过程。
 
-#### How to Prevent
+#### 如何预防
 
-The simplest way to prevent this attack is to ensure that the secret used to sign the JWTs is strong and unique, in order to make it harder for an attacker to crack. As this secret would never need to be typed by a human, it should be at least 64 characters, and generated using a [secure source of randomness](Cryptographic_Storage_Cheat_Sheet.md#secure-random-number-generation).
+防止此攻击的最简单方法是确保用于签署 JWT 的密钥强且唯一，以增加攻击者破解的难度。由于此密钥永远不需要人工输入，因此应至少为 64 个字符，并使用[安全的随机性源](Cryptographic_Storage_Cheat_Sheet.md#secure-random-number-generation)生成。
 
-Alternatively, consider the use of tokens that are signed with RSA rather than using an HMAC and secret key.
+另外，可以考虑使用由 RSA 签名而非 HMAC 和密钥的令牌。
 
-#### Further Reading
+#### 延伸阅读
 
-- [{JWT}.{Attack}.Playbook](https://github.com/ticarpi/jwt_tool/wiki) - A project documents the known attacks and potential security vulnerabilities and misconfigurations of JSON Web Tokens.
-- [JWT Best Practices Internet Draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-jwt-bcp/)
+- [{JWT}.{Attack}.Playbook](https://github.com/ticarpi/jwt_tool/wiki) - 一个记录 JSON Web 令牌已知攻击和潜在安全漏洞与错误配置的项目。
+- [JWT 最佳实践互联网草案](https://datatracker.ietf.org/doc/draft-ietf-oauth-jwt-bcp/)
