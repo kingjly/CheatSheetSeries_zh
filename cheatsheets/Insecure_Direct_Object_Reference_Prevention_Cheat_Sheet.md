@@ -1,50 +1,50 @@
-# Insecure Direct Object Reference Prevention Cheat Sheet
+# 不安全直接对象引用（IDOR）防护备忘录
 
-## Introduction
+## 引言
 
-Insecure Direct Object Reference (IDOR) is a vulnerability that arises when attackers can access or modify objects by manipulating identifiers used in a web application's URLs or parameters. It occurs due to missing access control checks, which fail to verify whether a user should be allowed to access specific data.
+不安全直接对象引用（Insecure Direct Object Reference，简称 IDOR）是一种漏洞，当攻击者可以通过操纵 Web 应用程序 URL 或参数中的标识符来访问或修改对象时，就会出现这种漏洞。这是由于缺少访问控制检查，未能验证用户是否应被允许访问特定数据。
 
-## Examples
+## 示例
 
-For instance, when a user accesses their profile, the application might generate a URL like this:
+例如，当用户访问自己的个人资料时，应用程序可能会生成如下 URL：
 
 ```
 https://example.org/users/123
 ```
 
-The 123 in the URL is a direct reference to the user's record in the database, often represented by the primary key. If an attacker changes this number to 124 and gains access to another user's information, the application is vulnerable to Insecure Direct Object Reference. This happens because the app didn't properly check if the user had permission to view data for user 124 before displaying it.
+URL 中的 123 是对数据库中用户记录的直接引用，通常由主键表示。如果攻击者将此数字更改为 124 并成功访问另一个用户的信息，则应用程序存在不安全直接对象引用漏洞。这是因为应用程序在显示数据之前没有正确检查用户是否有权查看用户 124 的数据。
 
-In some cases, the identifier may not be in the URL, but rather in the POST body, as shown in the following example:
+在某些情况下，标识符可能不在 URL 中，而是在 POST 请求体中，如下例所示：
 
 ```
 <form action="/update_profile" method="post">
-  <!-- Other fields for updating name, email, etc. -->
+  <!-- 用于更新姓名、电子邮件等的其他字段 -->
   <input type="hidden" name="user_id" value="12345">
-  <button type="submit">Update Profile</button>
+  <button type="submit">更新个人资料</button>
 </form>
 ```
 
-In this example, the application allows users to update their profiles by submitting a form with the user ID in a hidden field. If the app doesn't perform proper access control on the server-side, attackers can manipulate the "user_id" field to modify profiles of other users without authorization.
+在此示例中，应用程序允许用户通过提交包含用户 ID 的隐藏字段的表单来更新其个人资料。如果应用程序没有在服务器端执行适当的访问控制，攻击者可以操纵"user_id"字段，未经授权修改其他用户的个人资料。
 
-## Identifier complexity
+## 标识符复杂性
 
-In some cases, using more complex identifiers like GUIDs can make it practically impossible for attackers to guess valid values. However, even with complex identifiers, access control checks are essential. If attackers obtain URLs for unauthorized objects, the application should still block their access attempts.
+在某些情况下，使用更复杂的标识符（如 GUID）可以使攻击者实际上无法猜测有效值。然而，即使使用复杂的标识符，访问控制检查仍然至关重要。如果攻击者获得未经授权对象的 URL，应用程序仍应阻止其访问尝试。
 
-## Mitigation
+## 缓解措施
 
-To mitigate IDOR, implement access control checks for each object that users try to access. Web frameworks often provide ways to facilitate this. Additionally, use complex identifiers as a defense-in-depth measure, but remember that access control is crucial even with these identifiers.
+为缓解 IDOR，请为用户尝试访问的每个对象实施访问控制检查。Web 框架通常提供便于实现这一点的方法。另外，使用复杂的标识符作为深度防御措施，但请记住，即使使用这些标识符，访问控制也至关重要。
 
-Avoid exposing identifiers in URLs and POST bodies if possible. Instead, determine the currently authenticated user from session information. When using multi-step flows, pass identifiers in the session to prevent tampering.
+尽可能避免在 URL 和 POST 请求体中暴露标识符。相反，从会话信息中确定当前已认证的用户。在使用多步骤流程时，在会话中传递标识符以防止篡改。
 
-When looking up objects based on primary keys, use datasets that users have access to. For example, in Ruby on Rails:
+在根据主键查找对象时，使用用户有权访问的数据集。例如，在 Ruby on Rails 中：
 
-```
-// vulnerable, searches all projects
+```ruby
+// 存在漏洞，搜索所有项目
 @project = Project.find(params[:id])
-// secure, searches projects related to the current user
+// 安全，搜索与当前用户相关的项目
 @project = @current_user.projects.find(params[:id])
 ```
 
-Verify the user's permission every time an access attempt is made. Implement this structurally using the recommended approach for your web framework.
+每次尝试访问时都验证用户的权限。使用 Web 框架推荐的方法结构化地实现此功能。
 
-As an additional defense-in-depth measure, replace enumerable numeric identifiers with more complex, random identifiers. You can achieve this by adding a column with random strings in the database table and using those strings in the URLs instead of numeric primary keys. Another option is to use UUIDs or other long random values as primary keys. Avoid encrypting identifiers as it can be challenging to do so securely.
+作为深度防御的额外措施，将可枚举的数字标识符替换为更复杂、随机的标识符。可以通过在数据库表中添加随机字符串列，并在 URL 中使用这些字符串而不是数字主键来实现。另一种选择是使用 UUID 或其他长随机值作为主键。避免加密标识符，因为安全地这样做可能很具挑战性。
