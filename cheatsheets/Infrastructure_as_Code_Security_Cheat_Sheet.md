@@ -1,53 +1,65 @@
 <!---
-Copyright 2021 Nokia
-Licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported License
-SPDX-License-Identifier: CC-BY-SA-3.0
+版权所有 2021 诺基亚
+根据知识共享 署名-相同方式共享 3.0 未本地化版本许可证授权
+SPDX-许可证标识符：CC-BY-SA-3.0
 --->
 
-# Infrastructure as Code Security Cheatsheet
+# 基础设施即代码安全备忘录
 
-## Introduction
+## 简介
 
-Infrastructure as code (IaC), also known as software-defined infrastructure, allows the configuration and deployment of infrastructure components faster with consistency by allowing them to be defined as a code and also enables repeatable deployments across environments.
+基础设施即代码（Infrastructure as Code，IaC），也称为软件定义基础设施，通过将基础设施组件定义为代码，使配置和部署更快速、更一致，并支持跨环境的可重复部署。
 
-### Security best practices
+### 安全最佳实践
 
-Here are some of the security best practices for IaC that can be easily integrated into the Software Development Lifecycle:
+以下是可以轻松集成到软件开发生命周期中的 IaC 安全最佳实践：
 
-### Develop and Distribute
+### 开发和分发
 
-- IDE plugins - Leverage standard security plug-ins in the integrated development environment (IDE) which helps in the early detection of potential risks and drastically reduces the time to address any issues later in the development cycle. Plugins such as TFLint, Checkov, Docker Linter, docker-vulnerability-extension, Security Scan, Contrast Security, etc., help in the security assessment of the IaC.
-- Threat modelling - Build the threat modelling landscape earlier in the development cycle to ensure there is enough visibility of the high-risk, high-volume aspects of the code and flexibility to include security throughout to ensure the assets are safely managed.
-- Managing secrets -  Secrets are confidential data and information such as application tokens required for authentication, passwords, and SSH (Secure Shell) keys. The problem is not the secrets, but where you store them. If you are using a simple text file or SCMs like Git, then the secrets can be easily exposed. Open-source tools such as truffleHog, git-secrets, GitGuardian and similar can be utilized to detect such vulnerable management of secrets. See the [Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md) for more information.
-- Version control - Version control is the practice of tracking and managing changes to software code. Ensure all the changes to the IaC are tracked with the right set of information that helps in any revert operation. The important part is that you’re checking in those changes alongside the features they support and not separately. A feature’s infrastructure requirements should be a part of a feature’s branch or merge request. Git is generally used as the source code version control system.
-- Principle of least privilege - define the access management policies based on the principle of least privilege with the following priority items:
+- IDE 插件 - 利用集成开发环境（IDE）中的标准安全插件，有助于及早检测潜在风险，并大大缩短开发周期后期解决问题的时间。诸如 TFLint、Checkov、Docker Linter、docker-vulnerability-extension、Security Scan、Contrast Security 等插件有助于 IaC 的安全评估。
+
+- 威胁建模 - 在开发周期的早期构建威胁建模景观，确保对代码的高风险、高容量方面有足够的可见性，并具有灵活性在整个过程中包含安全性，以确保资产安全管理。
+
+- 秘密管理 - 秘密是机密数据和信息，如用于身份验证的应用令牌、密码和 SSH（安全外壳）密钥。问题不在于秘密本身，而在于存储位置。如果使用简单的文本文件或 Git 等源代码管理系统（SCM），则秘密可能很容易被暴露。可以利用 truffleHog、git-secrets、GitGuardian 等开源工具来检测此类脆弱的秘密管理。更多信息请参见[秘密管理备忘录](Secrets_Management_Cheat_Sheet.md)。
+
+- 版本控制 - 版本控制是跟踪和管理软件代码变更的实践。确保所有 IaC 的变更都能被追踪，并附带有助于还原操作的正确信息集。重要的是，您要与支持的功能一起提交这些变更，而不是单独提交。功能的基础设施需求应该是功能分支或合并请求的一部分。Git 通常用作源代码版本控制系统。
+
+- 最小权限原则 - 基于最小权限原则定义访问管理策略，重点关注以下项目：
   
-    - Defining who is and is not authorized to create/update/run/delete the scripts and inventory.
-    - Limiting the permissions of authorized IaC users to what is necessary to perform their tasks. The IaC scripts should ensure that the permissions granted to the various resources it creates are limited to what is required for them to perform their work.
+    - 定义谁被授权和谁未被授权创建/更新/运行/删除脚本和清单。
+    - 将授权 IaC 用户的权限限制在执行其任务所必需的范围。IaC 脚本应确保授予各种资源的权限仅限于其执行工作所需的权限。
 
-- Static analysis - Analyzes code in isolation, identifying risks, misconfigurations, and compliance faults only relevant to the IaC itself. Tools such as kubescan, Snyk, Coverity etc, can be leveraged for static analysis of IaC.
-- Open Source dependency check - Analyzes the open source dependencies such as OS packages, libraries, etc., to identify potential risks. Tools such as BlackDuck, Snyk, WhiteSource Bolt for GitHub, and similar can be leveraged for open source dependency analysis of IaC.
-- Container image scan - Image scanning refers to the process of analyzing the contents and the build process of a container image in order to detect security issues, vulnerabilities or potential risks. Open-source tools such as Dagda, Clair, Trivy, Anchore, etc., can be leveraged for container image analysis.
-CI/CD pipeline and Consolidated reporting - enabling the security checks to be made available in the CI/CD pipeline enables the analysis of each of the code changes, excludes the need for manual intervention, and enables maintaining the history of compliance. Along with consolidated reporting, these integrations enhance the speed of development of a secure IaC codebase. Open-source tools such as Jenkins, etc., can be leveraged to build the CI/CD pipelines, and DefectDojo and OWASP Glue can help in tying the checks together and visualizing the check results in a single dashboard.
-- Artifact signing - Digital signing of artifacts at build time and validation of the signed data before use protects artifacts from tampering between build and runtime, thus ensuring the integrity and provenance of an artifact. Open-source tools such as TUF helps in the digital signing of artifacts.
+- 静态分析 - 分析隔离的代码，识别仅与 IaC 本身相关的风险、错误配置和合规性故障。可以利用 kubescan、Snyk、Coverity 等工具进行 IaC 的静态分析。
 
-### Deploy
+- 开源依赖检查 - 分析开源依赖项，如操作系统包、库等，以识别潜在风险。可以利用 BlackDuck、Snyk、GitHub 的 WhiteSource Bolt 等工具进行 IaC 的开源依赖分析。
 
-- Inventory management:
-    - Commissioning - whenever a resource is deployed, ensure the resource is labeled, tracked and logged as part of the inventory management.
-    - Decommissioning - whenever a resource deletion is initiated, ensure the underlying configurations are erased, data is securely deleted and the resource is completely removed from the runtime as well as from the inventory management.
-    - Tagging - It is essential to tag cloud assets properly. During IaC operations, untagged assets are most likely to result in ghost resources that make it difficult to detect, visualize, and gain observability within the cloud environment and can affect the posture causing a drift. These ghost resources can add to billing costs, make maintenance difficult, and affect the reliability. The only solution to this is careful tagging and monitoring for untagged resources.
-- Dynamic analysis - Dynamic analysis helps in evaluating any existing environments and services that it will interoperate with or run on. This helps in uncovering potential risks due to the interoperability. Open-source tools such as ZAP, Burp, GVM, etc., can be leveraged for dynamic analysis.
+- 容器镜像扫描 - 镜像扫描是指分析容器镜像的内容和构建过程，以检测安全问题、漏洞或潜在风险。可以利用 Dagda、Clair、Trivy、Anchore 等开源工具进行容器镜像分析。
 
-### Runtime
+- CI/CD 流水线和综合报告 - 在 CI/CD 流水线中启用安全检查，可以分析每个代码变更，无需手动干预，并能维护合规性历史。结合综合报告，这些集成可以提高安全 IaC 代码库的开发速度。可以利用 Jenkins 等开源工具构建 CI/CD 流水线，DefectDojo 和 OWASP Glue 可以帮助将检查整合在一起，并在单个仪表板中可视化检查结果。
 
-- Immutability of infrastructure - The idea behind immutable infrastructure is to build the infrastructure components to an exact set of specifications. No deviation, no changes. If a change to a specification is required, then a whole new set of infrastructure is provisioned based on the updated requirements, and the previous infrastructure is taken out of service as obsolete.
-- Logging - Keeping a record is a critical aspect to keeping an eye on risks. You should enable logging - both security logs and audit logs - while provisioning infrastructure, as they help assess the security risks related to sensitive assets. They also assist in analyzing the root cause of incidents and in identifying potential threats. Open-source tools such as ELK, etc., can be leveraged for log analysis.
-- Monitoring - Continuous monitoring assists in looking out for any security and compliance violations, helps in identifying attacks and also provides alerts upon such incidents. Certain solutions also incorporate new technologies like AI to identify potential threats early. Open-source tools such as Prometheus, Grafana, etc., can be leveraged for monitoring of cloud infrastructure.
-- Runtime threat detection: Implementing a runtime threat detection solution helps in recognizing unexpected application behavior and alerts on threats at runtime. Open-source tools such as Falco, etc., can be leveraged for runtime threat detection. Certain application such as Contrast (Contrast Community Edition) can also detect OWASP Top 10 attacks on the application during runtime and help block them in order to protect and secure the application.
+- 制品签名 - 在构建时对制品进行数字签名，并在使用前验证签名数据，可以防止制品在构建和运行时被篡改，从而确保制品的完整性和来源。TUF 等开源工具可帮助进行制品的数字签名。
 
-## References
+### 部署
 
-- Securing Infrastructure as code: <https://www.opcito.com/blogs/securing-infrastructure-as-code>
-- Infrastructure as code security: <https://dzone.com/articles/infrastructure-as-code-security>
-- Shifting cloud security left with infrastructure as code: <https://securityboulevard.com/2020/04/shifting-cloud-security-left-with-infrastructure-as-code/>
+- 清单管理：
+    - 部署 - 每当部署资源时，确保将资源标记、跟踪并记录为清单管理的一部分。
+    - 退役 - 每当启动资源删除时，确保擦除底层配置，安全删除数据，并从运行时和清单管理中完全移除资源。
+    - 标记 - 正确标记云资源至关重要。在 IaC 操作期间，未标记的资源很可能导致幽灵资源，这使得在云环境中检测、可视化和获得可观察性变得困难，并可能影响状态导致偏差。这些幽灵资源可能增加账单成本，使维护变得困难，并影响可靠性。解决方案是仔细标记和监控未标记的资源。
+
+- 动态分析 - 动态分析有助于评估将要交互或运行的现有环境和服务。这有助于揭示由于互操作性而产生的潜在风险。可以利用 ZAP、Burp、GVM 等开源工具进行动态分析。
+
+### 运行时
+
+- 基础设施不可变性 - 不可变基础设施的理念是按照精确的规范构建基础设施组件。没有偏差，没有变更。如果需要对规范进行变更，则根据更新的需求配置全新的基础设施，并将之前的基础设施视为过时并停用。
+
+- 日志记录 - 保留记录是关注风险的关键方面。在配置基础设施时，应启用日志记录 - 包括安全日志和审计日志 - 因为它们有助于评估与敏感资产相关的安全风险。它们还有助于分析事件的根本原因并识别潜在威胁。可以利用 ELK 等开源工具进行日志分析。
+
+- 监控 - 持续监控有助于查看任何安全和合规性违规行为，有助于识别攻击并在发生此类事件时提供警报。某些解决方案还整合了人工智能等新技术，以尽早识别潜在威胁。可以利用 Prometheus、Grafana 等开源工具监控云基础设施。
+
+- 运行时威胁检测：实施运行时威胁检测解决方案有助于识别意外的应用程序行为并对运行时的威胁发出警报。可以利用 Falco 等开源工具进行运行时威胁检测。某些应用程序（如 Contrast（Contrast 社区版））还可以在运行时检测应用程序上的 OWASP 前 10 大攻击，并帮助阻止它们以保护和保障应用程序。
+
+## 参考资料
+
+- 保护基础设施即代码：<https://www.opcito.com/blogs/securing-infrastructure-as-code>
+- 基础设施即代码安全：<https://dzone.com/articles/infrastructure-as-code-security>
+- 通过基础设施即代码将云安全左移：<https://securityboulevard.com/2020/04/shifting-cloud-security-left-with-infrastructure-as-code/>
