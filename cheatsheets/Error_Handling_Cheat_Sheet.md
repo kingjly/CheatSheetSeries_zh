@@ -1,18 +1,18 @@
-# Error Handling Cheat Sheet
+# 错误处理速查表
 
-## Introduction
+## 引言
 
-Error handling is a part of the overall security of an application. Except in movies, an attack always begins with a **Reconnaissance** phase in which the attacker will try to gather as much technical information (often *name* and *version* properties) as possible about the target, such as the application server, frameworks, libraries, etc.
+错误处理是应用程序整体安全性的一部分。不同于电影中的情节，攻击总是从**侦察**阶段开始，攻击者会尽可能多地收集关于目标的技术信息（通常是*名称*和*版本*属性），例如应用服务器、框架、库等。
 
-Unhandled errors can assist an attacker in this initial phase, which is very important for the rest of the attack.
+未经处理的错误可能会帮助攻击者完成这个初始阶段，这对于后续攻击非常重要。
 
-The following [link](https://web.archive.org/web/20230929111320/https://cipher.com/blog/a-complete-guide-to-the-phases-of-penetration-testing/) provides a description of the different phases of an attack.
+以下[链接](https://web.archive.org/web/20230929111320/https://cipher.com/blog/a-complete-guide-to-the-phases-of-penetration-testing/)提供了攻击不同阶段的描述。
 
-## Context
+## 背景
 
-Issues at the error handling level can reveal a lot of information about the target and can also be used to identify injection points in the target's features.
+错误处理层面的问题可能会泄露目标的大量信息，并且可以用于识别目标功能中的注入点。
 
-Below is an example of the disclosure of a technology stack, here the Struts2 and Tomcat versions, via an exception rendered to the user:
+下面是通过向用户呈现异常来披露技术栈（这里是 Struts2 和 Tomcat 版本）的示例：
 
 ```text
 HTTP Status 500 - For input string: "null"
@@ -43,39 +43,39 @@ java.lang.NumberFormatException: For input string: "null"
 note: The full stack trace of the root cause is available in the Apache Tomcat/7.0.56 logs.
 ```
 
-Below is an example of disclosure of a SQL query error, along with the site installation path, that can be used to identify an injection point:
+下面是披露 SQL 查询错误以及站点安装路径的示例，可用于识别注入点：
 
 ```text
 Warning: odbc_fetch_array() expects parameter /1 to be resource, boolean given
 in D:\app\index_new.php on line 188
 ```
 
-The [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/01-Information_Gathering/) provides different techniques to obtain technical information from an application.
+[OWASP 测试指南](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/01-Information_Gathering/)提供了从应用程序获取技术信息的不同技术。
 
-## Objective
+## 目标
 
-The article shows how to configure a global error handler as part of your application's runtime configuration. In some cases, it may be more efficient to define this error handler as part of your code. The outcome being that when an unexpected error occurs then a generic response is returned by the application but the error details are logged server side for investigation, and not returned to the user.
+本文展示了如何配置全局错误处理程序，作为应用程序运行时配置的一部分。在某些情况下，在代码中定义此错误处理程序可能更有效。其结果是，当发生意外错误时，应用程序返回一个通用响应，但错误详细信息会被记录在服务器端以供调查，而不是返回给用户。
 
-The following schema shows the target approach:
+下面的架构图展示了目标方法：
 
-![Overview](../assets/Error_Handling_Cheat_Sheet_Overview.png)
+![概览](../assets/Error_Handling_Cheat_Sheet_Overview.png)
 
-As most recent application topologies are *API based*, we assume in this article that the backend exposes only a REST API and does not contain any user interface content. The application should try and exhaustively cover all possible failure modes and use 5xx errors only to indicate responses to requests that it cannot fulfill, but not provide any content as part of the response that would reveal implementation details. For that, [RFC 7807 - Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc7807) defines a document format.  
-For the error logging operation itself, the [logging cheat sheet](Logging_Cheat_Sheet.md) should be used. This article focuses on the error handling part.
+由于大多数最新的应用程序拓扑是*基于 API* 的，本文假设后端仅公开 REST API 且不包含任何用户界面内容。应用程序应尽可能详尽地覆盖所有可能的故障模式，并仅使用 5xx 错误来指示无法完成的请求的响应，但不提供可能泄露实现细节的任何响应内容。为此，[RFC 7807 - HTTP API 的问题详情](https://www.rfc-editor.org/rfc/rfc7807)定义了一种文档格式。
+对于错误日志记录操作本身，应使用[日志记录速查表](Logging_Cheat_Sheet.md)。本文重点关注错误处理部分。
 
-## Proposition
+## 建议
 
-For each technology stack, the following configuration options are proposed:
+对于每种技术栈，提出以下配置选项：
 
-### Standard Java Web Application
+### 标准 Java Web 应用程序
 
-For this kind of application, a global error handler can be configured at the **web.xml** deployment descriptor level.
+对于这类应用程序，可以在 **web.xml** 部署描述符级别配置全局错误处理程序。
 
-We propose here a configuration that can be used from Servlet specification *version 2.5* and above.
+这里提出一个可从 Servlet 规范 *2.5 版本* 及以上使用的配置。
 
-With this configuration, any unexpected error will cause a redirection to the page **error.jsp** in which the error will be traced and a generic response will be returned.
+使用此配置，任何意外错误都将重定向到 **error.jsp** 页面，在该页面中将跟踪错误并返回一个通用响应。
 
-Configuration of the redirection into the **web.xml** file:
+在 **web.xml** 文件中配置重定向：
 
 ``` xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -91,30 +91,30 @@ version="3.0">
 </web-app>
 ```
 
-Content of the **error.jsp** file:
+**error.jsp** 文件的内容：
 
 ``` java
 <%@ page language="java" isErrorPage="true" contentType="application/json; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <%
 String errorMessage = exception.getMessage();
-//Log the exception via the content of the implicit variable named "exception"
+//通过名为"exception"的隐式变量记录异常
 //...
-//We build a generic response with a JSON format because we are in a REST API app context
-//We also add an HTTP response header to indicate to the client app that the response is an error
+//我们构建一个 JSON 格式的通用响应，因为我们处于 REST API 应用上下文
+//我们还添加了一个 HTTP 响应头，向客户端应用程序指示这是一个错误响应
 response.setHeader("X-ERROR", "true");
-//Note that we're using an internal server error response
-//In some cases it may be prudent to return 4xx error codes, when we have misbehaving clients
+//请注意，我们使用的是内部服务器错误响应
+//在某些情况下，当客户端行为异常时，返回 4xx 错误代码可能更谨慎
 response.setStatus(500);
 %>
-{"message":"An error occur, please retry"}
+{"message":"发生错误，请重试"}
 ```
 
-### Java SpringMVC/SpringBoot web application
+### Java SpringMVC/SpringBoot Web 应用程序
 
-With [SpringMVC](https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html) or [SpringBoot](https://spring.io/projects/spring-boot), you can define a global error handler by implementing the following class in your project. Spring Framework 6 introduced [the problem details based on RFC 7807](https://github.com/spring-projects/spring-framework/issues/27052).
+使用 [SpringMVC](https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html) 或 [SpringBoot](https://spring.io/projects/spring-boot)，您可以通过在项目中实现以下类来定义全局错误处理程序。Spring Framework 6 引入了[基于 RFC 7807 的问题详情](https://github.com/spring-projects/spring-framework/issues/27052)。
 
-We indicate to the handler, via the annotation [@ExceptionHandler](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html), to act when any exception extending the class *java.lang.Exception* is thrown by the application. We also use the [ProblemDetail class](https://docs.spring.io/spring-framework/docs/6.0.0/javadoc-api/org/springframework/http/ProblemDetail.html) to create the response object.
+我们通过 [@ExceptionHandler](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html) 注解指示处理程序在应用程序抛出任何扩展 *java.lang.Exception* 类的异常时执行操作。我们还使用 [ProblemDetail 类](https://docs.spring.io/spring-framework/docs/6.0.0/javadoc-api/org/springframework/http/ProblemDetail.html)来创建响应对象。
 
 ``` java
 import org.springframework.http.HttpStatus;
@@ -125,33 +125,32 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * Global error handler in charge of returning a generic response in case of unexpected error situation.
+ * 全局错误处理程序，负责在意外错误情况下返回通用响应。
  */
 @RestControllerAdvice
 public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(value = {Exception.class})
     public ProblemDetail handleGlobalError(RuntimeException exception, WebRequest request) {
-        //Log the exception via the content of the parameter named "exception"
+        //通过"exception"参数的内容记录异常
         //...
-        //Note that we're using an internal server error response
-        //In some cases it may be prudent to return 4xx error codes, if we have misbehaving clients
-        //By specification, the content-type can be "application/problem+json" or "application/problem+xml"
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An error occur, please retry");
+        //请注意，我们使用的是内部服务器错误响应
+        //在某些情况下，如果客户端行为异常，返回 4xx 错误代码可能更谨慎
+        //根据规范，内容类型可以是 "application/problem+json" 或 "application/problem+xml"
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "发生错误，请重试");
     }
 }
 ```
 
-References:
+参考资料：
+- [使用 Spring 处理异常](https://www.baeldung.com/exception-handling-for-rest-with-spring)
+- [使用 SpringBoot 处理异常](https://www.toptal.com/java/spring-boot-rest-api-error-handling)
 
-- [Exception handling with Spring](https://www.baeldung.com/exception-handling-for-rest-with-spring)
-- [Exception handling with SpringBoot](https://www.toptal.com/java/spring-boot-rest-api-error-handling)
+### ASP.NET Core Web 应用程序
 
-### ASP NET Core web application
+使用 [ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/?view=aspnetcore-2.2)，您可以通过指定异常处理程序为专用的 API 控制器来定义全局错误处理程序。
 
-With [ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/?view=aspnetcore-2.2), you can define a global error handler by indicating that the exception handler is a dedicated API Controller.
-
-Content of the API Controller dedicated to the error handling:
+专门用于错误处理的 API 控制器的内容：
 
 ``` csharp
 using Microsoft.AspNetCore.Authorization;
@@ -164,7 +163,7 @@ using System.Net;
 namespace MyProject.Controllers
 {
     /// <summary>
-    /// API Controller used to intercept and handle all unexpected exception
+    /// API 控制器，用于拦截和处理所有意外异常
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
@@ -172,9 +171,9 @@ namespace MyProject.Controllers
     public class ErrorController : ControllerBase
     {
         /// <summary>
-        /// Action that will be invoked for any call to this Controller in order to handle the current error
+        /// 对此控制器的任何调用都将调用此操作以处理当前错误
         /// </summary>
-        /// <returns>A generic error formatted as JSON because we are in a REST API app context</returns>
+        /// <returns>因为我们处于 REST API 应用上下文，所以返回 JSON 格式的通用错误</returns>
         [HttpGet]
         [HttpPost]
         [HttpHead]
@@ -184,19 +183,18 @@ namespace MyProject.Controllers
         [HttpPatch]
         public JsonResult Handle()
         {
-            //Get the exception that has implied the call to this controller
+            //获取导致调用此控制器的异常
             Exception exception = HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
-            //Log the exception via the content of the variable named "exception" if it is not NULL
+            //如果异常不为 NULL，则通过名为"exception"的变量记录异常
             //...
-            //We build a generic response with a JSON format because we are in a REST API app context
-            //We also add an HTTP response header to indicate to the client app that the response
-            //is an error
+            //我们构建一个 JSON 格式的通用响应，因为我们处于 REST API 应用上下文
+            //我们还添加了一个 HTTP 响应头，向客户端应用程序指示这是一个错误响应
             var responseBody = new Dictionary<String, String>{ {
-                "message", "An error occur, please retry"
+                "message", "发生错误，请重试"
             } };
             JsonResult response = new JsonResult(responseBody);
-            //Note that we're using an internal server error response
-            //In some cases it may be prudent to return 4xx error codes, if we have misbehaving clients
+            //请注意，我们使用的是内部服务器错误响应
+            //在某些情况下，如果客户端行为异常，返回 4xx 错误代码可能更谨慎
             response.StatusCode = (int)HttpStatusCode.InternalServerError;
             Request.HttpContext.Response.Headers.Remove("X-ERROR");
             Request.HttpContext.Response.Headers.Add("X-ERROR", "true");
@@ -206,7 +204,7 @@ namespace MyProject.Controllers
 }
 ```
 
-Definition in the application **Startup.cs** file of the mapping of the exception handler to the dedicated error handling API controller:
+在应用程序 **Startup.cs** 文件中定义异常处理程序到专用错误处理 API 控制器的映射：
 
 ``` csharp
 using Microsoft.AspNetCore.Builder;
@@ -222,26 +220,24 @@ namespace MyProject
 ...
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            //First we configure the error handler middleware!
-            //We enable the global error handler in others environments than DEV
-            //because debug page are useful during implementation
+            //首先配置错误处理中间件！
+            //在非开发环境中启用全局错误处理程序
+            //因为调试页面在实现期间很有用
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
             else
             {
-                //Our global handler is defined on "/api/error" URL so we indicate to the
-                //exception handler to call this API controller
-                //on any unexpected exception raised by the application
+                //我们的全局处理程序定义在 "/api/error" URL 上，因此我们指示
+                //异常处理程序在应用程序引发任何意外异常时调用此 API 控制器
                 app.UseExceptionHandler("/api/error");
 
-                //To customize the response content type and text, use the overload of
-                //UseStatusCodePages that takes a content type and format string.
-                app.UseStatusCodePages("text/plain", "Status code page, status code: {0}");
+                //要自定义响应内容类型和文本，请使用带有内容类型和格式字符串的 UseStatusCodePages 重载。
+                app.UseStatusCodePages("text/plain", "状态码页面，状态码：{0}");
             }
 
-            //We configure others middlewares, remember that the declaration order is important...
+            //我们配置其他中间件，请记住声明顺序很重要...
             app.UseMvc();
             //...
         }
@@ -249,15 +245,14 @@ namespace MyProject
 }
 ```
 
-References:
+参考资料：
+- [ASP.Net Core 异常处理](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/error-handling?view=aspnetcore-2.1)
 
-- [Exception handling with ASP.Net Core](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/error-handling?view=aspnetcore-2.1)
+### ASP.NET Web API Web 应用程序
 
-### ASP NET Web API web application
+使用 [ASP.NET Web API](https://www.asp.net/web-api)（来自标准 .NET 框架，而非 .NET Core 框架），您可以定义和注册处理程序以跟踪和处理应用程序中发生的任何错误。
 
-With [ASP.NET Web API](https://www.asp.net/web-api) (from the standard .NET framework and not from the .NET Core framework), you can define and register handlers in order to trace and handle any error that occurs in the application.
-
-Definition of the handler for the tracing of the error details:
+用于跟踪错误详细信息的处理程序定义：
 
 ``` csharp
 using System;
@@ -266,26 +261,26 @@ using System.Web.Http.ExceptionHandling;
 namespace MyProject.Security
 {
     /// <summary>
-    /// Global logger used to trace any error that occurs at application wide level
+    /// 全局记录器，用于跟踪应用程序级别发生的任何错误
     /// </summary>
     public class GlobalErrorLogger : ExceptionLogger
     {
         /// <summary>
-        /// Method in charge of the management of the error from a tracing point of view
+        /// 负责从跟踪角度管理错误的方法
         /// </summary>
-        /// <param name="context">Context containing the error details</param>
+        /// <param name="context">包含错误详细信息的上下文</param>
         public override void Log(ExceptionLoggerContext context)
         {
-            //Get the exception
+            //获取异常
             Exception exception = context.Exception;
-            //Log the exception via the content of the variable named "exception" if it is not NULL
+            //如果异常不为 NULL，则通过名为"exception"的变量记录异常
             //...
         }
     }
 }
 ```
 
-Definition of the handler for the management of the error in order to return a generic response:
+用于管理错误以返回通用响应的处理程序定义：
 
 ``` csharp
 using Newtonsoft.Json;
@@ -302,39 +297,38 @@ using System.Web.Http.ExceptionHandling;
 namespace MyProject.Security
 {
     /// <summary>
-    /// Global handler used to handle any error that occurs at application wide level
+    /// 全局处理程序，用于处理应用程序级别发生的任何错误
     /// </summary>
     public class GlobalErrorHandler : ExceptionHandler
     {
         /// <summary>
-        /// Method in charge of handle the generic response send in case of error
+        /// 负责处理错误时发送通用响应的方法
         /// </summary>
-        /// <param name="context">Error context</param>
+        /// <param name="context">错误上下文</param>
         public override void Handle(ExceptionHandlerContext context)
         {
             context.Result = new GenericResult();
         }
 
         /// <summary>
-        /// Class used to represent the generic response send
+        /// 用于表示发送的通用响应的类
         /// </summary>
         private class GenericResult : IHttpActionResult
         {
             /// <summary>
-            /// Method in charge of creating the generic response
+            /// 负责创建通用响应的方法
             /// </summary>
-            /// <param name="cancellationToken">Object to cancel the task</param>
-            /// <returns>A task in charge of sending the generic response</returns>
+            /// <param name="cancellationToken">用于取消任务的对象</param>
+            /// <returns>负责发送通用响应的任务</returns>
             public Task<HttpResponseMessage> ExecuteAsync(CancellationToken cancellationToken)
             {
-                //We build a generic response with a JSON format because we are in a REST API app context
-                //We also add an HTTP response header to indicate to the client app that the response
-                //is an error
+                //我们构建一个 JSON 格式的通用响应，因为我们处于 REST API 应用上下文
+                //我们还添加了一个 HTTP 响应头，向客户端应用程序指示这是一个错误响应
                 var responseBody = new Dictionary<String, String>{ {
-                    "message", "An error occur, please retry"
+                    "message", "发生错误，请重试"
                 } };
-                // Note that we're using an internal server error response
-                // In some cases it may be prudent to return 4xx error codes, if we have misbehaving clients 
+                // 请注意，我们使用的是内部服务器错误响应
+                // 在某些情况下，如果客户端行为异常，返回 4xx 错误代码可能更谨慎 
                 HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.InternalServerError);
                 response.Headers.Add("X-ERROR", "true");
                 response.Content = new StringContent(JsonConvert.SerializeObject(responseBody),
@@ -346,7 +340,7 @@ namespace MyProject.Security
 }
 ```
 
-Registration of the both handlers in the application **WebApiConfig.cs** file:
+在应用程序 **WebApiConfig.cs** 文件中注册这两个处理程序：
 
 ``` csharp
 using MyProject.Security;
@@ -359,17 +353,17 @@ namespace MyProject
     {
         public static void Register(HttpConfiguration config)
         {
-            //Register global error logging and handling handlers in first
+            //首先注册全局错误日志记录和处理程序
             config.Services.Replace(typeof(IExceptionLogger), new GlobalErrorLogger());
             config.Services.Replace(typeof(IExceptionHandler), new GlobalErrorHandler());
-            //Rest of the configuration
+            //其余配置
             //...
         }
     }
 }
 ```
 
-Setting customErrors section to the **Web.config** file within the ```csharp <system.web>``` node as follows.
+在 **Web.config** 文件的 ```csharp <system.web>``` 节点中设置 customErrors 节：
 
 ```csharp
 <configuration>
@@ -382,16 +376,14 @@ Setting customErrors section to the **Web.config** file within the ```csharp <sy
 </configuration>
 ```
 
-References:
+参考资料：
+- [ASP.Net Web API 异常处理](https://exceptionnotfound.net/the-asp-net-web-api-exception-handling-pipeline-a-guided-tour/)
+- [ASP.NET 错误处理](https://docs.microsoft.com/en-us/aspnet/web-forms/overview/getting-started/getting-started-with-aspnet-45-web-forms/aspnet-error-handling)
 
-- [Exception handling with ASP.Net Web API](https://exceptionnotfound.net/the-asp-net-web-api-exception-handling-pipeline-a-guided-tour/)
+## 原型源代码
 
-- [ASP.NET Error Handling](https://docs.microsoft.com/en-us/aspnet/web-forms/overview/getting-started/getting-started-with-aspnet-45-web-forms/aspnet-error-handling)
+为找到正确的设置而创建的所有沙盒项目的源代码存储在此 [GitHub 仓库](https://github.com/righettod/poc-error-handling)。
 
-## Sources of the prototype
+## 附录 HTTP 错误
 
-The source code of all the sandbox projects created to find the right setup to use is stored in this [GitHub repository](https://github.com/righettod/poc-error-handling).
-
-## Appendix HTTP Errors
-
-A reference for HTTP errors can be found here [RFC 2616](https://www.ietf.org/rfc/rfc2616.txt). Using error messages that do not provide implementation details is important to avoid information leakage. In general, consider using 4xx error codes for requests that are due to an error on the part of the HTTP client (e.g. unauthorized access, request body too large) and use 5xx to indicate errors that are triggered on server side, due to an unforeseen bug. Ensure that applications are monitored for 5xx errors which are a good indication of the application failing for some sets of inputs.
+可以在 [RFC 2616](https://www.ietf.org/rfc/rfc2616.txt) 中找到 HTTP 错误的参考。使用不提供实现细节的错误消息对于避免信息泄露很重要。通常，考虑对由 HTTP 客户端错误引起的请求（例如未经授权的访问、请求正文过大）使用 4xx 错误代码，并使用 5xx 来指示由服务器端触发的错误，这些错误是由于不可预见的错误。确保监控应用程序的 5xx 错误，这是应用程序对某些输入集合失败的良好指示。
