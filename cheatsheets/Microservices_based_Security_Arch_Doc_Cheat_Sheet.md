@@ -1,250 +1,251 @@
-# Microservices based Security Arch Doc Cheat Sheet
+# 微服务安全架构文档备忘录
 
-## Introduction
+## 引言
 
-The microservice architecture is being increasingly used for designing and implementing application systems in both cloud-based and on-premise infrastructures. There are many security challenges need to be addressed in the application design and implementation phases. In order to address some security challenges it is necessity to collect security-specific information on application architecture.
-The goal of this article is to provide a concrete proposal of approach to collect microservice-based architecture information to securing application.
+微服务架构正越来越多地被用于设计和实现云端和本地基础设施中的应用系统。在应用设计和实现阶段需要解决许多安全挑战。为了应对一些安全挑战，有必要收集应用架构的安全特定信息。
 
-## Context
+本文的目标是提供一种具体的方法，用于收集基于微服务的架构信息以保护应用。
 
-During securing applications based on microservices architecture, security architects/engineers usually face with the following questions (mostly referenced in the [OWASP Application Security Verification Standard Project](https://github.com/OWASP/ASVS) under the section [V1 "Architecture, Design and Threat Modeling Requirements"](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)):
+## 背景
 
-1. Threat modeling and enforcement of the principle of least privilege:
-    - What scopes or API keys does microservice minimally need to access other microservice APIs?
-    - What grants does microservice minimally need to access database or message queue?
-2. Data leakage analysis:
-    - What storages or message queues do contain sensitive data?
-    - Does microservice read/write date from/to specific database or message queue?
-    - What microservices are invoked by dedicated microservice? What data is passed between microservices?
-3. Attack surface analysis:
-    - What microservices endpoints need to be tested during security testing?
+在保护基于微服务架构的应用时，安全架构师/工程师通常会面临以下问题（主要参考 [OWASP 应用安全验证标准项目](https://github.com/OWASP/ASVS)中的 [V1"架构、设计和威胁建模要求"](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)）：
 
-In most cases, existing application architecture documentation is not suitable to answer those questions. Next sections propose what architecture security-specific information can be collected to answer the questions above.
+1. 威胁建模和最小权限原则执行：
+    - 微服务访问其他微服务 API 最少需要哪些作用域或 API 密钥？
+    - 微服务访问数据库或消息队列最少需要哪些授权？
+2. 数据泄露分析：
+    - 哪些存储或消息队列包含敏感数据？
+    - 微服务是否从/向特定数据库或消息队列读/写数据？
+    - 哪些微服务被特定微服务调用？微服务之间传递了哪些数据？
+3. 攻击面分析：
+    - 在安全测试期间需要测试哪些微服务端点？
 
-## Objective
+在大多数情况下，现有的应用架构文档不适合回答这些问题。以下部分提出了可以收集哪些安全特定的架构信息来回答上述问题。
 
-The objectives of the cheat sheet are to explain what architecture security-specific information can be collected to answer the questions above and provide concrete proposal of approach to collect microservice-based architecture information to securing application.
+## 目标
 
-## Proposition
+本备忘录的目标是解释可以收集哪些安全特定的架构信息以回答上述问题，并提供收集基于微服务的架构信息以保护应用的具体方法。
 
-### Collect information on the building blocks
+## 建议
 
-#### Identify and describe application-functionality services
+### 收集构建块的信息
 
-Application-functionality services implement one or several business process or functionality (e.g., storing customer details, storing and displaying product catalog). Collect information on the parameters listed below related to each application-functionality service.
+#### 识别和描述应用功能服务
 
-| Parameter name | Description |
+应用功能服务实现一个或多个业务流程或功能（例如，存储客户详细信息、存储和显示产品目录）。收集与每个应用功能服务相关的以下参数的信息。
+
+| 参数名称 | 描述 |
 | :--- | :--- |
-| Service name (ID) | Unique service name or ID
-| Short description | Short description of business process or functionality implemented by the microservice
-| Link to source code repository | Specify a link to service source code repository
-| Development Team | Specify development team which develops the microservice
-| API definition | If microservice exposes external interface specify a link to the interface description (e.g., OpenAPI specification). It is advisable to define used security scheme, e.g. define scopes or API keys needed to invoke dedicated endpoint (e.g., [see](https://swagger.io/docs/specification/authentication/)).
-| The microservice architecture description | Specify a link to the microservice architecture diagram, description (if available)|
-| Link to runbook | Specify a link to the microservice runbook |
+| 服务名称（ID） | 唯一的服务名称或 ID
+| 简短描述 | 微服务实现的业务流程或功能的简短描述
+| 源代码仓库链接 | 指定服务源代码仓库的链接
+| 开发团队 | 指定开发该微服务的开发团队
+| API 定义 | 如果微服务公开外部接口，请指定接口描述的链接（例如，OpenAPI 规范）。建议定义使用的安全方案，例如定义调用特定端点所需的作用域或 API 密钥（例如，[参见](https://swagger.io/docs/specification/authentication/)）
+| 微服务架构描述 | 指定微服务架构图、描述的链接（如果可用）
+| 运行手册链接 | 指定微服务运行手册的链接
 
-#### Identify and describe infrastructure services
+#### 识别和描述基础设施服务
 
-Infrastructure services including remote services may implement authentication, authorization, service registration and discovery, security monitoring, logging etc. Collect information on the parameters listed below related to each infrastructure service.
+基础设施服务（包括远程服务）可以实现身份认证、授权、服务注册和发现、安全监控、日志记录等。收集与每个基础设施服务相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-|Service name (ID) | Unique service name or ID
-|Short description | Short description of functionality implemented by the service (e.g., authentication, authorization, service registration and discovery, logging, security monitoring, API gateway).
-|Link to source code repository | Specify a link to service source code repository (if applicable)
-|Link to the service documentation | Specify a link to the service documentation that includes service API definition, operational guidance/runbook, etc.
+| 服务名称（ID） | 唯一的服务名称或 ID
+| 简短描述 | 服务实现的功能的简短描述（例如，身份认证、授权、服务注册和发现、日志记录、安全监控、API 网关）
+| 源代码仓库链接 | 指定服务源代码仓库的链接（如果适用）
+| 服务文档链接 | 指定包含服务 API 定义、操作指南/运行手册等的服务文档链接
 
-#### Identify and describe data storages
+#### 识别和描述数据存储
 
-Collect information on the parameters listed below related to each data storage.
+收集与每个数据存储相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-|Storage name (ID) | Unique storage name or ID
-|Software type | Specify software that implements the data storage (e.g., PostgreSQL, Redis, Apache Cassandra).
+| 存储名称（ID） | 唯一的存储名称或 ID
+| 软件类型 | 指定实现数据存储的软件（例如，PostgreSQL、Redis、Apache Cassandra）
 
-#### Identify and describe message queues
+#### 识别和描述消息队列
 
-Messaging systems (e.g., RabbitMQ or Apache Kafka) are used to implement asynchronous microservices communication mechanism. Collect information on the parameters listed below related to each message queue.
+消息系统（例如，RabbitMQ 或 Apache Kafka）用于实现异步微服务通信机制。收集与每个消息队列相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-|Message queue (ID) | Unique message queue name or ID
-|Software type | Specify software that implements the message queue (e.g., RabbitMQ, Apache Kafka).
+| 消息队列（ID） | 唯一的消息队列名称或 ID
+| 软件类型 | 指定实现消息队列的软件（例如，RabbitMQ、Apache Kafka）
 
-#### Identify and describe data assets
+#### 识别和描述数据资产
 
-Identify and describe data assets that processed by system microservices/services. It is advisable firstly to identify assets, which are valuable from a security perspective (e.g., "User information", "Payment"). Collect information on the parameters listed below related to each asset.
+识别和描述系统微服务/服务处理的数据资产。建议首先识别从安全角度看有价值的资产（例如，"用户信息"、"支付"）。收集与每个资产相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-| Asset name (ID) | Unique asset name or ID
-| Protection level | Specify asset protection level (e.g., PII, confidential)
-| Additional info | Add clarifying information
+| 资产名称（ID） | 唯一的资产名称或 ID
+| 保护级别 | 指定资产保护级别（例如，个人可识别信息、机密）
+| 附加信息 | 添加澄清信息
 
-### Collect information on relations between building blocks
+### 收集构建块之间的关系信息
 
-#### Identify "service-to-storage" relations
+#### 识别"服务到存储"关系
 
-Collect information on the parameters listed below related to each "service-to-storage" relation.
+收集与每个"服务到存储"关系相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-| Service name (ID) | Specify service name (ID) defined above
-| Storage name (ID) | Specify storage name (ID) defined above
-| Access type | Specify access type, e.g. "Read" or "Read/Write"
+| 服务名称（ID） | 指定上面定义的服务名称（ID）
+| 存储名称（ID） | 指定上面定义的存储名称（ID）
+| 访问类型 | 指定访问类型，例如"读取"或"读/写"
 
-#### Identify "service-to-service" synchronous communications
+#### 识别"服务到服务"同步通信
 
-Collect information on the parameters listed below related to each "service-to-service" synchronous communication.
+收集与每个"服务到服务"同步通信相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-| Caller service name (ID) | Specify caller service name (ID) defined above
-| Called service name (ID) | Specify called service name (ID) defined above
-| Protocol/framework used| Specify protocol/framework used for communication, e.g. HTTP (REST, SOAP), Apache Thrift, gRPC
-| Short description | Shortly describe the purpose of communication (requests for query of information or request/commands for a state-changing business function) and data passed between services (if possible, in therms of assets defined above)
+| 调用方服务名称（ID） | 指定上面定义的调用方服务名称（ID）
+| 被调用服务名称（ID） | 指定上面定义的被调用服务名称（ID）
+| 使用的协议/框架 | 指定用于通信的协议/框架，例如 HTTP（REST、SOAP）、Apache Thrift、gRPC
+| 简短描述 | 简要描述通信的目的（查询信息的请求或用于改变状态的业务功能的请求/命令）以及服务之间传递的数据（如果可能，使用上面定义的资产术语）
 
-#### Identify "service-to-service" asynchronous communications
+#### 识别"服务到服务"异步通信
 
-Collect information on the parameters listed below related to each "service-to-service" asynchronous communication.
+收集与每个"服务到服务"异步通信相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-| Publisher service name (ID) | Specify publisher service name (ID) defined above
-| Subscriber service name (ID) | Specify subscriber service name (ID) defined above
-| Message queue (ID) | Specify message queue (ID) defined above
-| Short description | Shortly describe the purpose of communication (receiving of information or commands for a state-changing business function) and data passed between services (if possible, in therms of assets defined above)
+| 发布方服务名称（ID） | 指定上面定义的发布方服务名称（ID）
+| 订阅方服务名称（ID） | 指定上面定义的订阅方服务名称（ID）
+| 消息队列（ID） | 指定上面定义的消息队列（ID）
+| 简短描述 | 简要描述通信的目的（接收信息或用于改变状态的业务功能的命令）以及服务之间传递的数据（如果可能，使用上面定义的资产术语）
 
-#### Identify "asset-to-storage" relations
+#### 识别"资产到存储"关系
 
-Collect information on the parameters listed below related to each "asset-to-storage" relation.
+收集与每个"资产到存储"关系相关的以下参数的信息。
 
-| Parameter name | Description |
+| 参数名称 | 描述 |
 | :--- | :--- |
-| Asset name (ID) | Asset name (ID) defined above
-| Storage name (ID) | Specify storage name (ID) defined above
-| Storage type | Specify storage type for the asset, e.g. "golden source" or "cache"
+| 资产名称（ID） | 上面定义的资产名称（ID）
+| 存储名称（ID） | 指定上面定义的存储名称（ID）
+| 存储类型 | 指定资产的存储类型，例如"黄金源"或"缓存"
 
-### Create a graphical presentation of application architecture
+### 创建应用架构的图形化表示
 
-It is advisable to create graphical presentation of application architecture (building blocks and relations defined above) in form of services call graph or data flow diagram. In order to do that one can use special software tools (e.g. Enterprise Architect) or [DOT language](https://en.wikipedia.org/wiki/DOT_%28graph_description_language%29). See example of using DOT language [here](https://gist.github.com/vladgolubev/80c5523336ddec3859c0e90d9a070882).
+建议以服务调用图或数据流图的形式创建应用架构（上面定义的构建块和关系）的图形化表示。为此，可以使用专门的软件工具（例如 Enterprise Architect）或 [DOT 语言](https://en.wikipedia.org/wiki/DOT_%28graph_description_language%29)。请参见使用 DOT 语言的示例[此处](https://gist.github.com/vladgolubev/80c5523336ddec3859c0e90d9a070882)。
 
-### Use collected information in secure software development practices
+### 在安全软件开发实践中使用收集的信息
 
-Collected information may be useful for doing application security practices, e.g. during defining security requirements, threat modeling or security testing. Sections below contains examples of activities related to securing application architecture (as well as its mapping to OWASP projects) and tips for their implementation using information collected above.
+收集的信息可用于进行应用安全实践，例如在定义安全需求、威胁建模或安全测试期间。以下部分包含与保护应用架构相关的活动示例（以及与 OWASP 项目的映射），以及使用上述收集的信息实施这些活动的技巧。
 
-#### Attack surface analysis
+#### 攻击面分析
 
-##### Implementation tips
+##### 实施技巧
 
-To enumerate microservices endpoints that need to be tested during security testing and analyzed during threat modeling analyze data collected under the following sections:
+要枚举安全测试期间需要测试的微服务端点并在威胁建模期间进行分析，请分析以下部分收集的数据：
 
-- Identify and describe application-functionality services (parameter "API definition")
-- Identify and describe infrastructure services (parameter "Link to the service documentation")
+- 识别和描述应用功能服务（参数"API 定义"）
+- 识别和描述基础设施服务（参数"服务文档链接"）
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.1.2](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
-- [OWASP Attack Surface Analysis Cheat Sheet](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.md)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.1.2](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP 攻击面分析备忘录](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.md)
 
-#### Data leakage analysis
+#### 数据泄露分析
 
-##### Implementation tips
+##### 实施技巧
 
-To analyze possible data leakage analyze data collected under the following sections:
+要分析可能的数据泄露，请分析以下部分收集的数据：
 
-- Identify and describe data assets
-- Identify "service-to-storage" relations
-- Identify "service-to-service" synchronous communications
-- Identify "service-to-service" asynchronous communications
-- Identify "asset-to-storage" relations
+- 识别和描述数据资产
+- 识别"服务到存储"关系
+- 识别"服务到服务"同步通信
+- 识别"服务到服务"异步通信
+- 识别"资产到存储"关系
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.1.2](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
-- [OWASP Top 10-2017 A3-Sensitive Data Exposure](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A3-Sensitive_Data_Exposure)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.1.2](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP Top 10-2017 A3-敏感数据暴露](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A3-Sensitive_Data_Exposure)
 
-#### Application's trust boundaries, components, and significant data flows justification
+#### 应用的信任边界、组件和重要数据流的合理性
 
-##### Implementation tips
+##### 实施技巧
 
-To verify documentation and justification of all the application's trust boundaries, components, and significant data flows analyze data collected under the following sections:
+要验证应用的所有信任边界、组件和重要数据流的文档和合理性，请分析以下部分收集的数据：
 
-- Identify and describe application-functionality services
-- Identify and describe infrastructure services
-- Identify and describe data storages
-- Identify and describe message queues
-- Identify "service-to-storage" relations
-- Identify "service-to-service" synchronous communications
-- Identify "service-to-service" asynchronous communications
+- 识别和描述应用功能服务
+- 识别和描述基础设施服务
+- 识别和描述数据存储
+- 识别和描述消息队列
+- 识别"服务到存储"关系
+- 识别"服务到服务"同步通信
+- 识别"服务到服务"异步通信
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.1.4](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.1.4](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
 
-#### Analysis of the application's high-level architecture
+#### 应用高级架构分析
 
-##### Implementation tips
+##### 实施技巧
 
-To verify definition and security analysis of the application's high-level architecture and all connected remote services analyze data collected under the following sections:
+要验证应用的高级架构定义和安全分析以及所有连接的远程服务，请分析以下部分收集的数据：
 
-- Identify and describe application-functionality services
-- Identify and describe infrastructure services
-- Identify and describe data storages
-- Identify and describe message queues
+- 识别和描述应用功能服务
+- 识别和描述基础设施服务
+- 识别和描述数据存储
+- 识别和描述消息队列
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.1.5](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.1.5](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
 
-#### Implementation of centralized security controls verification
+#### 集中式安全控制实施验证
 
-##### Implementation tips
+##### 实施技巧
 
-To verify implementation of centralized, simple (economy of design), vetted, secure, and reusable security controls to avoid duplicate, missing, ineffective, or insecure controls analyze data collected under the section "Identify and describe infrastructure services".
+要验证实施集中的、简单的（设计经济性）、经过审查的、安全的和可重用的安全控制，以避免重复、缺失、无效或不安全的控制，请分析"识别和描述基础设施服务"部分收集的数据。
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.1.6](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.1.6](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
 
-#### Enforcement of the principle of least privilege
+#### 最小权限原则的执行
 
-##### Implementation tips
+##### 实施技巧
 
-To define minimally needed microservice permissions analyze data collected under the following sections:
+要定义微服务所需的最小权限，请分析以下部分收集的数据：
 
-- Identify and describe application-functionality services (parameter "API definition")
-- Identify "service-to-storage" relations
-- Identify "service-to-service" synchronous communications
-- Identify "service-to-service" asynchronous communications
+- 识别和描述应用功能服务（参数"API 定义"）
+- 识别"服务到存储"关系
+- 识别"服务到服务"同步通信
+- 识别"服务到服务"异步通信
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.4.3](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.4.3](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
 
-#### Sensitive data identification and classification
+#### 敏感数据识别和分类
 
-##### Implementation tips
+##### 实施技巧
 
-To verify that all sensitive data is identified and classified into protection levels analyze data collected under the following sections:
+要验证所有敏感数据已被识别并分类为保护级别，请分析以下部分收集的数据：
 
-- Identify and describe data assets
-- Identify "asset-to-storage" relations
+- 识别和描述数据资产
+- 识别"资产到存储"关系
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.8.1](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.8.1](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
 
-#### Application components business/security functions verification
+#### 应用组件业务/安全功能验证
 
-##### Implementation tips
+##### 实施技巧
 
-To verify the definition and documentation of all application components in terms of the business or security functions they provide analyze data collected under the following sections (parameter "Short description"):
+要验证所有应用组件在其提供的业务或安全功能方面的定义和文档，请分析以下部分收集的数据（参数"简短描述"）：
 
-- Identify and describe application-functionality services
-- Identify and describe infrastructure services
+- 识别和描述应用功能服务
+- 识别和描述基础设施服务
 
-##### Mapping to OWASP projects
+##### 映射到 OWASP 项目
 
-- [OWASP ASVS, V1 "Architecture, Design and Threat Modeling Requirements", #1.11.1](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
+- [OWASP ASVS, V1"架构、设计和威胁建模要求", #1.11.1](https://github.com/OWASP/ASVS/blob/master/4.0/en/0x10-V1-Architecture.md#v1-architecture-design-and-threat-modeling-requirements)
