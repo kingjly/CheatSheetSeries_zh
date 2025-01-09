@@ -1,258 +1,259 @@
-# Key Management Cheat Sheet
+# 密钥管理备忘录
 
-## Introduction
+## 引言
 
-This Key Management Cheat Sheet provides developers with guidance for implementation of cryptographic key management within an application in a secure manner. It is important to document and harmonize rules and practices for:
+本密钥管理备忘录为开发者提供了在应用程序中安全实施加密密钥管理的指导。文档化和协调以下规则和实践至关重要：
 
-1. Key life cycle management (generation, distribution, destruction)
-2. Key compromise, recovery and zeroization
-3. Key storage
-4. Key agreement
+1. 密钥生命周期管理（生成、分发、销毁）
+2. 密钥泄露、恢复和清零
+3. 密钥存储
+4. 密钥协商
 
-## General Guidelines and Considerations
+## 总体指南和注意事项
 
-Formulate a plan for the overall organization's cryptographic strategy to guide developers working on different applications and ensure that each application's cryptographic capability meets minimum requirements and best practices.
+制定整体组织的加密策略，指导不同应用程序的开发人员，确保每个应用程序的加密能力满足最低要求和最佳实践。
 
-Identify the cryptographic and key management requirements for your application and map all components that process or store cryptographic key material.
+识别应用程序的加密和密钥管理需求，并映射所有处理或存储加密密钥材料的组件。
 
-## Key Selection
+## 密钥选择
 
-Selection of the cryptographic and key management algorithms to use within a given application should begin with an understanding of the objectives of the application.
+在给定应用程序中选择加密和密钥管理算法，应从了解应用程序的目标开始。
 
-For example, if the application is required to store data securely, then the developer should select an algorithm suite that supports the objective of data at rest protection security. Applications that are required to transmit and receive data would select an algorithm suite that supports the objective of data in transit protection.
+例如，如果应用程序需要安全存储数据，那么开发者应选择支持静态数据保护安全目标的算法套件。需要传输和接收数据的应用程序将选择支持传输中数据保护目标的算法套件。
 
-We have provided recommendations on the selection of crypto suites within an application based on application and security objectives. Application developers oftentimes begin the development of crypto and key management capabilities by examining what is available in a library.
+我们根据应用程序和安全目标提供了在应用程序中选择加密套件的建议。应用程序开发者通常通过检查库中可用的内容开始开发加密和密钥管理功能。
 
-However, an analysis of the real needs of the application should be conducted to determine the optimal key management approach. Begin by understanding the security objectives of the application which will then drive the selection of cryptographic protocols that are best suited. For example, the application may require:
+然而，应进行对应用程序实际需求的分析，以确定最佳的密钥管理方法。首先要了解应用程序的安全目标，这将驱动选择最合适的加密协议。例如，应用程序可能需要：
 
-1. Confidentiality of data at rest and confidentiality of data in transit.
-2. Authenticity of the end device.
-3. Authenticity of data origin.
-4. Integrity of data in transit.
-5. Keys to create the data encryption keys.
+1. 静态数据和传输中数据的机密性。
+2. 终端设备的真实性。
+3. 数据源的真实性。
+4. 传输中数据的完整性。
+5. 创建数据加密密钥的密钥。
 
-Once the understanding of the security needs of the application is achieved, developers can determine what protocols and algorithms are required. Once the protocols and algorithms are understood, you can begin to define the different types of keys that will support the application's objectives.
+一旦了解了应用程序的安全需求，开发者就可以确定所需的协议和算法。了解了协议和算法后，就可以开始定义支持应用程序目标的不同类型的密钥。
 
-There are a diverse set of key types and certificates to consider, for example:
+需要考虑多样的密钥类型和证书，例如：
 
-1. **Encryption:** [Symmetric](https://en.wikipedia.org/wiki/Symmetric-key_algorithm) encryption keys, [Asymmetric](https://en.wikipedia.org/wiki/Public-key_cryptography) encryption keys (public and private).
-2. **Authentication of End Devices:** Pre-shared symmetric keys, Trusted certificates, Trust Anchors.
-3. **Data Origin Authentication:** [HMAC](https://en.wikipedia.org/wiki/HMAC).
-4. **Integrity Protection:** [Message Authentication Codes](https://en.wikipedia.org/wiki/Message_authentication_code) (MACs).
-5. **Key Encryption Keys**.
+1. **加密：**[对称](https://en.wikipedia.org/wiki/Symmetric-key_algorithm)加密密钥，[非对称](https://en.wikipedia.org/wiki/Public-key_cryptography)加密密钥（公钥和私钥）。
+2. **终端设备认证：**预共享对称密钥，可信证书，信任锚。
+3. **数据源认证：**[HMAC](https://en.wikipedia.org/wiki/HMAC)。
+4. **完整性保护：**[消息认证码](https://en.wikipedia.org/wiki/Message_authentication_code)（MACs）。
+5. **密钥加密密钥**。
 
-### Algorithms and Protocols
+### 算法和协议
 
-According to `NIST SP 800-57 Part 1`, many algorithms and schemes that provide a security service use a [hash function](https://en.wikipedia.org/wiki/Hash_function) as a component of the algorithm.
+根据 `NIST SP 800-57 第1部分`，许多提供安全服务的算法和方案使用[哈希函数](https://en.wikipedia.org/wiki/Hash_function)作为算法的组成部分。
 
-Hash functions can be found in digital signature algorithms (`FIPS186`), Keyed-Hash Message Authentication Codes (HMAC) (`FIPS198`), key-derivation functions/methods (`NIST Special Publications (SP) 800-56A, 800-56B, 800-56C and 800-108`), and random number generators (`NIST SP 800-90A`). Approved hash functions are defined in `FIPS180`.
+哈希函数可以在数字签名算法（`FIPS186`）、密钥哈希消息认证码（HMAC）（`FIPS198`）、密钥派生函数/方法（`NIST特别出版物（SP）800-56A、800-56B、800-56C和800-108`）以及随机数生成器（`NIST SP 800-90A`）中找到。批准的哈希函数在 `FIPS180` 中定义。
 
-`NIST SP 800-57 Part 1` recognizes three basic classes of approved cryptographic algorithms: hash functions, symmetric- key algorithms and asymmetric-key algorithms. The classes are defined by the number of cryptographic keys that are used in conjunction with the algorithm.
+`NIST SP 800-57 第1部分`认可三种基本类型的批准的加密算法：哈希函数、对称密钥算法和非对称密钥算法。这些类别由与算法一起使用的加密密钥数量定义。
 
-The NSA released a report, [Commercial National Security Algorithm Suite 2.0](https://media.defense.gov/2022/Sep/07/2003071834/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS_.PDF) which lists the cryptographic algorithms that are expected to be remain strong even with advances in quantum computing.
+美国国家安全局发布了一份报告，[商业国家安全算法套件2.0](https://media.defense.gov/2022/Sep/07/2003071834/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS_.PDF)，列出了即使在量子计算取得进展的情况下预计仍将保持强大的加密算法。
 
-#### Cryptographic hash functions
+#### 加密哈希函数
 
-Cryptographic hash functions do not require keys. Hash functions generate a relatively small digest (hash value) from a (possibly) large input in a way that is fundamentally difficult to reverse (i.e., it is hard to find an input that will produce a given output). Hash functions are used as building blocks for key management, for example,
+加密哈希函数不需要密钥。哈希函数以一种从根本上难以逆转的方式从（可能的）大输入生成相对较小的摘要（哈希值）。哈希函数用作密钥管理的构建块，例如：
 
-1. To provide data authentication and integrity services (Section 4.2.3) – the hash function is used with a key to generate a message authentication code.
-2. To compress messages for digital signature generation and verification (Section 4.2.4).
-3. To derive keys in key-establishment algorithms (Section 4.2.5).
-4. To generate deterministic random numbers (Section 4.2.7).
+1. 提供数据认证和完整性服务（第4.2.3节）——哈希函数与密钥一起生成消息认证码。
+2. 压缩数字签名生成和验证的消息（第4.2.4节）。
+3. 在密钥建立算法中派生密钥（第4.2.5节）。
+4. 生成确定性随机数（第4.2.7节）。
 
-#### Symmetric-key algorithms
+#### 对称密钥算法
 
-Symmetric-key algorithms (sometimes known as secret-key algorithms) transform data in a way that is fundamentally difficult to undo without knowledge of a secret key. The key is "symmetric" because the same key is used for a cryptographic operation and its inverse (e.g., encryption and decryption).
+对称密钥算法（有时称为秘密密钥算法）以一种在没有秘密密钥知识的情况下从根本上难以撤销的方式转换数据。密钥是"对称的"，因为对于加密操作及其逆操作（如加密和解密）使用相同的密钥。
 
-Symmetric keys are often known by more than one entity; however, the key shall not be disclosed to entities that are not authorized access to the data protected by that algorithm and key. Symmetric key algorithms are used, for example,
+对称密钥通常被多个实体知道；但是，不得向未经授权访问该算法和密钥保护的数据的实体披露该密钥。对称密钥算法用于，例如：
 
-1. To provide data confidentiality (Section 4.2.2); the same key is used to encrypt and decrypt data.
-2. To provide authentication and integrity services (Section 4.2.3) in the form of Message Authentication Codes (MACs); the same key is used to generate the MAC and to validate it. MACs normally employ either a symmetric key-encryption algorithm or a cryptographic hash function as their cryptographic primitive.
-3. As part of the key-establishment process (Section 4.2.5).
-4. To generate deterministic random numbers (Section 4.2.7).
+1. 提供数据机密性（第4.2.2节）；使用相同的密钥加密和解密数据。
+2. 以消息认证码（MACs）的形式提供认证和完整性服务（第4.2.3节）；使用相同的密钥生成和验证MAC。MAC通常使用对称密钥加密算法或加密哈希函数作为其加密原语。
+3. 作为密钥建立过程的一部分（第4.2.5节）。
+4. 生成确定性随机数（第4.2.7节）。
 
-#### Asymmetric-key algorithms
+#### 非对称密钥算法
 
-Asymmetric-key algorithms, commonly known as public-key algorithms, use two related keys (i.e., a key pair) to perform their functions: a public key and a private key. The public key may be known by anyone; the private key should be under the sole control of the entity that "owns" the key pair. Even though the public and private keys of a key pair are related, knowledge of the public key does not reveal the private key. Asymmetric algorithms are used, for example,
+非对称密钥算法，通常称为公钥算法，使用两个相关的密钥（即密钥对）来执行其功能：公钥和私钥。公钥可以被任何人知道；私钥应该仅由拥有该密钥对的实体控制。尽管密钥对的公钥和私钥是相关的，但公钥的知识并不会泄露私钥。非对称算法用于，例如：
 
-1. To compute digital signatures (Section 4.2.4).
-2. To establish cryptographic keying material (Section 4.2.5).
-3. To generate random numbers (Section 4.2.7).
+1. 计算数字签名（第4.2.4节）。
+2. 建立加密密钥材料（第4.2.5节）。
+3. 生成随机数（第4.2.7节）。
 
-#### Message Authentication Codes (MACs)
+#### 消息认证码（MACs）
 
-Message Authentication Codes (MACs) provide data authentication and integrity. A MAC is a cryptographic checksum on the data that is used in order to provide assurance that the data has not changed and that the MAC was computed by the expected entity.
+消息认证码（MACs）提供数据认证和完整性。MAC是数据上的加密校验和，用于保证数据未被更改，且MAC由预期的实体计算。
 
-Although message integrity is often provided using non-cryptographic techniques known as error detection codes, these codes can be altered by an adversary to effect an action to the adversary's benefit. The use of an approved cryptographic mechanism, such as a MAC, can alleviate this problem.
+尽管消息完整性通常使用称为错误检测码的非加密技术提供，但这些代码可以被对手更改以对对手有利。使用批准的加密机制（如MAC）可以缓解这个问题。
 
-In addition, the MAC can provide a recipient with assurance that the originator of the data is a key holder (i.e., an entity authorized to have the key). MACs are often used to authenticate the originator to the recipient when only those two parties share the MAC key.
+此外，MAC可以向接收者保证数据的发起者是密钥持有者（即被授权拥有密钥的实体）。MAC通常用于在仅有两方共享MAC密钥时向接收者认证发起者。
 
-#### Digital Signatures
+#### 数字签名
 
-[Digital signatures](https://en.wikipedia.org/wiki/Digital_signature) are used to provide authentication, integrity and [non-repudiation](https://en.wikipedia.org/wiki/Non-repudiation). Digital signatures are used in conjunction with hash functions and are computed on data of any length (up to a limit that is determined by the hash function).
+[数字签名](https://en.wikipedia.org/wiki/Digital_signature)用于提供认证、完整性和[不可抵赖性](https://en.wikipedia.org/wiki/Non-repudiation)。数字签名与哈希函数一起使用，并在任意长度的数据上计算（取决于哈希函数的限制）。
 
-`FIPS186` specifies algorithms that are approved for the computation of digital signatures.
+`FIPS186` 指定了用于计算数字签名的批准算法。
 
-#### Key Encryption Keys
+#### 密钥加密密钥
 
-Symmetric key-wrapping keys are used to encrypt other keys using symmetric-key algorithms. Key-wrapping keys are also known as key encrypting keys.
+对称密钥包装密钥用于使用对称密钥算法加密其他密钥。密钥包装密钥也称为密钥加密密钥。
 
-### Key Strength
+### 密钥强度
 
-Review `NIST SP 800-57` (Recommendation for Key Management) for recommended guidelines on key strength for specific algorithm implementations. Also, consider these best practices:
+查看 `NIST SP 800-57`（密钥管理建议）以获取特定算法实现的密钥强度推荐指南。还要考虑以下最佳实践：
 
-1. Establish what the application's minimum computational resistance to attack should be. Understanding the minimum computational resistance to attack should take into consideration the sophistication of your adversaries, how long data needs to be protected, where data is stored and if it is exposed. Identifying the computational resistance to attack will inform engineers as to the minimum length of the cryptographic key required to protect data over the life of that data. Consult `NIST SP 800-131a` for additional guidance on determining the appropriate key lengths for the algorithm of choice.
-2. When encrypting keys for storage or distribution, always encrypt a cryptographic key with another key of equal or greater cryptographic strength.
-3. When moving to [Elliptic Curve-based algorithms](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography), choose a key length that meets or exceeds the comparative strength of other algorithms in use within your system. Refer to `NIST SP 800-57 Table 2`.
-4. Formulate a strategy for the overall organization's cryptographic strategy to guide developers working on different applications and ensure that each application's cryptographic capability meets minimum requirements and best practices.
+1. 确定应用程序对攻击的最小计算抵抗力。了解最小计算抵抗力应考虑对手的复杂性、数据需要保护的时间、数据存储位置以及是否暴露。识别计算抵抗力将告知工程师在数据生命周期内保护数据所需的最小加密密钥长度。有关确定所选算法适当密钥长度的其他指导，请参阅 `NIST SP 800-131a`。
+2. 在存储或分发密钥时加密，始终使用等于或大于加密强度的另一个密钥加密加密密钥。
+3. 转向[椭圆曲线算法](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography)时，选择满足或超过系统中使用的其他算法比较强度的密钥长度。参考 `NIST SP 800-57 表2`。
+4. 制定整体组织的加密策略，指导不同应用程序的开发人员，确保每个应用程序的加密能力满足最低要求和最佳实践。
 
-### Memory Management Considerations
+### 内存管理注意事项
 
-Keys stored in memory for a long time can become "burned in". This can be mitigated by splitting the key into components that are frequently updated. `NIST SP 800-57`).
+长时间存储在内存中的密钥可能会"烧录"。这可以通过将密钥拆分为经常更新的组件来缓解。（`NIST SP 800-57`）
 
-Loss or corruption of the memory media on which keys and/or certificates are stored, and recovery planning, according to `NIST SP 800-57`.
+存储密钥和/或证书的内存介质的丢失或损坏，以及恢复规划，根据 `NIST SP 800-57`。
 
-Plan for the recovery from possible corruption of the memory media necessary for key or certificate generation, registration, and/or distribution systems, subsystems, or components as recommended in `NIST SP 800-57`.
+按照 `NIST SP 800-57` 的建议，为可能损坏的内存介质的恢复制定计划，这些介质对于密钥或证书生成、注册和/或分发系统、子系统或组件至关重要。
 
-### Perfect Forward Secrecy
+### 完美前向保密性
 
-[Ephemeral keys](https://en.wikipedia.org/wiki/Ephemeral_key) can provide perfect forward secrecy protection, which means a compromise of the server's long term signing key does not compromise the confidentiality of past sessions. Refer to [TLS cheat sheet](Transport_Layer_Security_Cheat_Sheet.md).
+[临时密钥](https://en.wikipedia.org/wiki/Ephemeral_key)可以提供完美前向保密性保护，这意味着服务器的长期签名密钥的泄露不会危及过去会话的机密性。参考 [TLS 速查表](Transport_Layer_Security_Cheat_Sheet.md)。
 
-### Key Usage
+### 密钥使用
 
-According to NIST, in general, a single key should be used for only one purpose (e.g., encryption, authentication, key wrapping, random number generation, or digital signatures).
+根据 NIST，通常一个密钥应仅用于一个目的（如加密、认证、密钥包装、随机数生成或数字签名）。
 
-There are several reasons for this:
+这有几个原因：
 
-1. The use of the same key for two different cryptographic processes may weaken the security provided by one or both of the processes.
-2. Limiting the use of a key limits the damage that could be done if the key is compromised.
-3. Some uses of keys interfere with each other. For example, the length of time the key may be required for each use and purpose. Retention requirements of the data may differ for different data types.
+1. 在两个不同的加密过程中使用相同的密钥可能会削弱一个或两个过程提供的安全性。
+2. 限制密钥的使用可以限制密钥泄露时可能造成的损害。
+3. 某些密钥的使用会相互干扰。例如，每个使用和目的所需的密钥时间长度可能不同。不同数据类型的保留要求可能不同。
 
-### Cryptographic Module Topics
+### 加密模块主题
 
-According to `NIST SP 800-133`, cryptographic modules are the set of hardware, software, and/or firmware that implements security functions (including cryptographic algorithms and key generation) and is contained within a cryptographic module boundary to provide protection of the keys.
+根据 `NIST SP 800-133`，加密模块是实现安全功能（包括加密算法和密钥生成）的硬件、软件和/或固件集合，并包含在加密模块边界内以提供密钥保护。
 
-## Key Management Lifecycle Best Practices
+## 密钥管理生命周期最佳实践
 
-### Generation
+### 生成
 
-Cryptographic keys shall be generated within cryptographic module with at least a `FIPS 140-2` compliance. For explanatory purposes, consider the cryptographic module in which a key is generated to be the key-generating module.
+加密密钥应在至少符合 `FIPS 140-2` 标准的加密模块中生成。出于解释目的，将生成密钥的加密模块视为密钥生成模块。
 
-Any random value required by the key-generating module shall be generated within that module; that is, the Random Bit Generator that generates the random value shall be implemented within cryptographic module with at least a `FIPS 140-2` compliance that generates the key.
+密钥生成模块所需的任何随机值都应在该模块内生成；即，生成随机值的随机比特生成器应在至少符合 `FIPS 140-2` 标准并生成密钥的加密模块中实现。
 
-Hardware cryptographic modules are preferred over software cryptographic modules for protection.
+硬件加密模块比软件加密模块更适合保护。
 
-### Distribution
+### 分发
 
-The generated keys shall be transported (when necessary) using secure channels and shall be used by their associated cryptographic algorithm within at least a `FIPS 140-2` compliant cryptographic modules. For additional detail for the recommendations in this section refer to `NIST Special Paper 800-133`.
+生成的密钥应使用安全信道传输（在必要时），并在至少符合 `FIPS 140-2` 标准的加密模块中由其关联的加密算法使用。有关本节建议的更多详细信息，请参考 `NIST 特别文件 800-133`。
 
-### Storage
+### 存储
 
-1. Developers must understand where cryptographic keys are stored within the application. Understand what memory devices the keys are stored on.
-2. Keys must be protected on both volatile and persistent memory, ideally processed within secure cryptographic modules.
-3. Keys should never be stored in plaintext format.
-4. Ensure all keys are stored in a cryptographic vault, such as a [hardware security module](https://en.wikipedia.org/wiki/Hardware_security_module) (HSM) or isolated cryptographic service.
-5. If you are planning on storing keys in offline devices/databases, then encrypt the keys using Key Encryption Keys (KEKs) prior to the export of the key material. KEK length (and algorithm) should be equivalent to or greater in strength than the keys being protected.
-6. Ensure that keys have integrity protections applied while in storage (consider dual purpose algorithms that support encryption and Message Code Authentication (MAC)).
-7. Ensure that standard application level code never reads or uses cryptographic keys in any way and use key management libraries.
-8. Ensure that keys and cryptographic operation is done inside the sealed vault.
-9. All work should be done in the vault (such as key access, encryption, decryption, signing, etc).
+1. 开发者必须了解应用程序中加密密钥的存储位置。了解密钥存储在哪些内存设备上。
+2. 密钥必须在易失性和持久性内存上受到保护，理想情况下在安全的加密模块内处理。
+3. 密钥绝不应以明文格式存储。
+4. 确保所有密钥存储在加密保险库中，如[硬件安全模块](https://en.wikipedia.org/wiki/Hardware_security_module)（HSM）或隔离的加密服务。
+5. 如果计划在离线设备/数据库中存储密钥，则在导出密钥材料之前使用密钥加密密钥（KEK）加密密钥。KEK长度（和算法）应等于或大于被保护密钥的强度。
+6. 确保密钥在存储期间具有完整性保护（考虑支持加密和消息代码认证（MAC）的双重用途算法）。
+7. 确保标准应用程序级代码绝不以任何方式读取或使用加密密钥，并使用密钥管理库。
+8. 确保密钥和加密操作在密封保险库内完成。
+9. 所有工作都应在保险库内完成（如密钥访问、加密、解密、签名等）。
 
-For a more complete guide to storing sensitive information such as keys, see the [Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md).
+有关存储敏感信息（如密钥）的更完整指南，请参见[秘密管理速查表](Secrets_Management_Cheat_Sheet.md)。
 
-### Escrow and Backup
+### 托管和备份
 
-Data that has been encrypted with lost cryptographic keys will never be recovered. Therefore, it is essential that the application incorporate a secure key backup capability, especially for applications that support data at rest encryption for long-term data stores.
+使用丢失的加密密钥加密的数据将永远无法恢复。因此，应用程序必须具备安全的密钥备份功能，尤其是支持长期数据存储静态数据加密的应用程序。
 
-When backing up keys, ensure that the database that is used to store the keys is encrypted using at least a `FIPS 140-2` validated module. It is sometimes useful to escrow key material for use in investigations and for re-provisioning of key material to users in the event that the key is lost or corrupted.
+备份密钥时，确保用于存储密钥的数据库使用至少经过 `FIPS 140-2` 验证的模块加密。有时，为调查和在密钥丢失或损坏时重新为用户提供密钥材料而托管密钥材料是很有用的。
 
-Never escrow keys used for performing digital signatures, but consider the need to escrow keys that support encryption. Oftentimes, escrow can be performed by the [Certificate Authority](https://en.wikipedia.org/wiki/Certificate_authority) (CA) or key management system that provisions certificates and keys, however in some instances separate APIs must be implemented to allow the system to perform the escrow for the application.
+切勿托管用于执行数字签名的密钥，但要考虑托管支持加密的密钥的需求。通常，托管可由[证书颁发机构](https://en.wikipedia.org/wiki/Certificate_authority)（CA）或配置证书和密钥的密钥管理系统执行，但在某些情况下，必须实施单独的 API 以允许系统为应用程序执行托管。
 
-### Accountability and Audit
+### 问责制和审计
 
-Accountability involves the identification of those that have access to, or control of, cryptographic keys throughout their lifecycles. Accountability can be an effective tool to help prevent key compromises and to reduce the impact of compromises once they are detected.
+问责制涉及在整个生命周期中识别那些可以访问或控制加密密钥的人员。问责制可以是帮助防止密钥泄露并在检测到泄露后减少影响的有效工具。
 
-Although it is preferred that no humans are able to view keys, as a minimum, the key management system should account for all individuals who are able to view plaintext cryptographic keys.
+尽管最好没有人能查看密钥，但作为最低要求，密钥管理系统应记录所有能够查看明文加密密钥的个人。
 
-In addition, more sophisticated key-management systems may account for all individuals authorized to access or control any cryptographic keys, whether in plaintext or ciphertext form.
+此外，更复杂的密钥管理系统可能会记录所有被授权访问或控制任何加密密钥（无论是明文还是密文形式）的个人。
 
-Accountability provides three significant advantages:
+问责制提供三个重要优势：
 
-1. It aids in the determination of when the compromise could have occurred and what individuals could have been involved.
-2. It tends to protect against compromise, because individuals with access to the key know that their access to the key is known.
-3. It is very useful in recovering from a detected key compromise to know where the key was used and what data or other keys were protected by the compromised key.
+1. 它有助于确定何时可能发生泄露以及可能涉及哪些个人。
+2. 它倾向于防止泄露，因为可以访问密钥的个人知道他们的密钥访问是被知晓的。
+3. 在检测到密钥泄露后，了解密钥的使用位置和被泄露密钥保护的数据或其他密钥非常有用。
 
-Certain principles have been found to be useful in enforcing the accountability of cryptographic keys. These principles might not apply to all systems or all types of keys.
+某些原则被发现对执行加密密钥的问责制很有用。这些原则可能不适用于所有系统或所有类型的密钥。
 
-Some of the principles that apply to long-term keys controlled by humans include:
+适用于由人类控制的长期密钥的一些原则包括：
 
-1. Uniquely identifying keys.
-2. Identifying the key user.
-3. Identifying the dates and times of key use, along with the data that is protected.
-4. Identifying other keys that are protected by a symmetric or private key.
+1. 唯一标识密钥。
+2. 识别密钥用户。
+3. 识别密钥使用的日期和时间，以及受保护的数据。
+4. 识别由对称或私钥保护的其他密钥。
 
-Two types of audit should be performed on key management systems:
+应对密钥管理系统执行两种类型的审计：
 
-1. The security plan and the procedures that are developed to support the plan should be periodically audited to ensure that they continue to support the Key Management Policy (`NIST SP 800-57 Part 2`).
-2. The protective mechanisms employed should be periodically reassessed with respect to the level of security that they provide and are expected to provide in the future, and that the mechanisms correctly and effectively support the appropriate policies.
+1. 应定期审核支持该计划的安全计划和程序，以确保它们继续支持密钥管理政策（`NIST SP 800-57 第2部分`）。
+2. 应定期重新评估所采用的保护机制，以确定它们提供的安全级别以及预期在未来提供的安全级别，并且机制正确有效地支持适当的政策。
 
-New technology developments and attacks should be taken into consideration. On a more frequent basis, the actions of the humans that use, operate and maintain the system should be reviewed to verify that the humans continue to follow established security procedures.
+应考虑新技术发展和攻击。更频繁地，应审查使用、操作和维护系统的人员的行为，以验证他们是否继续遵循既定的安全程序。
 
-Strong cryptographic systems can be compromised by lax and inappropriate human actions. Highly unusual events should be noted and reviewed as possible indicators of attempted attacks on the system.
+即使是强大的加密系统也可能因人为的松懈和不当行为而被破坏。应记录并审查高度异常的事件，作为系统可能遭受攻击的潜在指标。
 
-### Key Compromise and Recovery
+### 密钥泄露和恢复
 
-The compromise of a key has the following implications:
+密钥泄露具有以下影响：
 
-1. In general, the unauthorized disclosure of a key used to provide confidentiality protection (i.e., via encryption) means that all information encrypted by that key could be exposed or known by unauthorized entities. The disclosure of a Certificate of Authorities's private signature key means that an adversary can create fraudulent certificates and Certificate Revocation Lists (CRLs).
-2. A compromise of the integrity of a key means that the key is incorrect - either that the key has been modified (either deliberately or accidentally), or that another key has been substituted; this includes a deletion (non-availability) of the key. The substitution or modification of a key used to provide integrity calls into question the integrity of all information protected by the key. This information could have been provided by, or changed by, an unauthorized entity that knows the key. The substitution of a public or secret key that will be used (at a later time) to encrypt data could allow an unauthorized entity (who knows the decryption key) to decrypt data that was encrypted using the encryption key.
-3. A compromise of a key's usage or application association means that the key could be used for the wrong purpose (e.g., for key establishment instead of digital signatures) or for the wrong application, and could result in the compromise of information protected by the key.
-4. A compromise of a key's association with the owner or other entity means that the identity of the other entity cannot be assured (i.e., one does not know who the other entity really is) or that information cannot be processed correctly (e.g., decrypted with the correct key).
-5. A compromise of a key's association with other information means that there is no association at all, or the association is with the wrong "information". This could cause the cryptographic services to fail, information to be lost, or the security of the information to be compromised. Certain protective measures may be taken in order to minimize the likelihood or consequences of a key compromise. Similar affect as ransomware, except that you can't pay the ransom and get the key back.
+1. 通常，用于提供机密性保护（即通过加密）的密钥未经授权披露意味着该密钥加密的所有信息可能被未经授权的实体暴露或知晓。颁发机构私有签名密钥的泄露意味着对手可以创建欺诈性证书和证书吊销列表（CRL）。
+2. 密钥完整性的泄露意味着密钥不正确 - 密钥被修改（无论是故意还是意外），或者另一个密钥被替换；这包括密钥删除（不可用）。用于提供完整性的密钥的替换或修改会使受该密钥保护的所有信息的完整性受到质疑。这些信息可能由知道密钥的未经授权的实体提供或更改。替换将来用于加密数据的公钥或秘密密钥可能允许知道解密密钥的未经授权的实体解密使用加密密钥加密的数据。
+3. 密钥使用或应用关联的泄露意味着密钥可能被用于错误的目的（例如，用于密钥建立而非数字签名）或用于错误的应用，可能导致受密钥保护的信息泄露。
+4. 密钥与所有者或其他实体关联的泄露意味着无法保证其他实体的身份（即不知道另一个实体的真实身份）或信息无法正确处理（例如，无法使用正确的密钥解密）。
+5. 密钥与其他信息关联的泄露意味着根本没有关联，或关联了错误的"信息"。这可能导致加密服务失败、信息丢失或信息安全受到损害。为了最大程度地减少密钥泄露的可能性或后果，可以采取某些保护措施。类似于勒索软件的影响，只是你无法支付赎金并取回密钥。
 
-The following procedures are usually involved:
+通常涉及以下程序：
 
-1. Limiting the amount of time a symmetric or private key is in plaintext form.
-2. Preventing humans from viewing plaintext symmetric and private keys.
-3. Restricting plaintext symmetric and private keys to physically protected containers. This includes key generators, key-transport devices, key loaders, cryptographic modules, and key-storage devices.
-4. Using integrity checks to ensure that the integrity of a key or its association with other data has not been compromised. For example, keys may be wrapped (i.e., encrypted) in such a manner that unauthorized modifications to the wrapping or to the associations will be detected.
-5. Employing key confirmation (see NIST SP 800-57 Part 1 Section 4.2.5.5) to help ensure that the proper key was, in fact, established.
-6. Establishing an accountability system that keeps track of each access to symmetric and private keys in plaintext form.
-7. Providing a cryptographic integrity check on the key (e.g., using a MAC or a digital signature).
-8. The use of trusted timestamps for signed data. i. Destroying keys as soon as they are no longer needed.
-9. Creating a compromise-recovery plan, especially in the case of a CA compromise.
+1. 限制对称或私钥以明文形式存在的时间。
+2. 防止人类查看明文对称和私钥。
+3. 将明文对称和私钥限制在物理保护的容器中。这包括密钥生成器、密钥传输设备、密钥加载器、加密模块和密钥存储设备。
+4. 使用完整性检查以确保密钥或其与其他数据的关联未被破坏。例如，密钥可以以这样的方式包装（即加密），以便检测对包装或关联的未经授权的修改。
+5. 采用密钥确认（参见 NIST SP 800-57 第1部分第4.2.5.5节）以帮助确保实际建立了正确的密钥。
+6. 建立一个问责制系统，跟踪对明文形式对称和私钥的每次访问。
+7. 对密钥提供加密完整性检查（例如，使用 MAC 或数字签名）。
+8. 对签名数据使用可信时间戳。
+9. 一旦不再需要就销毁密钥。
+10. 创建密钥泄露恢复计划，尤其是在 CA 泄露的情况下。
 
-A compromise-recovery plan is essential for restoring cryptographic security services in the event of a key compromise. A compromise-recovery plan shall be documented and easily accessible.
+密钥泄露恢复计划对于在密钥泄露事件中恢复加密安全服务至关重要。密钥泄露恢复计划应被记录并易于访问。
 
-The compromise-recovery plan should contain:
+密钥泄露恢复计划应包含：
 
-1. The identification and contact info of the personnel to notify.
-2. The identification and contact info of the personnel to perform the recovery actions.
-3. The re-key method.
-4. An inventory of all cryptographic keys and their use (e.g., the location of all certificates in a system).
-5. The education of all appropriate personnel on the recovery procedures.
-6. An identification and contact info of all personnel needed to support the recovery procedures.
-7. Policies that key-revocation checking be enforced (to minimize the effect of a compromise).
-8. The monitoring of the re-keying operations (to ensure that all required operations are performed for all affected keys).
-9. Any other recovery procedures, which may include:
-    1. Physical inspection of the equipment.
-    2. Identification of all information that may be compromised as a result of the incident.
-    3. Identification of all signatures that may be invalid, due to the compromise of a signing key.
-    4. Distribution of new keying material, if required.
+1. 要通知的人员的身份和联系信息。
+2. 执行恢复操作的人员的身份和联系信息。
+3. 重新密钥方法。
+4. 所有加密密钥及其用途的清单（例如，系统中所有证书的位置）。
+5. 对所有相关人员进行恢复程序的教育。
+6. 支持恢复程序所需的所有人员的身份和联系信息。
+7. 强制执行密钥吊销检查的政策（以最小化泄露的影响）。
+8. 监控重新密钥操作（以确保为所有受影响的密钥执行所有必需的操作）。
+9. 任何其他恢复程序，可能包括：
+    1. 设备的物理检查。
+    2. 识别由于该事件可能泄露的所有信息。
+    3. 识别由于签名密钥泄露而可能无效的所有签名。
+    4. 在必要时分发新的密钥材料。
 
-## Trust Stores
+## 信任存储
 
-1. Design controls to secure the trust store against injection of third-party root certificates. The access controls are managed and enforced on an entity and application basis.
-2. Implement integrity controls on objects stored in the trust store.
-3. Do not allow for export of keys held within the trust store without authentication and authorization.
-4. Setup strict policies and procedures for exporting key material from applications to network applications and other components.
-5. Implement a secure process for updating the trust store.
+1. 设计控制措施，防止第三方根证书注入信任存储。访问控制在实体和应用程序基础上进行管理和执行。
+2. 对存储在信任存储中的对象实施完整性控制。
+3. 不允许在未经身份验证和授权的情况下导出信任存储中的密钥。
+4. 为将密钥材料从应用程序导出到网络应用程序和其他组件建立严格的策略和程序。
+5. 实施更新信任存储的安全流程。
 
-## Cryptographic Key Management Libraries
+## 加密密钥管理库
 
-Use only reputable crypto libraries that are well maintained and updated, as well as tested and validated by third-party organizations (e.g., `NIST`/`FIPS`).
+仅使用信誉良好、维护良好且更新的加密库，并由第三方组织（如 `NIST`/`FIPS`）测试和验证。
 
-## Documentation
+## 文档
 
-- [The definitive guide to encryption key management fundamentals](https://downloads.townsendsecurity.com/ebooks/EKM-Definitive-Guide.pdf).
-- [Practical cryptography for developers](https://cryptobook.nakov.com/).
+- [加密密钥管理基础的权威指南](https://downloads.townsendsecurity.com/ebooks/EKM-Definitive-Guide.pdf)。
+- [面向开发者的实用密码学](https://cryptobook.nakov.com/)。
