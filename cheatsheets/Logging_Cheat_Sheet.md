@@ -1,381 +1,412 @@
-# Logging Cheat Sheet
+# 日志记录备忘录
+
+## 引言
+
+本备忘录专注于为开发者提供关于构建应用程序日志机制的集中指导，尤其是与安全日志相关的部分。
+
+许多系统启用了网络设备、操作系统、Web 服务器、邮件服务器和数据库服务器日志记录，但通常缺少、禁用或配置不当自定义应用程序事件日志。与基础设施日志相比，应用程序日志提供了更深入的洞察。
+
+应用程序日志记录应：
+- 在应用程序内部保持一致
+- 在组织的应用程序组合中保持一致
+- 在相关情况下使用行业标准
+
+这样，记录的事件数据可以被各种系统使用、关联、分析和管理。
+
+## 目的
+
+应用程序日志记录应始终包括安全事件。应用程序日志是宝贵的数据，用于：
+
+- 识别安全事件
+- 监控策略违规
+- 建立基准
+- 辅助不可否认性控制
+- 提供关于问题和异常情况的信息
+- 为事件调查提供其他应用程序特定数据
+- 帮助通过攻击检测防御漏洞识别和利用
+
+应用程序日志记录还可用于记录其他类型的事件，例如：
+
+- 安全事件
+- 业务流程监控
+- 反自动化监控
+- 审计跟踪
+- 性能监控
+- 合规监控
+- 后续信息请求数据
+- 合法拦截数据
+- 其他特定业务需求
+
+## 设计、实施和测试
+
+### 事件数据源
+
+应用程序本身可访问广泛的信息事件，这些事件应用于生成日志条目。主要事件数据源是应用程序代码本身。
+
+应用程序对用户（如身份、角色、权限）和事件上下文（目标、操作、结果）有最多的信息，这些数据通常在基础设施设备或相关应用程序中不可用。
+
+其他可考虑的应用程序使用信息源包括：
+
+- 客户端软件
+- 嵌入式检测代码
+- 网络防火墙
+- 网络和主机入侵检测系统
+- 相关应用程序
+- 应用程序防火墙
+- 数据库应用程序
+- 声誉监控服务
+- 其他应用程序
+- 操作系统
+
+### 记录事件数据的位置
+
+应用程序通常将事件日志数据写入：
+- 文件系统
+- 数据库（SQL 或 NoSQL）
+- 远程系统
 
-## Introduction
+建议：
+- 使用单独的分区
+- 对文件目录应用严格权限
+- 使用单独的数据库账户
+- 使用安全协议的标准格式
+
+### 要记录的事件
+
+始终记录：
+
+- 输入验证失败
+- 输出验证失败
+- 身份验证成功和失败
+- 授权失败
+- 会话管理失败
+- 应用程序错误和系统事件
+- 应用程序启动和关闭
+- 高风险功能使用情况
+- 法律和选择加入事件
+- 可疑业务逻辑活动
+
+可选记录：
+- 序列失败
+- 过度使用
+- 数据变更
+- 欺诈活动
+- 可疑行为
+- 配置修改
+- 应用程序代码文件和/或内存变更
+
+### 日志内容
+
+每个日志条目应包含：
+- 时间戳
+- 严重性/日志级别
+- 源 IP 地址
+- 用户标识符
+- 事件类型
+- 事件结果（成功/失败）
+- 相关系统组件
+
+### 日志安全性
+
+- 保护日志不被未授权访问
+- 防止日志伪造
+- 考虑使用数字签名
+- 限制日志中的敏感信息
+- 定期备份日志
+- 实施日志轮换策略
+
+### 性能和存储考虑
+
+- 异步日志记录
+- 批量写入
+- 压缩日志
+- 设置日志大小和保留策略
+- 使用专用日志存储系统
+
+### 合规性
+
+考虑行业特定的日志记录要求：
+- PCI DSS
+- HIPAA
+- GDPR
+- SOX
+
+## 最佳实践
+
+1. 使用结构化日志格式
+2. 标准化日志记录方法
+3. 实施日志级别
+4. 避免记录敏感信息
+5. 定期审查和分析日志
+6. 使用集中式日志管理
+7. 自动化日志分析
+8. 建立事件响应流程
+
+## 工具和框架
+
+- ELK Stack
+- Splunk
+- Graylog
+- Logstash
+- Fluentd
+
+## 结论
+
+高质量、安全和有意义的日志对于理解系统行为、检测安全事件和支持取证至关重要。
 
-This cheat sheet is focused on providing developers with concentrated guidance on building application logging mechanisms, especially related to security logging.
+### 事件属性
+
+每个日志条目都需要包含足够的信息，以便后续进行监控和分析。这可能是完整的内容数据，但更可能是摘要或仅包含关键属性。
+
+应用程序日志必须为每个事件记录"何时、何地、谁、做了什么"。
+
+这些属性将根据架构、应用程序类别和主机系统/设备的不同而有所不同，但通常包括以下内容：
+
+- 何时
+    - 日志日期和时间（国际格式）
+    - 事件日期和时间 - 事件时间戳可能与记录时间不同，例如在客户端应用程序托管在远程设备上的服务器日志记录中，该设备仅间歇性或周期性在线
+    - 交互标识符 `注A`
+- 何地
+    - 应用程序标识符，如名称和版本
+    - 应用程序地址，如集群/主机名或服务器 IPv4 或 IPv6 地址和端口号、工作站标识、本地设备标识符
+    - 服务，如名称和协议
+    - 地理位置
+    - 窗口/表单/页面，如 Web 应用程序的入口点 URL 和 HTTP 方法、对话框名称
+    - 代码位置，如脚本名称、模块名称
+- 谁（人或机器用户）
+    - 源地址，如用户的设备/机器标识符、用户的 IP 地址、蜂窝/射频塔 ID、移动电话号码
+    - 用户身份（如已认证或已知），如用户数据库表主键值、用户名、许可证号
+- 做了什么
+    - 事件类型 `注B`
+    - 事件严重性 `注B`，例如 `{0=紧急, 1=警报, ..., 7=调试}, {致命, 错误, 警告, 信息, 调试, 跟踪}`
+    - 安全相关事件标志（如果日志包含非安全事件数据）
+    - 描述
 
-Many systems enable network device, operating system, web server, mail server and database server logging, but often custom application event logging is missing, disabled or poorly configured. It provides much greater insight than infrastructure logging alone. Web application (e.g. web site or web service) logging is much more than having web server logs enabled (e.g. using Extended Log File Format).
+另外，还要考虑记录：
 
-Application logging should be consistent within the application, consistent across an organization's application portfolio and use industry standards where relevant, so the logged event data can be consumed, correlated, analyzed and managed by a wide variety of systems.
+- 辅助时间源（如 GPS）事件日期和时间
+- 操作 - 请求的原始预期目的，如登录、刷新会话 ID、注销、更新配置文件
+- 对象，如受影响的组件或其他对象（用户账户、数据资源、文件），如 URL、会话 ID、用户账户、文件
+- 结果状态 - 针对对象的操作是否成功，如成功、失败、延迟
+- 原因 - 为什么出现上述状态，如数据库检查中用户未认证、凭据不正确
+- HTTP 状态码（仅限 Web 应用程序）- 返回给用户的状态码（通常是 200 或 301）
+- HTTP 请求头或 HTTP 用户代理（仅限 Web 应用程序）
+- 用户类型分类，如公共用户、已认证用户、CMS 用户、搜索引擎、授权渗透测试者、正常运行时间监控器（参见下文"要排除的数据"）
+- 事件检测的分析置信度 `注B`，如低、中、高或数值
+- 用户看到的响应和/或应用程序采取的操作，如状态码、自定义文本消息、会话终止、管理员警报
+- 扩展详细信息，如堆栈跟踪、系统错误消息、调试信息、HTTP 请求正文、HTTP 响应头和正文
+- 内部分类，如责任、合规引用
+- 外部分类，如 NIST 安全内容自动化协议（SCAP）、Mitre 通用攻击模式枚举和分类（CAPEC）
 
-## Purpose
+关于这些内容的更多信息，请参见末尾列出的"其他"相关文章，特别是 Anton Chuvakin 和 Gunnar Peterson 的综合文章。
 
-Application logging should always be included for security events. Application logs are invaluable data for:
+**注A：** "交互标识符"是链接单个用户交互的所有（相关）事件的方法（如桌面应用程序表单提交、Web 页面请求、移动应用按钮点击、Web 服务调用）。应用程序知道这些事件与同一交互相关，并应记录这些信息，而不是丢失信息并强制后续关联技术重新构建单独的事件。例如，单个 SOAP 请求可能有多个输入验证失败，并且可能跨越一小段时间。另一个例子是，对于应用程序提交到数据库服务器的长时间运行的"传奇请求"，输出验证失败可能发生在输入提交之后很久。
 
-- Identifying security incidents
-- Monitoring policy violations
-- Establishing baselines
-- Assisting non-repudiation controls (note that the trait non-repudiation is hard to achieve for logs because their trustworthiness is often just based on the logging party being audited properly while mechanisms like digital signatures are hard to utilize here)
-- Providing information about problems and unusual conditions
-- Contributing additional application-specific data for incident investigation which is lacking in other log sources
-- Helping defend against vulnerability identification and exploitation through attack detection
+**注B：** 每个组织都应确保对事件（类型、置信度、严重性）的分类、描述语法以及字段长度和数据类型（包括日期/时间的格式）采用一致且有文档记录的方法。
 
-Application logging might also be used to record other types of events too such as:
+### 要排除的数据
 
-- Security events
-- Business process monitoring e.g. sales process abandonment, transactions, connections
-- Anti-automation monitoring
-- Audit trails e.g. data addition, modification and deletion, data exports
-- Performance monitoring e.g. data load time, page timeouts
-- Compliance monitoring
-- Data for subsequent requests for information e.g. data subject access, freedom of information, litigation, police and other regulatory investigations
-- Legally sanctioned interception of data e.g. application-layer wire-tapping
-- Other business-specific requirements
+除非得到法律许可，否则不要记录数据。例如，拦截某些通信、监控员工和在未经同意的情况下收集某些数据可能都是非法的。
 
-Process monitoring, audit, and transaction logs/trails etc. are usually collected for different purposes than security event logging, and this often means they should be kept separate.
+不要排除来自"已知"用户的任何事件，如其他内部系统、"可信"第三方、搜索引擎机器人、正常运行时间/进程和其他远程监控系统、渗透测试者、审计员。但是，您可能希望在记录的数据中为每个用户包含一个分类标志。
 
-The types of events and details collected will tend to be different.
+通常不应直接记录以下内容，而应删除、屏蔽、清理、哈希或加密：
 
-For example a [PCIDSS](https://www.pcisecuritystandards.org/pci_security/) audit log will contain a chronological record of activities to provide an independently verifiable trail that permits reconstruction, review and examination to determine the original sequence of attributable transactions. It is important not to log too much, or too little.
+- 应用程序源代码
+- 会话标识值（如需跟踪特定会话事件，可考虑替换为哈希值）
+- 访问令牌
+- 敏感个人数据和某些形式的个人身份信息（PII），如健康、政府标识符、弱势群体
+- 身份验证密码
+- 数据库连接字符串
+- 加密密钥和其他主要机密
+- 银行账户或支付卡持卡人数据
+- 高于日志系统允许存储的安全分类的数据
+- 商业敏感信息
+- 在相关司法管辖区非法收集的信息
+- 用户已选择退出收集、未同意收集或同意已过期的信息
 
-Use knowledge of the intended purposes to guide what, when and how much. The remainder of this cheat sheet primarily discusses security event logging.
+有时可能存在以下数据，虽然对后续调查有用，但在记录事件之前可能需要特殊处理：
 
-## Design, implementation, and testing
+- 文件路径
+- 数据库连接字符串
+- 内部网络名称和地址
+- 非敏感个人数据（如个人姓名、电话号码、电子邮件地址）
 
-### Event data sources
+考虑使用个人数据去标识技术，如删除、混淆或假名化直接和间接标识符，在不需要个人身份或风险被认为过大的情况下。
 
-The application itself has access to a wide range of information events that should be used to generate log entries. Thus, the primary event data source is the application code itself.
+在某些系统中，清理可以在日志收集后、显示前进行。
 
-The application has the most information about the user (e.g. identity, roles, permissions) and the context of the event (target, action, outcomes), and often this data is not available to either infrastructure devices, or even closely-related applications.
+### 可自定义日志记录
 
-Other sources of information about application usage that could also be considered are:
+可能需要能够更改日志记录级别（基于严重性或威胁级别的事件类型、记录的详细程度）。如果实施此功能，请确保：
 
-- Client software e.g. actions on desktop software and mobile devices in local logs or using messaging technologies, JavaScript exception handler via Ajax, web browser such as using Content Security Policy (CSP) reporting mechanism
-- Embedded instrumentation code
-- Network firewalls
-- Network and host intrusion detection systems (NIDS and HIDS)
-- Closely-related applications e.g. filters built into web server software, web server URL redirects/rewrites to scripted custom error pages and handlers
-- Application firewalls e.g. filters, guards, XML gateways, database firewalls, web application firewalls (WAFs)
-- Database applications e.g. automatic audit trails, trigger-based actions
-- Reputation monitoring services e.g. uptime or malware monitoring
-- Other applications e.g. fraud monitoring, CRM
-- Operating system e.g. mobile platform
+- 默认级别必须提供足够的业务需求详细信息
+- 不应可能完全停用应用程序日志记录或对合规要求必要的事件日志记录
+- 更改日志记录级别必须是应用程序内在的（例如基于批准的算法由应用程序自动执行）或遵循变更管理流程（例如更改配置数据、修改源代码）
+- 必须定期验证日志记录级别
 
-The degree of confidence in the event information has to be considered when including event data from systems in a different trust zone. Data may be missing, modified, forged, replayed and could be malicious – it must always be treated as untrusted data.
+### 事件收集
 
-Consider how the source can be verified, and how integrity and non-repudiation can be enforced.
-
-### Where to record event data
-
-Applications commonly write event log data to the file system or a database (SQL or NoSQL). Applications installed on desktops and on mobile devices may use local storage and local databases, as well as sending data to remote storage.
-
-Your selected framework may limit the available choices. All types of applications may send event data to remote systems (instead of or as well as more local storage).
+如果开发框架支持合适的日志记录机制，请使用或构建该机制。否则，实现一个可以从其他模块/组件调用的应用程序范围的日志处理程序。
 
-This could be a centralized log collection and management system (e.g. SIEM or SEM) or another application elsewhere. Consider whether the application can simply send its event stream, unbuffered, to stdout, for management by the execution environment.
+记录接口，引用组织特定的事件分类和描述语法要求。
 
-- When using the file system, it is preferable to use a separate partition than those used by the operating system, other application files and user generated content
-    - For file-based logs, apply strict permissions concerning which users can access the directories, and the permissions of files within the directories
-    - In web applications, the logs should not be exposed in web-accessible locations, and if done so, should have restricted access and be configured with a plain text MIME type (not HTML)
-- When using a database, it is preferable to utilize a separate database account that is only used for writing log data and which has very restrictive database, table, function and command permissions
-- Use standard formats over secure protocols to record and send event data, or log files, to other systems e.g. Common Log File System (CLFS) or Common Event Format (CEF) over syslog; standard formats facilitate integration with centralised logging services
+如果可能，创建这个日志处理程序作为一个标准模块，可以彻底测试、部署在多个应用程序中，并添加到推荐模块列表中。
 
-Consider separate files/tables for extended event information such as error stack traces or a record of HTTP request and response headers and bodies.
+- 对来自其他信任区的事件数据执行输入验证，确保其格式正确（并考虑在输入验证失败时发出警报和不记录）
+- 对所有事件数据执行清理，以防止日志注入攻击，如回车符（CR）、换行符（LF）和分隔符字符（并可选地删除敏感数据）
+- 正确编码输出（记录）格式的数据
+- 如果写入数据库，请阅读、理解并应用 SQL 注入速查表
+- 确保日志记录过程/系统的故障不会阻止应用程序正常运行或允许信息泄露
+- 同步所有服务器和设备的时间 `注C`
 
-### Which events to log
+**注C：** 在应用程序运行在其他方控制的设备上（例如个人手机上、位于另一个企业网络的远程客户工作站）时，这并不总是可能的。在这些情况下，尝试测量时间偏移，或记录事件时间戳的置信度。
 
-The level and content of security monitoring, alerting, and reporting needs to be set during the requirements and design stage of projects, and should be proportionate to the information security risks. This can then be used to define what should be logged.
+尽可能以标准格式记录数据，或至少确保可以使用行业标准格式导出/广播。
 
-There is no one size fits all solution, and a blind checklist approach can lead to unnecessary "alarm fog" that means real problems go undetected.
+在某些情况下，事件可能在中间点中继或收集。在后一种情况下，某些数据可能在转发到中央存储库和分析系统之前被聚合或汇总。
 
-Where possible, always log:
+### 验证
 
-- Input validation failures e.g. protocol violations, unacceptable encodings, invalid parameter names and values
-- Output validation failures e.g. database record set mismatch, invalid data encoding
-- Authentication successes and failures
-- Authorization (access control) failures
-- Session management failures e.g. cookie session identification value modification or suspicious JWT validation failures
-- Application errors and system events e.g. syntax and runtime errors, connectivity problems, performance issues, third party service error messages, file system errors, file upload virus detection, configuration changes
-- Application and related systems start-ups and shut-downs, and logging initialization (starting, stopping or pausing)
-- Use of higher-risk functionality including:
-    - User administration actions such as addition or deletion of users, changes to privileges, assigning users to tokens, adding or deleting tokens
-    - Use of systems administrative privileges or access by application administrators including all actions by those users
-    - Use of default or shared accounts or a "break-glass" account.
-    - Access to sensitive data such as payment cardholder data,
-    - Encryption activities such as use or rotation of cryptographic keys
-    - Creation and deletion of system-level objects
-    - Data import and export including screen-based reports
-    - Submission and processing of user-generated content - especially file uploads
-    - Deserialization failures
-    - Network connections and associated failures such as backend TLS failures (including certificate validation failures), or requests with an unexpected HTTP verb
-- Legal and other opt-ins e.g. permissions for mobile phone capabilities, terms of use, terms & conditions, personal data usage consent, permission to receive marketing communications
-- Suspicous business logic activities such as:
-    - Attempts to perform a set actions out of order/bypass flow control
-    - Actions which don't make sense in the business context
-    - Attempts to exceed limitations for particular actions
-
-Optionally consider if the following events can be logged and whether it is desirable information:
-
-- Sequencing failure
-- Excessive use
-- Data changes
-- Fraud and other criminal activities
-- Suspicious, unacceptable, or unexpected behavior
-- Modifications to configuration
-- Application code file and/or memory changes
-
-### Event attributes
-
-Each log entry needs to include sufficient information for the intended subsequent monitoring and analysis. It could be full content data, but is more likely to be an extract or just summary properties.
-
-The application logs must record "when, where, who and what" for each event.
-
-The properties for these will be different depending on the architecture, class of application and host system/device, but often include the following:
-
-- When
-    - Log date and time (international format)
-    - Event date and time - the event timestamp may be different to the time of logging e.g. server logging where the client application is hosted on remote device that is only periodically or intermittently online
-    - Interaction identifier `Note A`
-- Where
-    - Application identifier e.g. name and version
-    - Application address e.g. cluster/hostname or server IPv4 or IPv6 address and port number, workstation identity, local device identifier
-    - Service e.g. name and protocol
-    - Geolocation
-    - Window/form/page e.g. entry point URL and HTTP method for a web application, dialogue box name
-    - Code location e.g. script name, module name
-- Who (human or machine user)
-    - Source address e.g. user's device/machine identifier, user's IP address, cell/RF tower ID, mobile telephone number
-    - User identity (if authenticated or otherwise known) e.g. user database table primary key value, user name, license number
-- What
-    - Type of event `Note B`
-    - Severity of event `Note B` e.g. `{0=emergency, 1=alert, ..., 7=debug}, {fatal, error, warning, info, debug, trace}`
-    - Security relevant event flag (if the logs contain non-security event data too)
-    - Description
-
-Additionally consider recording:
-
-- Secondary time source (e.g. GPS) event date and time
-- Action - original intended purpose of the request e.g. Log in, Refresh session ID, Log out, Update profile
-- Object e.g. the affected component or other object (user account, data resource, file) e.g. URL, Session ID, User account, File
-- Result status - whether the ACTION aimed at the OBJECT was successful e.g. Success, Fail, Defer
-- Reason - why the status above occurred e.g. User not authenticated in database check ..., Incorrect credentials
-- HTTP Status Code (web applications only) - the status code returned to the user (often 200 or 301)
-- Request HTTP headers or HTTP User Agent (web applications only)
-- User type classification e.g. public, authenticated user, CMS user, search engine, authorized penetration tester, uptime monitor (see "Data to exclude" below)
-- Analytical confidence in the event detection `Note B` e.g. low, medium, high or a numeric value
-- Responses seen by the user and/or taken by the application e.g. status code, custom text messages, session termination, administrator alerts
-- Extended details e.g. stack trace, system error messages, debug information, HTTP request body, HTTP response headers and body
-- Internal classifications e.g. responsibility, compliance references
-- External classifications e.g. NIST Security Content Automation Protocol (SCAP), Mitre Common Attack Pattern Enumeration and Classification (CAPEC)
-
-For more information on these, see the "other" related articles listed at the end, especially the comprehensive article by Anton Chuvakin and Gunnar Peterson.
-
-**Note A:** The "Interaction identifier" is a method of linking all (relevant) events for a single user interaction (e.g. desktop application form submission, web page request, mobile app button click, web service call). The application knows all these events relate to the same interaction, and this should be recorded instead of losing the information and forcing subsequent correlation techniques to re-construct the separate events. For example, a single SOAP request may have multiple input validation failures and they may span a small range of times. As another example, an output validation failure may occur much later than the input submission for a long-running "saga request" submitted by the application to a database server.
-
-**Note B:** Each organisation should ensure it has a consistent, and documented, approach to classification of events (type, confidence, severity), the syntax of descriptions, and field lengths & data types including the format used for dates/times.
-
-### Data to exclude
-
-Never log data unless it is legally sanctioned. For example, intercepting some communications, monitoring employees, and collecting some data without consent may all be illegal.
-
-Never exclude any events from "known" users such as other internal systems, "trusted" third parties, search engine robots, uptime/process and other remote monitoring systems, pen testers, auditors. However, you may want to include a classification flag for each of these in the recorded data.
-
-The following should usually not be recorded directly in the logs, but instead should be removed, masked, sanitized, hashed, or encrypted:
-
-- Application source code
-- Session identification values (consider replacing with a hashed value if needed to track session specific events)
-- Access tokens
-- Sensitive personal data and some forms of personally identifiable information (PII) e.g. health, government identifiers, vulnerable people
-- Authentication passwords
-- Database connection strings
-- Encryption keys and other primary secrets
-- Bank account or payment card holder data
-- Data of a higher security classification than the logging system is allowed to store
-- Commercially-sensitive information
-- Information it is illegal to collect in the relevant jurisdictions
-- Information a user has opted out of collection, or not consented to e.g. use of do not track, or where consent to collect has expired
-
-Sometimes the following data can also exist, and whilst useful for subsequent investigation, it may also need to be treated in some special manner before the event is recorded:
-
-- File paths
-- Database connection strings
-- Internal network names and addresses
-- Non sensitive personal data (e.g. personal names, telephone numbers, email addresses)
-
-Consider using personal data de-identification techniques such as deletion, scrambling or pseudonymization of direct and indirect identifiers where the individual's identity is not required, or the risk is considered too great.
-
-In some systems, sanitization can be undertaken post log collection, and prior to log display.
-
-### Customizable logging
-
-It may be desirable to be able to alter the level of logging (type of events based on severity or threat level, amount of detail recorded). If this is implemented, ensure that:
-
-- The default level must provide sufficient detail for business needs
-- It should not be possible to completely deactivate application logging or logging of events that are necessary for compliance requirements
-- Alterations to the level/extent of logging must be intrinsic to the application (e.g. undertaken automatically by the application based on an approved algorithm) or follow change management processes (e.g. changes to configuration data, modification of source code)
-- The logging level must be verified periodically
-
-### Event collection
-
-If your development framework supports suitable logging mechanisms, use or build upon that. Otherwise, implement an application-wide log handler which can be called from other modules/components.
-
-Document the interface referencing the organisation-specific event classification and description syntax requirements.
-
-If possible create this log handler as a standard module that can be thoroughly tested, deployed in multiple applications, and added to a list of approved & recommended modules.
-
-- Perform input validation on event data from other trust zones to ensure it is in the correct format (and consider alerting and not logging if there is an input validation failure)
-- Perform sanitization on all event data to prevent log injection attacks e.g. carriage return (CR), line feed (LF) and delimiter characters (and optionally to remove sensitive data)
-- Encode data correctly for the output (logged) format
-- If writing to databases, read, understand, and apply the SQL injection cheat sheet
-- Ensure failures in the logging processes/systems do not prevent the application from otherwise running or allow information leakage
-- Synchronize time across all servers and devices `Note C`
-
-**Note C:** This is not always possible where the application is running on a device under some other party's control (e.g. on an individual's mobile phone, on a remote customer's workstation which is on another corporate network). In these cases, attempt to measure the time offset, or record a confidence level in the event timestamp.
-
-Where possible, record data in a standard format, or at least ensure it can be exported/broadcast using an industry-standard format.
-
-In some cases, events may be relayed or collected together in intermediate points. In the latter some data may be aggregated or summarized before forwarding on to a central repository and analysis system.
-
-### Verification
-
-Logging functionality and systems must be included in code review, application testing and security verification processes:
-
-- Ensure the logging is working correctly and as specified
-- Check that events are being classified consistently and the field names, types and lengths are correctly defined to an agreed standard
-- Ensure logging is implemented and enabled during application security, fuzz, penetration, and performance testing
-- Test the mechanisms are not susceptible to injection attacks
-- Ensure there are no unwanted side-effects when logging occurs
-- Check the effect on the logging mechanisms when external network connectivity is lost (if this is usually required)
-- Ensure logging cannot be used to deplete system resources, for example by filling up disk space or exceeding database transaction log space, leading to denial of service
-- Test the effect on the application of logging failures such as simulated database connectivity loss, lack of file system space, missing write permissions to the file system, and runtime errors in the logging module itself
-- Verify access controls on the event log data
-- If log data is utilized in any action against users (e.g. blocking access, account lock-out), ensure this cannot be used to cause denial of service (DoS) of other users
-
-### Network architecture
-
-As an example, the diagram below shows a service that provides business functionality to customers. We recommend creating a centralized system for collecting logs. There may be many such services, but all of them must securely collect logs in a centralized system.
-
-Applications of this business service are located in network segments:
-
-- FRONTEND 1 aka DMZ (UI)
-- MIDDLEWARE 1 (business application - service core)
-- BACKEND 1 (service database)
-
-The service responsible for collecting IT events, including security events, is located in the following segments:
-
-- BACKEND 2 (log storage)
-- MIDDLEWARE 3 - 2 applications:
-    - log loader application that download log from storage, pre-processes, and transfer to UI
-    - log collector that accepts logs from business applications, other infrastructure, cloud applications and saves in log storage
-- FRONTEND 2 (UI for viewing business service event logs)
-- FRONTEND 3 (applications that receive logs from cloud applications and transfer logs to log collector)
-    - It is allowed to combine the functionality of two applications in one
-
-For example, all external requests from users go through the API management service, see application in MIDDLEWARE 2 segment.
+日志记录功能和系统必须包含在代码审查、应用程序测试和安全验证流程中：
+
+- 确保日志记录正常工作且符合规范
+- 检查事件是否一致分类，字段名称、类型和长度是否正确定义为商定的标准
+- 确保在应用程序安全、模糊、渗透和性能测试期间实施和启用日志记录
+- 测试机制是否容易受到注入攻击
+- 确保发生日志记录时没有不良副作用
+- 检查外部网络连接丢失时日志记录机制的影响（如果通常需要）
+- 确保日志记录不能通过填满磁盘空间或超过数据库事务日志空间来耗尽系统资源，从而导致拒绝服务
+- 测试日志记录失败的影响，如模拟数据库连接丢失、文件系统空间不足、文件系统写入权限缺失以及日志记录模块本身的运行时错误
+- 验证事件日志数据的访问控制
+- 如果日志数据用于对用户采取任何操作（如阻止访问、锁定账户），请确保这不会导致其他用户的拒绝服务（DoS）
+
+### 网络架构
+
+作为一个示例，下图展示了一个为客户提供业务功能的服务。我们建议创建一个集中的日志收集系统。可能有许多此类服务，但所有服务都必须安全地将日志收集到一个集中的系统中。
+
+该业务服务的应用程序位于以下网络分段中：
+
+- 前端 1，又称 DMZ（用户界面）
+- 中间件 1（业务应用程序 - 服务核心）
+- 后端 1（服务数据库）
+
+负责收集 IT 事件（包括安全事件）的服务位于以下分段中：
+
+- 后端 2（日志存储）
+- 中间件 3 - 2 个应用程序：
+    - 日志加载应用程序，从存储中下载日志，预处理并传输到用户界面
+    - 日志收集器，接受来自业务应用程序、其他基础设施、云应用程序的日志并保存到日志存储
+- 前端 2（用于查看业务服务事件日志的用户界面）
+- 前端 3（从云应用程序接收日志并将日志传输到日志收集器的应用程序）
+    - 允许将两个应用程序的功能合并到一个中
+
+例如，所有来自用户的外部请求都通过 API 管理服务，请参见中间件 2 分段中的应用程序。
 
 ![MIDDLEWARE](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Logging_Cheat_Sheet.drawio.png)
 
-As you can see in the image above, at the network level, the processes of saving and downloading logs require opening different network accesses (ports), arrows are highlighted in different colors. Also, saving and downloading are performed by different applications.
+如图所示，在网络层面，保存和下载日志需要打开不同的网络访问（端口），箭头以不同颜色突出显示。此外，保存和下载由不同的应用程序执行。
 
-Full network segmentation cheat sheet by [sergiomarotco](https://github.com/sergiomarotco): [link](https://github.com/sergiomarotco/Network-segmentation-cheat-sheet)
+完整的网络分段速查表由 [sergiomarotco](https://github.com/sergiomarotco) 提供：[链接](https://github.com/sergiomarotco/Network-segmentation-cheat-sheet)
 
-## Deployment and operation
+## 部署和运行
 
-### Release
+### 发布
 
-- Provide security configuration information by adding details about the logging mechanisms to release documentation
-- Brief the application/process owner about the application logging mechanisms
-- Ensure the outputs of the monitoring (see below) are integrated with incident response processes
+- 通过在发布文档中添加日志记录机制的安全配置信息来提供信息
+- 向应用程序/流程所有者简要介绍应用程序日志记录机制
+- 确保监控输出（见下文）与事件响应流程集成
 
-### Operation
+### 运行
 
-Enable processes to detect whether logging has stopped, and to identify tampering or unauthorized access and deletion (see protection below).
+启用流程以检测日志记录是否已停止，并识别篡改或未经授权的访问和删除（参见下文保护）。
 
-### Protection
+### 保护
 
-The logging mechanisms and collected event data must be protected from mis-use such as tampering in transit, and unauthorized access, modification and deletion once stored. Logs may contain personal and other sensitive information, or the data may contain information regarding the application's code and logic.
+日志记录机制和收集的事件数据必须防止滥用，如传输中篡改，以及存储后未经授权的访问、修改和删除。日志可能包含个人和其他敏感信息，或数据可能包含有关应用程序代码和逻辑的信息。
 
-In addition, the collected information in the logs may itself have business value (to competitors, gossip-mongers, journalists and activists) such as allowing the estimate of revenues, or providing performance information about employees.
+此外，日志中收集的信息本身可能具有业务价值（对竞争对手、八卦者、记者和活动家），如允许估算收入或提供员工绩效信息。
 
-This data may be held on end devices, at intermediate points, in centralized repositories and in archives and backups.
+这些数据可能存储在终端设备、中间点、集中存储库以及存档和备份中。
 
-Consider whether parts of the data may need to be excluded, masked, sanitized, hashed, or encrypted during examination or extraction.
+考虑在检查或提取期间是否需要排除、屏蔽、清理、哈希或加密部分数据。
 
-At rest:
+静态存储：
 
-- Build in tamper detection so you know if a record has been modified or deleted
-- Store or copy log data to read-only media as soon as possible
-- All access to the logs must be recorded and monitored (and may need prior approval)
-- The privileges to read log data should be restricted and reviewed periodically
+- 内置篡改检测，以便知道记录是否被修改或删除
+- 尽快将日志数据存储或复制到只读介质
+- 所有对日志的访问都必须被记录和监控（可能需要事先批准）
+- 读取日志数据的权限应受限并定期审查
 
-In transit:
+传输中：
 
-- If log data is sent over untrusted networks (e.g. for collection, for dispatch elsewhere, for analysis, for reporting), use a secure transmission protocol
-- Consider whether the origin of the event data needs to be verified
-- Perform due diligence checks (regulatory and security) before sending event data to third parties
+- 如果日志数据通过不受信任的网络发送（例如用于收集、分发、分析、报告），请使用安全传输协议
+- 考虑是否需要验证事件数据的来源
+- 在将事件数据发送给第三方之前，进行尽职调查检查（监管和安全）
 
-See `NIST SP 800-92` Guide to Computer Security Log Management for more guidance.
+有关更多指导，请参见 `NIST SP 800-92` 计算机安全日志管理指南。
 
-### Monitoring of events
+### 事件监控
 
-The logged event data needs to be available to review and there are processes in place for appropriate monitoring, alerting, and reporting:
+需要可审查记录的事件数据，并建立适当的监控、警报和报告流程：
 
-- Incorporate the application logging into any existing log management systems/infrastructure e.g. centralized logging and analysis systems
-- Ensure event information is available to appropriate teams
-- Enable alerting and signal the responsible teams about more serious events immediately
-- Share relevant event information with other detection systems, to related organizations and centralized intelligence gathering/sharing systems
+- 将应用程序日志记录整合到任何现有的日志管理系统/基础设施中，如集中式日志记录和分析系统
+- 确保事件信息可供相关团队使用
+- 启用警报，并立即向负责团队发出更严重事件的信号
+- 与其他检测系统、相关组织和集中情报收集/共享系统共享相关事件信息
 
-### Disposal of logs
+### 日志处置
 
-Log data, temporary debug logs, and backups/copies/extractions, must not be destroyed before the duration of the required data retention period, and must not be kept beyond this time.
+日志数据、临时调试日志以及备份/副本/提取物，不得在所需的数据保留期限之前销毁，也不得超过此时间保留。
 
-Legal, regulatory and contractual obligations may impact on these periods.
+法律、监管和合同义务可能会影响这些期限。
 
-## Attacks on Logs
+## 日志攻击
 
-Because of their usefulness as a defense, logs may be a target of attacks. See also OWASP [Log Injection](https://owasp.org/www-community/attacks/Log_Injection) and [CWE-117](https://cwe.mitre.org/data/definitions/117.html).
+由于日志作为防御手段的有用性，它们可能成为攻击目标。另请参见 OWASP [日志注入](https://owasp.org/www-community/attacks/Log_Injection)和 [CWE-117](https://cwe.mitre.org/data/definitions/117.html)。
 
-### Confidentiality
+### 机密性
 
-Who should be able to read what? A confidentiality attack enables an unauthorized party to access sensitive information stored in logs.
+谁应该能够阅读什么？机密性攻击使未经授权的一方能够访问存储在日志中的敏感信息。
 
-- Logs contain PII of users. Attackers gather PII, then either release it or use it as a stepping stone for further attacks on those users.
-- Logs contain technical secrets such as passwords. Attackers use it as a stepping stone for deeper attacks.
+- 日志包含用户的个人身份信息（PII）。攻击者收集 PII，然后要么发布，要么将其用作对这些用户进行进一步攻击的跳板。
+- 日志包含技术秘密，如密码。攻击者将其用作进行更深入攻击的跳板。
 
-### Integrity
+### 完整性
 
-Which information should be modifiable by whom?
+哪些信息应该由谁修改？
 
-- An attacker with read access to a log uses it to exfiltrate secrets.
-- An attack leverages logs to connect with exploitable facets of logging platforms, such as sending in a payload over syslog in order to cause an out-of-bounds write.
+- 具有日志读取权限的攻击者使用它来窃取秘密。
+- 攻击利用日志连接日志平台的可利用方面，例如通过 syslog 发送有效载荷以导致越界写入。
 
-### Availability
+### 可用性
 
-What downtime is acceptable?
+可接受的停机时间是多少？
 
-- An attacker floods log files in order to exhaust disk space available for non-logging facets of system functioning. For example, the same disk used for log files might be used for SQL storage of application data.
-- An attacker floods log files in order to exhaust disk space available for further logging.
-- An attacker uses one log entry to destroy other log entries.
-- An attacker leverages poor performance of logging code to reduce application performance
+- 攻击者使日志文件泛滥以耗尽系统功能非日志方面可用的磁盘空间。例如，用于日志文件的同一磁盘可能用于应用程序数据的 SQL 存储。
+- 攻击者使日志文件泛滥以耗尽进一步日志记录可用的磁盘空间。
+- 攻击者使用一个日志条目销毁其他日志条目。
+- 攻击者利用日志记录代码的性能不佳来降低应用程序性能。
 
-### Accountability
+### 问责制
 
-Who is responsible for harm?
+谁对造成的伤害负责？
 
-- An attacker prevent writes in order to cover their tracks.
-- An attacker prevent damages the log in order to cover their tracks.
-- An attacker causes the wrong identity to be logged in order to conceal the responsible party.
+- 攻击者阻止写入以掩盖其踪迹。
+- 攻击者损坏日志以掩盖其踪迹。
+- 攻击者导致记录错误的身份以隐藏责任方。
 
-## Related articles
+## 相关文章
 
-- OWASP [ESAPI Documentation](https://owasp.org/www-project-enterprise-security-api/).
-- OWASP [Logging Project](https://owasp.org/www-project-security-logging/).
-- IETF [syslog protocol](https://tools.ietf.org/rfc/rfc5424.txt).
-- Mitre [Common Event Expression (CEE)](http://cee.mitre.org/) (as of 2014 no longer actively developed).
-- NIST [SP 800-92 Guide to Computer Security Log Management](http://csrc.nist.gov/publications/nistpubs/800-92/SP800-92.pdf).
-- PCISSC [PCI DSS v2.0 Requirement 10 and PA-DSS v2.0 Requirement 4](https://www.pcisecuritystandards.org/security_standards/documents.php).
-- W3C [Extended Log File Format](http://www.w3.org/TR/WD-logfile.html).
-- Other [Build Visibility In, Richard Bejtlich, TaoSecurity blog](http://taosecurity.blogspot.co.uk/2009/08/build-visibility-in.html).
-- Other [Common Event Format (CEF), Arcsight](https://community.microfocus.com/t5/ArcSight-Connectors/ArcSight-Common-Event-Format-CEF-Implementation-Standard/ta-p/1645557).
-- Other [Log Event Extended Format (**LEEF**), IBM](https://www.ibm.com/developerworks/community/wikis/form/anonymous/api/wiki/9989d3d7-02c1-444e-92be-576b33d2f2be/page/3dc63f46-4a33-4e0b-98bf-4e55b74e556b/attachment/a19b9122-5940-4c89-ba3e-4b4fc25e2328/media/QRadar_LEEF_Format_Guide.pdf).
-- Other [Common Log File System (CLFS), Microsoft](http://msdn.microsoft.com/en-us/library/windows/desktop/bb986747(v=vs.85).aspx).
-- Other [Building Secure Applications: Consistent Logging, Rohit Sethi & Nish Bhalla, Symantec Connect](http://www.symantec.com/connect/articles/building-secure-applications-consistent-logging).
+- OWASP [ESAPI 文档](https://owasp.org/www-project-enterprise-security-api/)
+- OWASP [日志项目](https://owasp.org/www-project-security-logging/)
+- IETF [syslog 协议](https://tools.ietf.org/rfc/rfc5424.txt)
+- Mitre [通用事件表达式（CEE）](http://cee.mitre.org/)（截至 2014 年不再积极开发）
+- NIST [SP 800-92 计算机安全日志管理指南](http://csrc.nist.gov/publications/nistpubs/800-92/SP800-92.pdf)
+- PCISSC [PCI DSS v2.0 要求 10 和 PA-DSS v2.0 要求 4](https://www.pcisecuritystandards.org/security_standards/documents.php)
+- W3C [扩展日志文件格式](http://www.w3.org/TR/WD-logfile.html)
+- 其他 [建立可见性，Richard Bejtlich，TaoSecurity 博客](http://taosecurity.blogspot.co.uk/2009/08/build-visibility-in.html)
+- 其他 [通用事件格式（CEF），Arcsight](https://community.microfocus.com/t5/ArcSight-Connectors/ArcSight-Common-Event-Format-CEF-Implementation-Standard/ta-p/1645557)
+- 其他 [日志事件扩展格式（**LEEF**），IBM](https://www.ibm.com/developerworks/community/wikis/form/anonymous/api/wiki/9989d3d7-02c1-444e-92be-576b33d2f2be/page/3dc63f46-4a33-4e0b-98bf-4e55b74e556b/attachment/a19b9122-5940-4c89-ba3e-4b4fc25e2328/media/QRadar_LEEF_Format_Guide.pdf)
+- 其他 [通用日志文件系统（CLFS），Microsoft](http://msdn.microsoft.com/en-us/library/windows/desktop/bb986747(v=vs.85).aspx)
+- 其他 [构建安全应用程序：一致的日志记录，Rohit Sethi & Nish Bhalla，Symantec Connect](http://www.symantec.com/connect/articles/building-secure-applications-consistent-logging)
