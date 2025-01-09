@@ -1,42 +1,42 @@
-# Laravel Cheat Sheet
+# Laravel 安全备忘录
 
-## Introduction
+## 引言
 
-This *Cheatsheet* intends to provide security tips to developers building Laravel applications. It aims to cover all common vulnerabilities and how to ensure that your Laravel applications are secure.
+本 *备忘录* 旨在为构建 Laravel 应用程序的开发者提供安全建议。它旨在涵盖所有常见的安全漏洞以及如何确保 Laravel 应用程序的安全性。
 
-The Laravel Framework provides in-built security features and is meant to be secure by default. However, it also provides additional flexibility for complex use cases. This means that developers unfamiliar with the inner workings of Laravel may fall into the trap of using complex features in a way that is not secure. This guide is meant to educate developers to avoid common pitfalls and develop Laravel applications in a secure manner.
+Laravel 框架提供了内置的安全特性，并且默认情况下是安全的。然而，它还为复杂的用例提供了额外的灵活性。这意味着对 Laravel 内部工作原理不熟悉的开发者可能会陷入以不安全的方式使用复杂特性的陷阱。本指南旨在教育开发者避免常见的陷阱，并以安全的方式开发 Laravel 应用程序。
 
-You may also refer the [Enlightn Security Documentation](https://www.laravel-enlightn.com/docs/security/), which highlights common vulnerabilities and good practices on securing Laravel applications.
+您还可以参考 [Enlightn 安全文档](https://www.laravel-enlightn.com/docs/security/)，其中突出了常见的安全漏洞和保护 Laravel 应用程序的最佳实践。
 
-## The Basics
+## 基础知识
 
-- Make sure your app is not in debug mode while in production. To turn off debug mode, set your `APP_DEBUG` environment variable to `false`:
+- 确保在生产环境中关闭调试模式。要关闭调试模式，请将 `APP_DEBUG` 环境变量设置为 `false`：
 
 ```ini
 APP_DEBUG=false
 ```
 
-- Make sure your application key has been generated. Laravel applications use the app key for symmetric encryption and SHA256 hashes such as cookie encryption, signed URLs, password reset tokens and session data encryption. To generate the app key, you may run the `key:generate` Artisan command:
+- 确保已生成应用程序密钥。Laravel 应用程序使用应用程序密钥进行对称加密和 SHA256 哈希，如 cookie 加密、签名 URL、密码重置令牌和会话数据加密。要生成应用程序密钥，您可以运行 `key:generate` Artisan 命令：
 
 ```bash
 php artisan key:generate
 ```
 
-- Make sure your PHP configuration is secure. You may refer the [PHP Configuration Cheat Sheet](PHP_Configuration_Cheat_Sheet.md) for more information on secure PHP configuration settings.
+- 确保 PHP 配置安全。您可以参考 [PHP 配置备忘录](PHP_Configuration_Cheat_Sheet.md)，了解更多关于安全的 PHP 配置设置。
 
-- Set safe file and directory permissions on your Laravel application. In general, all Laravel directories should be setup with a max permission level of `775` and non-executable files with a max permission level of `664`. Executable files such as Artisan or deployment scripts should be provided with a max permission level of `775`.
+- 为 Laravel 应用程序设置安全的文件和目录权限。通常，所有 Laravel 目录应设置最大权限级别为 `775`，非可执行文件的最大权限级别为 `664`。可执行文件（如 Artisan 或部署脚本）应提供最大权限级别 `775`。
 
-- Make sure your application does not have vulnerable dependencies. You can check this using the [Enlightn Security Checker](https://github.com/enlightn/security-checker).
+- 确保应用程序没有易受攻击的依赖项。您可以使用 [Enlightn 安全检查器](https://github.com/enlightn/security-checker) 检查这一点。
 
-## Cookie Security and Session Management
+## Cookie 安全和会话管理
 
-By default, Laravel is configured in a secure manner. However, if you change your cookie or session configurations, make sure of the following:
+默认情况下，Laravel 配置是安全的。但是，如果您更改 cookie 或会话配置，请确保以下几点：
 
-- Enable the cookie encryption middleware if you use the `cookie` session store or if you store any kind of data that should not be readable or tampered with by clients. In general, this should be enabled unless your application has a very specific use case that requires disabling this. To enable this middleware, simply add the `EncryptCookies` middleware to the `web` middleware group in your `App\Http\Kernel` class:
+- 如果使用 `cookie` 会话存储或存储任何不应被客户端读取或篡改的数据，请启用 cookie 加密中间件。通常，除非应用程序有非常特定的需要禁用此功能的用例，否则应启用此功能。要启用此中间件，只需在 `App\Http\Kernel` 类的 `web` 中间件组中添加 `EncryptCookies` 中间件：
 
 ```php
 /**
- * The application's route middleware groups.
+ * 应用程序的路由中间件组。
  *
  * @var array
  */
@@ -49,76 +49,76 @@ protected $middlewareGroups = [
 ];
 ```
 
-- Enable the `HttpOnly` attribute on your session cookies via your `config/session.php` file, so that your session cookies are inaccessible from Javascript:
+- 通过 `config/session.php` 文件启用会话 cookie 的 `HttpOnly` 属性，使会话 cookie 对 Javascript 不可访问：
 
 ```php
 'http_only' => true,
 ```
 
-- Unless you are using sub-domain route registrations in your Laravel application, it is recommended to set the cookie `domain` attribute to null so that only the same origin (excluding subdomains) can set the cookie. This can be configured in your `config/session.php` file:
+- 除非在 Laravel 应用程序中使用子域名路由注册，否则建议将 cookie 的 `domain` 属性设置为 null，以便只有同一来源（不包括子域名）可以设置 cookie。这可以在 `config/session.php` 文件中配置：
 
 ```php
 'domain' => null,
 ```
 
-- Set your `SameSite` cookie attribute to `lax` or `strict` in your `config/session.php` file to restrict your cookies to a first-party or same-site context:
+- 在 `config/session.php` 文件中将 `SameSite` cookie 属性设置为 `lax` 或 `strict`，以将 cookie 限制在第一方或同站点上下文：
 
 ```php
 'same_site' => 'lax',
 ```
 
-- If your application is HTTPS only, it is recommended to set the `secure` configuration option in your `config/session.php` file to `true` to protect against man-in-the-middle attacks. If your application has a combination of HTTP and HTTPS, then it is recommended to set this value to `null` so that the secure attribute is set automatically when serving HTTPS requests:
+- 如果您的应用程序仅使用 HTTPS，建议在 `config/session.php` 文件中将 `secure` 配置选项设置为 `true`，以防止中间人攻击。如果您的应用程序同时使用 HTTP 和 HTTPS，建议将此值设置为 `null`，以便在提供 HTTPS 请求时自动设置安全属性：
 
 ```php
 'secure' => null,
 ```
 
-- Ensure that you have a low session idle timeout value. [OWASP recommends](Session_Management_Cheat_Sheet.md) a 2-5 minutes idle timeout for high value applications and 15-30 minutes for low risk applications. This can be configured in your `config/session.php` file:
+- 确保会话空闲超时值较低。[OWASP 建议](Session_Management_Cheat_Sheet.md)对于高价值应用程序为 2-5 分钟的空闲超时，对于低风险应用程序为 15-30 分钟。这可以在 `config/session.php` 文件中配置：
 
 ```php
 'lifetime' => 15,
 ```
 
-You may also refer the [Cookie Security Guide](https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20171130_Cookie_Security_Myths_Misconceptions_David_Johansson.pdf) to learn more about cookie security and the cookie attributes mentioned above.
+您还可以参考 [Cookie 安全指南](https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20171130_Cookie_Security_Myths_Misconceptions_David_Johansson.pdf)，了解更多关于 cookie 安全性和上述 cookie 属性的信息。
 
-## Authentication
+## 身份验证
 
-### Guards and Providers
+### 守卫和提供者
 
-At its core, Laravel's authentication facilities are made up of "guards" and "providers". Guards define how users are authenticated for each request. Providers define how users are retrieved from your persistent storage.
+在其核心，Laravel 的身份验证设施由"守卫"和"提供者"组成。守卫定义了如何对每个请求进行身份验证。提供者定义了如何从持久存储中检索用户。
 
-Laravel ships with a `session` guard which maintains state using session storage and cookies, and a `token` guard for API tokens.
+Laravel 自带一个使用会话存储和 cookie 维护状态的 `session` 守卫，以及用于 API 令牌的 `token` 守卫。
 
-For providers, Laravel ships with a `eloquent` provider for retrieving users using the Eloquent ORM and the `database` provider for retrieving users using the database query builder.
+对于提供者，Laravel 自带使用 Eloquent ORM 检索用户的 `eloquent` 提供者和使用数据库查询构建器检索用户的 `database` 提供者。
 
-Guards and providers can be configured in the `config/auth.php` file. Laravel offers the ability to build custom guards and providers as well.
+守卫和提供者可以在 `config/auth.php` 文件中配置。Laravel 还提供构建自定义守卫和提供者的能力。
 
-### Starter Kits
+### 入门套件
 
-Laravel offers a wide variety of first party application starter kits that include in-built authentication features:
+Laravel 提供了多种包含内置身份验证功能的官方应用程序入门套件：
 
-1. [Laravel Breeze](https://laravel.com/docs/8.x/starter-kits#laravel-breeze): A simple, minimal implementation of all Laravel's authentication features including login, registration, password reset, email verification and password confirmation.
-2. [Laravel Fortify](https://laravel.com/docs/fortify): A headless authentication backend that includes the above authentication features along with two-factor authentication.
-3. [Laravel Jetstream](https://jetstream.laravel.com/): An application starter kit that provides a UI on top of Laravel Fortify's authentication features.
+1. [Laravel Breeze](https://laravel.com/docs/8.x/starter-kits#laravel-breeze)：Laravel 所有身份验证功能的简单、最小实现，包括登录、注册、密码重置、电子邮件验证和密码确认。
+2. [Laravel Fortify](https://laravel.com/docs/fortify)：一个无头身份验证后端，包括上述身份验证功能以及双因素身份验证。
+3. [Laravel Jetstream](https://jetstream.laravel.com/)：在 Laravel Fortify 身份验证功能之上提供 UI 的应用程序入门套件。
 
-It is recommended to use one of these starter kits to ensure robust and secure authentication for your Laravel applications.
+建议使用这些入门套件之一，以确保 Laravel 应用程序的强大和安全的身份验证。
 
-### API Authentication Packages
+### API 身份验证包
 
-Laravel also offers the following API authentication packages:
+Laravel 还提供以下 API 身份验证包：
 
-1. [Passport](https://laravel.com/docs/passport): An OAuth2 authentication provider.
-2. [Sanctum](https://laravel.com/docs/sanctum): An API token authentication provider.
+1. [Passport](https://laravel.com/docs/passport)：OAuth2 身份验证提供者。
+2. [Sanctum](https://laravel.com/docs/sanctum)：API 令牌身份验证提供者。
 
-Starter kits such as Fortify and Jetstream have in-built support for Sanctum.
+Fortify 和 Jetstream 等入门套件内置支持 Sanctum。
 
-## Mass Assignment
+## 批量赋值
 
-[Mass assignment](Mass_Assignment_Cheat_Sheet.md) is a common vulnerability in modern web applications that use an ORM like Laravel's Eloquent ORM.
+[批量赋值](Mass_Assignment_Cheat_Sheet.md)是使用像 Laravel 的 Eloquent ORM 这样的 ORM 的现代 Web 应用程序中的常见漏洞。
 
-A mass assignment is a vulnerability where an ORM pattern is abused to modify data items that the user should not be normally allowed to modify.
+批量赋值是一种漏洞，攻击者滥用 ORM 模式来修改用户通常不应被允许修改的数据项。
 
-Consider the following code:
+考虑以下代码：
 
 ```php
 Route::any('/profile', function (Request $request) {
@@ -130,23 +130,23 @@ Route::any('/profile', function (Request $request) {
 })->middleware('auth');
 ```
 
-The above profile route allows the logged in user to change their profile information.
+上述配置文件路由允许登录用户更改其个人资料信息。
 
-However, let's say there is an `is_admin` column in the users table. You probably do not want the user to be allowed to change the value of this column. However, the above code allows users to change any column values for their row in the users table. This is a mass assignment vulnerability.
+然而，假设用户表中有一个 `is_admin` 列。您可能不希望用户更改此列的值。但是，上述代码允许用户更改用户表中其行的任何列值。这是一个批量赋值漏洞。
 
-Laravel has in-built features by default to protect against this vulnerability. Make sure of the following to stay secure:
+Laravel 默认提供了内置功能来防止此漏洞。请确保以下几点以保持安全：
 
-- Qualify the allowed parameters that you wish to update using `$request->only` or `$request->validated` rather than `$request->all`.
-- Do not unguard models or set the `$guarded` variable to an empty array. By doing this, you are actually disabling Laravel's in-built mass assignment protection.
-- Avoid using methods such as `forceFill` or `forceCreate` that bypass the protection mechanism. You may however use these methods if you are passing in a validated array of values.
+- 使用 `$request->only` 或 `$request->validated` 限定要更新的允许参数，而不是使用 `$request->all`。
+- 不要取消模型保护或将 `$guarded` 变量设置为空数组。这样做实际上会禁用 Laravel 的内置批量赋值保护。
+- 避免使用绕过保护机制的方法，如 `forceFill` 或 `forceCreate`。但是，如果传入经过验证的值数组，您可以使用这些方法。
 
-## SQL Injection
+## SQL 注入
 
-SQL Injection attacks are unfortunately quite common in modern web applications and entail attackers providing malicious request input data to interfere with SQL queries. This guide covers SQL injection and how it can be prevented specifically for Laravel applications. You may also refer the [SQL Injection Prevention Cheatsheet](SQL_Injection_Prevention_Cheat_Sheet.md) for more information that is not specific to Laravel.
+SQL 注入攻击在现代 Web 应用程序中非常常见，攻击者通过提供恶意请求输入数据来干扰 SQL 查询。本指南介绍 SQL 注入及如何在 Laravel 应用程序中防范。您还可以参考 [SQL 注入预防备忘录](SQL_Injection_Prevention_Cheat_Sheet.md)，了解更多不特定于 Laravel 的信息。
 
-### Eloquent ORM SQL Injection Protection
+### Eloquent ORM SQL 注入保护
 
-By default, Laravel's Eloquent ORM protects against SQL injection by parameterizing queries and using SQL bindings. For instance, consider the following query:
+默认情况下，Laravel 的 Eloquent ORM 通过参数化查询和使用 SQL 绑定来防止 SQL 注入。例如，考虑以下查询：
 
 ```php
 use App\Models\User;
@@ -154,19 +154,19 @@ use App\Models\User;
 User::where('email', $email)->get();
 ```
 
-The code above fires the query below:
+上述代码执行以下查询：
 
 ```sql
 select * from `users` where `email` = ?
 ```
 
-So, even if `$email` is untrusted user input data, you are protected from SQL injection attacks.
+因此，即使 `$email` 是不可信的用户输入数据，您也受到 SQL 注入攻击的保护。
 
-### Raw Query SQL Injection
+### 原始查询 SQL 注入
 
-Laravel also offers raw query expressions and raw queries to construct complex queries or database specific queries that aren't supported out of the box.
+Laravel 还提供原始查询表达式和原始查询，以构建复杂查询或数据库特定查询。
 
-While this is great for flexibility, you must be careful to always use SQL data bindings for such queries. Consider the following query:
+虽然这为灵活性提供了便利，但您必须始终小心使用 SQL 数据绑定。考虑以下查询：
 
 ```php
 use Illuminate\Support\Facades\DB;
@@ -176,15 +176,15 @@ User::whereRaw('email = "'.$request->input('email').'"')->get();
 DB::table('users')->whereRaw('email = "'.$request->input('email').'"')->get();
 ```
 
-Both lines of code actually execute the same query, which is vulnerable to SQL injection as the query does not use SQL bindings for untrusted user input data.
+这两行代码实际上执行相同的查询，由于未对不可信的用户输入数据使用 SQL 绑定，因此容易受到 SQL 注入攻击。
 
-The code above fires the following query:
+上述代码执行以下查询：
 
 ```sql
-select * from `users` where `email` = "value of email query parameter"
+select * from `users` where `email` = "email 查询参数的值"
 ```
 
-Always remember to use SQL bindings for request data. We can fix the above code by making the following modification:
+始终记得对请求数据使用 SQL 绑定。我们可以通过以下修改来修复上述代码：
 
 ```php
 use App\Models\User;
@@ -192,7 +192,7 @@ use App\Models\User;
 User::whereRaw('email = ?', [$request->input('email')])->get();
 ```
 
-We can even use named SQL bindings like so:
+我们甚至可以使用命名 SQL 绑定：
 
 ```php
 use App\Models\User;
@@ -200,11 +200,11 @@ use App\Models\User;
 User::whereRaw('email = :email', ['email' => $request->input('email')])->get();
 ```
 
-### Column Name SQL Injection
+### 列名 SQL 注入
 
-You must never allow user input data to dictate column names referenced by your queries.
+您绝不能允许用户输入数据决定查询引用的列名。
 
-The following queries may be vulnerable to SQL injection:
+以下查询可能容易受到 SQL 注入：
 
 ```php
 use App\Models\User;
@@ -213,11 +213,11 @@ User::where($request->input('colname'), 'somedata')->get();
 User::query()->orderBy($request->input('sortBy'))->get();
 ```
 
-It is important to note that even though Laravel has some in-built features such as wrapping column names to protect against the above SQL injection vulnerabilities, some database engines (depending on versions and configurations) may still be vulnerable because binding column names is not supported by databases.
+需要注意的是，尽管 Laravel 有一些内置功能（如包装列名）来防止上述 SQL 注入漏洞，但某些数据库引擎（取决于版本和配置）可能仍然容易受到攻击，因为数据库不支持绑定列名。
 
-At the very least, this may result in a mass assignment vulnerability instead of a SQL injection because you may have expected a certain set of column values, but since they are not validated here, the user is free to use other columns as well.
+至少，这可能导致批量赋值漏洞，而不是 SQL 注入，因为您可能期望某组列值，但由于这里没有验证，用户可以自由使用其他列。
 
-Always validate user input for such situations like so:
+始终验证此类情况下的用户输入：
 
 ```php
 use App\Models\User;
@@ -226,11 +226,11 @@ $request->validate(['sortBy' => 'in:price,updated_at']);
 User::query()->orderBy($request->validated()['sortBy'])->get();
 ```
 
-### Validation Rule SQL Injection
+### 验证规则 SQL 注入
 
-Certain validation rules have the option of providing database column names. Such rules are vulnerable to SQL injection in the same manner as column name SQL injection because they construct queries in a similar manner.
+某些验证规则可以提供数据库列名。这些规则以与列名 SQL 注入相同的方式容易受到 SQL 注入攻击，因为它们以类似的方式构造查询。
 
-For example, the following code may be vulnerable:
+例如，以下代码可能容易受到攻击：
 
 ```php
 use Illuminate\Validation\Rule;
@@ -240,7 +240,7 @@ $request->validate([
 ]);
 ```
 
-Behind the scenes, the above code triggers the following query:
+在幕后，上述代码触发以下查询：
 
 ```php
 use App\Models\User;
@@ -249,37 +249,37 @@ $colname = $request->input('colname');
 User::where($colname, $request->input('id'))->where($colname, '<>', $id)->count();
 ```
 
-Since the column name is dictated by user input, it is similar to column name SQL injection.
+由于列名由用户输入决定，这类似于列名 SQL 注入。
 
-## Cross Site Scripting (XSS)
+## 跨站脚本（XSS）
 
-[XSS attacks](https://owasp.org/www-community/attacks/xss/) are injection attacks where malicious scripts (such as JavaScript code snippets) are injected into trusted websites.
+[XSS 攻击](https://owasp.org/www-community/attacks/xss/)是指将恶意脚本（如 JavaScript 代码片段）注入可信网站的注入攻击。
 
-Laravel's [Blade templating engine](https://laravel.com/docs/blade) has echo statements `{{ }}` that automatically escape variables using the `htmlspecialchars` PHP function to protect against XSS attacks.
+Laravel 的 [Blade 模板引擎](https://laravel.com/docs/blade)具有 echo 语句 `{{ }}`，它使用 PHP 的 `htmlspecialchars` 函数自动转义变量，以防止 XSS 攻击。
 
-Laravel also offers displaying unescaped data using the unescaped syntax `{!! !!}`. This must not be used on any untrusted data, otherwise your application will be subject to an XSS attack.
+Laravel 还提供使用非转义语法 `{!! !!}` 显示未转义数据的功能。对于任何不可信的数据，都不得使用此语法，否则您的应用程序将受到 XSS 攻击。
 
-For instance, if you have something like this in any of your Blade templates, it would result in a vulnerability:
+例如，如果在任何 Blade 模板中有如下内容，将导致漏洞：
 
 ```blade
 {!! request()->input('somedata') !!}
 ```
 
-This, however, is safe to do:
+而这是安全的：
 
 ```blade
 {{ request()->input('somedata') }}
 ```
 
-For other information on XSS prevention that is not specific to Laravel, you may refer the [Cross Site Scripting Prevention Cheatsheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md).
+关于不特定于 Laravel 的 XSS 预防的其他信息，您可以参考 [跨站脚本预防备忘录](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)。
 
-## Unrestricted File Uploads
+## 不受限制的文件上传
 
-Unrestricted file upload attacks entail attackers uploading malicious files to compromise web applications. This section describes how to protect against such attacks while building Laravel applications. You may also refer the [File Upload Cheatsheet](File_Upload_Cheat_Sheet.md) to learn more.
+不受限制的文件上传攻击是指攻击者上传恶意文件以破坏 Web 应用程序。本节描述在构建 Laravel 应用程序时如何防范此类攻击。您还可以参考 [文件上传备忘录](File_Upload_Cheat_Sheet.md)以了解更多。
 
-### Always Validate File Type and Size
+### 始终验证文件类型和大小
 
-Always validate the file type (extension or MIME type) and file size to avoid storage DOS attacks and remote code execution:
+始终验证文件类型（扩展名或 MIME 类型）和文件大小，以避免存储 DOS 攻击和远程代码执行：
 
 ```php
 $request->validate([
@@ -287,17 +287,17 @@ $request->validate([
 ]);
 ```
 
-Storage DOS attacks exploit missing file size validations and upload massive files to cause a denial of service (DOS) by exhausting the disk space.
+存储 DOS 攻击利用缺失的文件大小验证，上传大量文件以通过耗尽磁盘空间造成拒绝服务（DOS）。
 
-Remote code execution attacks entail first, uploading malicious executable files (such as PHP files) and then, triggering their malicious code by visiting the file URL (if public).
+远程代码执行攻击首先上传恶意可执行文件（如 PHP 文件），然后通过访问文件 URL（如果是公开的）触发其恶意代码。
 
-Both these attacks can be avoided by simple file validations as mentioned above.
+如上所述，这两种攻击都可以通过简单的文件验证来避免。
 
-### Do Not Rely On User Input To Dictate Filenames or Path
+### 不要依赖用户输入来决定文件名或路径
 
-If your application allows user controlled data to construct the path of a file upload, this may result in overwriting a critical file or storing the file in a bad location.
+如果您的应用程序允许用户控制的数据构造文件上传路径，可能会导致覆盖关键文件或将文件存储在不恰当的位置。
 
-Consider the following code:
+考虑以下代码：
 
 ```php
 Route::post('/upload', function (Request $request) {
@@ -307,9 +307,9 @@ Route::post('/upload', function (Request $request) {
 });
 ```
 
-This route saves a file to a directory specific to a user ID. Here, we rely on the `filename` user input data and this may result in a vulnerability as the filename could be something like `../2/filename.pdf`. This will upload the file in user ID 2's directory instead of the directory pertaining to the current logged in user.
+此路由将文件保存到特定用户 ID 的目录。这里我们依赖 `filename` 用户输入数据，这可能导致漏洞，因为文件名可能是 `../2/filename.pdf` 之类的内容。这将在用户 ID 2 的目录中上传文件，而不是当前登录用户的目录。
 
-To fix this, we should use the `basename` PHP function to strip out any directory information from the `filename` input data:
+要修复此问题，我们应使用 PHP 的 `basename` 函数从 `filename` 输入数据中剥离任何目录信息：
 
 ```php
 Route::post('/upload', function (Request $request) {
@@ -319,19 +319,19 @@ Route::post('/upload', function (Request $request) {
 });
 ```
 
-### Avoid Processing ZIP or XML Files If Possible
+### 尽可能避免处理 ZIP 或 XML 文件
 
-XML files can expose your application to a wide variety of attacks such as XXE attacks, the billion laughs attack and others. If you process ZIP files, you may be exposed to zip bomb DOS attacks.
+XML 文件可能使您的应用程序暴露于各种攻击，如 XXE 攻击、十亿笑攻击等。如果处理 ZIP 文件，可能会遭受 ZIP 炸弹 DOS 攻击。
 
-Refer the [XML Security Cheatsheet](XML_Security_Cheat_Sheet.md) and the [File Upload Cheatsheet](File_Upload_Cheat_Sheet.md) to learn more.
+请参考 [XML 安全备忘录](XML_Security_Cheat_Sheet.md)和 [文件上传备忘录](File_Upload_Cheat_Sheet.md)以了解更多。
 
-## Path Traversal
+## 路径遍历
 
-A path traversal attack aims to access files by manipulating request input data with `../` sequences and variations or by using absolute file paths.
+路径遍历攻击旨在通过使用 `../` 序列及其变体或使用绝对文件路径来操纵请求输入数据，从而访问文件。
 
-If you allow users to download files by filename, you may be exposed to this vulnerability if input data is not stripped of directory information.
+如果允许用户通过文件名下载文件，且未从输入数据中剥离目录信息，则可能会遭受此漏洞。
 
-Consider the following code:
+考虑以下代码：
 
 ```php
 Route::get('/download', function(Request $request) {
@@ -339,9 +339,9 @@ Route::get('/download', function(Request $request) {
 });
 ```
 
-Here, the filename is not stripped of directory information, so a malformed filename such as `../../.env` could expose your application credentials to potential attackers.
+在这里，文件名未剥离目录信息，因此像 `../../.env` 这样的格式错误的文件名可能会将您的应用程序凭据暴露给潜在攻击者。
 
-Similar to unrestricted file uploads, you should use the `basename` PHP function to strip out directory information like so:
+与不受限制的文件上传类似，您应使用 PHP 的 `basename` 函数来剥离目录信息：
 
 ```php
 Route::get('/download', function(Request $request) {
@@ -349,11 +349,11 @@ Route::get('/download', function(Request $request) {
 });
 ```
 
-## Open Redirection
+## 开放重定向
 
-Open Redirection attacks in themselves are not that dangerous but they enable phishing attacks.
+开放重定向攻击本身并不太危险，但它们能够启用钓鱼攻击。
 
-Consider the following code:
+考虑以下代码：
 
 ```php
 Route::get('/redirect', function (Request $request) {
@@ -361,17 +361,17 @@ Route::get('/redirect', function (Request $request) {
 });
 ```
 
-This code redirects the user to any external URL provided by user input. This could enable attackers to create seemingly safe URLs like `https://example.com/redirect?url=http://evil.com`. For instance, attackers may use a URL of this type to spoof password reset emails and lead victims to expose their credentials on the attacker's website.
+此代码将用户重定向到用户输入提供的任何外部 URL。这可能使攻击者创建看似安全的 URL，如 `https://example.com/redirect?url=http://evil.com`。例如，攻击者可能使用此类 URL 来伪造密码重置电子邮件，并诱导受害者在攻击者的网站上泄露其凭据。
 
-## Cross Site Request Forgery (CSRF)
+## 跨站请求伪造（CSRF）
 
-[Cross-Site Request Forgery (CSRF)](https://owasp.org/www-community/attacks/csrf) is a type of attack that occurs when a malicious web site, email, blog, instant message, or program causes a user's web browser to perform an unwanted action on a trusted site when the user is authenticated.
+[跨站请求伪造（CSRF）](https://owasp.org/www-community/attacks/csrf)是一种攻击，当恶意网站、电子邮件、博客、即时消息或程序在用户已通过身份验证时，导致用户的 Web 浏览器在可信站点上执行非预期操作。
 
-Laravel provides CSRF protection out-of-the-box with the `VerifyCSRFToken` middleware. Generally, if you have this middleware in the `web` middleware group of your `App\Http\Kernel` class, you should be well protected:
+Laravel 通过 `VerifyCSRFToken` 中间件提供开箱即用的 CSRF 保护。通常，如果在 `App\Http\Kernel` 类的 `web` 中间件组中有此中间件，您应该已经得到很好的保护：
 
 ```php
 /**
- * The application's route middleware groups.
+ * 应用程序的路由中间件组。
  *
  * @var array
  */
@@ -384,26 +384,26 @@ protected $middlewareGroups = [
 ];
 ```
 
-Next, for all your `POST` request forms, you may use the `@csrf` blade directive to generate the hidden CSRF input token fields:
+接下来，对于所有 `POST` 请求表单，您可以使用 `@csrf` Blade 指令生成隐藏的 CSRF 输入令牌字段：
 
 ```html
 <form method="POST" action="/profile">
     @csrf
 
-    <!-- Equivalent to... -->
+    <!-- 等同于... -->
     <input type="hidden" name="_token" value="{{ csrf_token() }}" />
 </form>
 ```
 
-For AJAX requests, you can setup the [X-CSRF-Token header](https://laravel.com/docs/csrf#csrf-x-csrf-token).
+对于 AJAX 请求，您可以设置 [X-CSRF-Token 标头](https://laravel.com/docs/csrf#csrf-x-csrf-token)。
 
-Laravel also provides the ability to exclude certain routes from CSRF protection using the `$except` variable in your CSRF middleware class. Typically, you would want to exclude only stateless routes (e.g. APIs or webhooks) from CSRF protection. If any other routes are excluded, these may result in CSRF vulnerabilities.
+Laravel 还提供了使用 CSRF 中间件类中的 `$except` 变量从 CSRF 保护中排除某些路由的能力。通常，您只想从 CSRF 保护中排除无状态路由（如 API 或 Webhook）。如果排除任何其他路由，可能会导致 CSRF 漏洞。
 
-## Command Injection
+## 命令注入
 
-Command Injection vulnerabilities involve executing shell commands constructed with unescaped user input data.
+命令注入漏洞涉及执行使用未转义用户输入数据构造的 shell 命令。
 
-For example, the following code performs a `whois` on a user provided domain name:
+例如，以下代码对用户提供的域名执行 `whois`：
 
 ```php
 public function verifyDomain(Request $request)
@@ -412,13 +412,13 @@ public function verifyDomain(Request $request)
 }
 ```
 
-The above code is vulnerable as the user data is not escaped properly. To do so, you may use the `escapeshellcmd` and/or `escapeshellarg` PHP functions.
+上述代码容易受到攻击，因为用户数据未正确转义。为此，您可以使用 PHP 的 `escapeshellcmd` 和/或 `escapeshellarg` 函数。
 
-## Other Injections
+## 其他注入
 
-Object injection, eval code injection and extract variable hijacking attacks involve unserializing, evaluating or using the `extract` function on untrusted user input data.
+对象注入、eval 代码注入和 extract 变量劫持攻击涉及对不可信的用户输入数据进行反序列化、求值或使用 `extract` 函数。
 
-Some examples are:
+一些示例：
 
 ```php
 unserialize($request->input('data'));
@@ -426,30 +426,30 @@ eval($request->input('data'));
 extract($request->all());
 ```
 
-In general, avoid passing any untrusted input data to these dangerous functions.
+通常，避免将任何不可信的输入数据传递给这些危险函数。
 
-## Security Headers
+## 安全标头
 
-You should consider adding the following security headers to your web server or Laravel application middleware:
+您应考虑在 Web 服务器或 Laravel 应用程序中间件中添加以下安全标头：
 
 - X-Frame-Options
 - X-Content-Type-Options
-- Strict-Transport-Security (for HTTPS only applications)
+- Strict-Transport-Security（仅适用于 HTTPS 应用程序）
 - Content-Security-Policy
 
-For more information, refer the [OWASP secure headers project](https://owasp.org/www-project-secure-headers/).
+更多信息，请参考 [OWASP 安全标头项目](https://owasp.org/www-project-secure-headers/)。
 
-## Tools
+## 工具
 
-You should consider using [Enlightn](https://www.laravel-enlightn.com/), a static and dynamic analysis tool for Laravel applications that has over 45 automated security checks to identify potential security issues. There is both an open source version and a commercial version of Enlightn available. Enlightn includes an extensive 45 page documentation on security vulnerabilities and a great way to learn more on Laravel security is to just review its [documentation](https://www.laravel-enlightn.com/docs/security/).
+您应考虑使用 [Enlightn](https://www.laravel-enlightn.com/)，这是一个用于 Laravel 应用程序的静态和动态分析工具，具有超过 45 个自动化安全检查，可识别潜在的安全问题。Enlightn 有开源版本和商业版本。Enlightn 包含一份详细的 45 页安全漏洞文档，了解 Laravel 安全性的好方法是查看其[文档](https://www.laravel-enlightn.com/docs/security/)。
 
-You should also use the [Enlightn Security Checker](https://github.com/enlightn/security-checker) or the [Local PHP Security Checker](https://github.com/fabpot/local-php-security-checker). Both of them are open source packages, licensed under the MIT and AGPL licenses respectively, that scan your PHP dependencies for known vulnerabilities using the [Security Advisories Database](https://github.com/FriendsOfPHP/security-advisories).
+您还应使用 [Enlightn 安全检查器](https://github.com/enlightn/security-checker)或 [本地 PHP 安全检查器](https://github.com/fabpot/local-php-security-checker)。这两个都是开源包，分别在 MIT 和 AGPL 许可下授权，它们使用[安全咨询数据库](https://github.com/FriendsOfPHP/security-advisories)扫描 PHP 依赖项中的已知漏洞。
 
-## References
+## 参考资料
 
-- [Laravel Documentation on Authentication](https://laravel.com/docs/authentication)
-- [Laravel Documentation on Authorization](https://laravel.com/docs/authorization)
-- [Laravel Documentation on CSRF](https://laravel.com/docs/csrf)
-- [Laravel Documentation on Validation](https://laravel.com/docs/validation)
-- [Enlightn SAST and DAST Tool](https://www.laravel-enlightn.com/)
-- [Laravel Enlightn Security Documentation](https://www.laravel-enlightn.com/docs/security/)
+- [Laravel 身份验证文档](https://laravel.com/docs/authentication)
+- [Laravel 授权文档](https://laravel.com/docs/authorization)
+- [Laravel CSRF 文档](https://laravel.com/docs/csrf)
+- [Laravel 验证文档](https://laravel.com/docs/validation)
+- [Enlightn SAST 和 DAST 工具](https://www.laravel-enlightn.com/)
+- [Laravel Enlightn 安全文档](https://www.laravel-enlightn.com/docs/security/)
