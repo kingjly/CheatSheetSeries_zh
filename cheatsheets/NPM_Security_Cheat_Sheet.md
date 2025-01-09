@@ -1,163 +1,163 @@
-# NPM Security best practices
+# NPM 安全最佳实践
 
-In the following npm cheatsheet, we’re going to focus on [10 npm security best practices](https://snyk.io/blog/ten-npm-security-best-practices) and productivity tips, useful for JavaScript and Node.js developers.
+在以下 npm 备忘录中，我们将重点关注 [10 个 npm 安全最佳实践](https://snyk.io/blog/ten-npm-security-best-practices)和生产力技巧，这对 JavaScript 和 Node.js 开发者很有用。
 
-## 1) Avoid publishing secrets to the npm registry
+## 1) 避免将秘密信息发布到 npm 注册表
 
-Whether you’re making use of API keys, passwords or other secrets, they can very easily end up leaking into source control or even a published package on the public npm registry. You may have secrets in your working directory in designated files such as a `.env` which should be added to a `.gitignore` to avoid committing it to a SCM, but what happen when you publish an npm package from the project’s directory?
+无论是使用 API 密钥、密码还是其他秘密信息，它们都很容易泄露到源代码控制或公共 npm 注册表中。你可能在工作目录的指定文件（如 `.env`）中有秘密信息，这些文件应该被添加到 `.gitignore` 以避免提交到源代码管理系统，但是当你从项目目录发布 npm 包时会发生什么？
 
-The npm CLI packs up a project into a tar archive (tarball) in order to push it to the registry. The following criteria determine which files and directories are added to the tarball:
+npm CLI 将项目打包成 tar 归档（tarball）以推送到注册表。以下标准决定了哪些文件和目录被添加到 tarball：
 
-- If there is either a `.gitignore` or a `.npmignore` file, the contents of the file are used as an ignore pattern when preparing the package for publication.
-- If both ignore files exist, everything not located in `.npmignore` is published to the registry. This condition is a common source of confusion and is a problem that can lead to leaking secrets.
+- 如果存在 `.gitignore` 或 `.npmignore` 文件，文件内容将用作准备发布包时的忽略模式。
+- 如果两个忽略文件都存在，`.npmignore` 中未列出的所有内容都将发布到注册表。这种情况是常见的混淆源，可能导致秘密信息泄露。
 
-Developers may end up updating the `.gitignore` file, but forget to update `.npmignore` as well, which can lead to a potentially sensitive file not being pushed to source control, but still being included in the npm package.
+开发者可能会更新 `.gitignore` 文件，但忘记同时更新 `.npmignore`，这可能导致敏感文件不会被推送到源代码控制，但仍会包含在 npm 包中。
 
-Another good practice to adopt is making use of the `files` property in package.json, which works as an allowlist and specifies the array of files to be included in the package that is to be created and installed (while the ignore file functions as a denylist). The `files` property and an ignore file can both be used together to determine which files should explicitly be included, as well as excluded, from the package. When using both, the former the `files` property in package.json takes precedence over the ignore file.
+另一个好的做法是使用 `package.json` 中的 `files` 属性，它作为允许列表，指定要创建和安装的包中要包含的文件数组（而忽略文件则作为拒绝列表）。`files` 属性和忽略文件可以一起使用，以明确指定包中应包含和排除的文件。使用两者时，`package.json` 中的 `files` 属性优先于忽略文件。
 
-When a package is published, the npm CLI will verbosely display the archive being created. To be extra careful, add a `--dry-run` command-line argument to your publish command in order to first review how the tarball is created without actually publishing it to the registry.
+发布包时，npm CLI 将详细显示正在创建的归档。为了格外小心，可以在发布命令中添加 `--dry-run` 命令行参数，以便在实际发布到注册表之前先预览 tarball 的创建情况。
 
-In January 2019, npm shared on their blog that they added a [mechanism that automatically revokes a token](https://blog.npmjs.org/post/182015409750/automated-token-revocation-for-when-you) if they detect that one has been published with a package.
+2019 年 1 月，npm 在他们的博客上分享，如果检测到在包中发布了令牌，他们会自动撤销该令牌。
 
-## 2) Enforce the lockfile
+## 2) 强制执行锁定文件
 
-We embraced the birth of package lockfiles with open arms, which introduced: deterministic installations across different environments, and enforced dependency expectations across team collaboration. Life is good! Or so I thought… what would have happened had I slipped a change into the project’s `package.json` file but had forgotten to commit the lockfile alongside of it?
+我们张开双臂欢迎了锁定文件的诞生，它带来了：跨不同环境的确定性安装，以及跨团队协作的依赖期望强制执行。生活很美好！但是，如果我在项目的 `package.json` 文件中做了更改，却忘记同时提交锁定文件会怎样？
 
-Both Yarn, and npm act the same during dependency installation . When they detect an inconsistency between the project’s `package.json` and the lockfile, they compensate for such change based on the `package.json` manifest by installing different versions than those that were recorded in the lockfile.
+Yarn 和 npm 在依赖安装期间的行为相同。当它们检测到项目的 `package.json` 和锁定文件之间存在不一致时，它们会根据 `package.json` 清单进行补偿，安装与锁定文件中记录的不同的版本。
 
-This kind of situation can be hazardous for build and production environments as they could pull in unintended package versions and render the entire benefit of a lockfile futile.
+这种情况对构建和生产环境可能很危险，因为它们可能拉取意外的包版本，从而使锁定文件的整体好处变得徒劳。
 
-Luckily, there is a way to tell both Yarn and npm to adhere to a specified set of dependencies and their versions by referencing them from the lockfile. Any inconsistency will abort the installation. The command-line should read as follows:
+幸运的是，有一种方法可以告诉 Yarn 和 npm 遵守锁定文件中引用的特定依赖及其版本。任何不一致都将中止安装。命令行应该如下所示：
 
-- If you’re using Yarn, run `yarn install --frozen-lockfile`.
-- If you’re using npm run `npm ci`.
+- 如果使用 Yarn，运行 `yarn install --frozen-lockfile`。
+- 如果使用 npm，运行 `npm ci`。
 
-## 3) Minimize attack surfaces by ignoring run-scripts
+## 3) 通过忽略运行脚本来最小化攻击面
 
-The npm CLI works with package run-scripts. If you’ve ever run `npm start` or `npm test` then you’ve used package run-scripts too. The npm CLI builds on scripts that a package can declare, and allows packages to define scripts to run at specific entry points during the package’s installation in a project. For example, some of these [script hook](https://docs.npmjs.com/misc/scripts) entries may be `postinstall` scripts that a package that is being installed will execute in order to perform housekeeping chores.
+npm CLI 使用包运行脚本。如果你曾经运行过 `npm start` 或 `npm test`，那么你也使用过包运行脚本。npm CLI 基于包可以声明的脚本构建，并允许包在项目安装的特定入口点定义要运行的脚本。例如，一些[脚本钩子](https://docs.npmjs.com/misc/scripts)条目可能是 `postinstall` 脚本，在安装包时执行以执行日常维护任务。
 
-With this capability, bad actors may create or alter packages to perform malicious acts by running any arbitrary command when their package is installed. A couple of cases where we’ve seen this already happening is the popular [eslint-scope incident](https://snyk.io/vuln/npm:eslint-scope:20180712) that harvested npm tokens, and the [crossenv incident](https://snyk.io/vuln/npm:crossenv:20170802), along with 36 other packages that abused a typosquatting attack on the npm registry.
+通过这种功能，恶意行为者可能会创建或更改包，通过在包安装时运行任意命令来执行恶意行为。我们已经看到这种情况发生在流行的 [eslint-scope 事件](https://snyk.io/vuln/npm:eslint-scope:20180712)中，该事件收集了 npm 令牌，以及 [crossenv 事件](https://snyk.io/vuln/npm:crossenv:20170802)，以及另外 36 个在 npm 注册表上滥用拼写错误攻击的包。
 
-Apply these npm security best practices in order to minimize the malicious module attack surface:
+应用这些 npm 安全最佳实践以最小化恶意模块攻击面：
 
-- Always vet and perform due-diligence on third-party modules that you install in order to confirm their health and credibility.
-- Hold-off on upgrading immediately to new versions; allow new package versions some time to circulate before trying them out.
-- Before upgrading, make sure to review changelog and release notes for the upgraded version.
-- When installing packages make sure to add the `--ignore-scripts` suffix to disable the execution of any scripts by third-party packages.
-- Consider adding `ignore-scripts` to your `.npmrc` project file, or to your global npm configuration.
+- 始终审查和尽职调查你安装的第三方模块，以确认它们的健康和可信度。
+- 不要立即升级到新版本；允许新包版本有一些时间流通后再尝试。
+- 升级前，确保查看更改日志和发行说明。
+- 安装包时，确保添加 `--ignore-scripts` 后缀以禁用第三方包的任何脚本执行。
+- 考虑将 `ignore-scripts` 添加到项目的 `.npmrc` 文件或全局 npm 配置中。
 
-## 4) Assess npm project health
+## 4) 评估 npm 项目健康状况
 
-### npm outdated command
+### npm outdated 命令
 
-Rushing to constantly upgrade dependencies to their latest releases is not necessarily a good practice if it is done without reviewing release notes, the code changes, and generally testing new upgrades in a comprehensive manner. With that said, staying out of date and not upgrading at all, or after a long time, is a source for trouble as well.
+盲目地不断将依赖升级到最新版本并不一定是好的做法，尤其是在不查看发行说明、代码变更和全面测试新升级的情况下。话虽如此，长期不升级或很久才升级同样会带来麻烦。
 
-The npm CLI can provide information about the freshness of dependencies you use with regards to their semantic versioning offset. By running `npm outdated`, you can see which packages are out of date. Dependencies in yellow correspond to the semantic versioning as specified in the package.json manifest, and dependencies colored in red mean that there’s an update available. Furthermore, the output also shows the latest version for each dependency.
+npm CLI 可以提供关于你使用的依赖相对于其语义版本偏移的新鲜度信息。通过运行 `npm outdated`，你可以看到哪些包已过时。黄色的依赖对应于 `package.json` 清单中指定的语义版本，红色的依赖意味着有可用的更新。此外，输出还显示每个依赖的最新版本。
 
-### npm doctor command
+### npm doctor 命令
 
-Between the variety of Node.js package managers, and different versions of Node.js you may have installed in your path, how do you verify a healthy npm installation and working environment? Whether you’re working with the npm CLI in a development environment or within a CI, it is important to assess that everything is working as expected.
+在各种 Node.js 包管理器和你可能在路径中安装的不同 Node.js 版本之间，如何验证健康的 npm 安装和工作环境？无论你是在开发环境还是 CI 中使用 npm CLI，确保一切正常工作都很重要。
 
-Call the doctor! The npm CLI incorporates a health assessment tool to diagnose your environment for a well-working npm interaction. Run `npm doctor` to review your npm setup:
+叫医生来看看！npm CLI 包含一个健康评估工具，用于诊断你的环境是否能顺利使用 npm。运行 `npm doctor` 来检查你的 npm 设置：
 
-- Check the official npm registry is reachable, and display the currently configured registry.
-- Check that Git is available.
-- Review installed npm and Node.js versions.
-- Run permission checks on the various folders such as the local and global `node_modules`, and on the folder used for package cache.
-- Check the local npm module cache for checksum correctness.
+- 检查官方 npm 注册表是否可访问，并显示当前配置的注册表。
+- 检查 Git 是否可用。
+- 检查已安装的 npm 和 Node.js 版本。
+- 对本地和全局 `node_modules`，以及用于包缓存的文件夹进行权限检查。
+- 检查本地 npm 模块缓存的校验和正确性。
 
-## 5) Audit for vulnerabilities in open source dependencies
+## 5) 审核开源依赖中的漏洞
 
-The npm ecosystem is the single largest repository of application libraries amongst all the other language ecosystems. The registry and the libraries in it are at the core for JavaScript developers as they are able to leverage work that others have already built and incorporate it into their codebase. With that said, the increasing adoption of open source libraries in applications brings with it an increased risk of introducing security vulnerabilities.
+npm 生态系统是所有语言生态系统中最大的应用库仓库。对于 JavaScript 开发者来说，注册表和其中的库是核心，因为他们能够利用他人已经构建的工作并将其合并到自己的代码库中。话虽如此，在应用程序中越来越多地采用开源库也带来了引入安全漏洞的增加风险。
 
-Many popular npm packages have been found to be vulnerable and may carry a significant risk without proper security auditing of your project’s dependencies. Some examples are npm [request](https://snyk.io/vuln/npm:request:20160119), [superagent](https://snyk.io/vuln/search?q=superagent&type=npm), [mongoose](https://snyk.io/vuln/search?q=mongoose&type=npm), and even security-related packages like [jsonwebtoken](https://snyk.io/vuln/npm:jsonwebtoken:20150331), and  [validator](https://snyk.io/vuln/search?q=validator&type=npm).
+许多流行的 npm 包被发现存在漏洞，如果没有对项目依赖进行适当的安全审核，可能会带来重大风险。一些例子包括 npm [request](https://snyk.io/vuln/npm:request:20160119)、[superagent](https://snyk.io/vuln/search?q=superagent&type=npm)、[mongoose](https://snyk.io/vuln/search?q=mongoose&type=npm)，甚至安全相关的包如 [jsonwebtoken](https://snyk.io/vuln/npm:jsonwebtoken:20150331) 和 [validator](https://snyk.io/vuln/search?q=validator&type=npm)。
 
-Security doesn’t end by just scanning for security vulnerabilities when installing a package but should also be streamlined with developer workflows to be effectively adopted throughout the entire lifecycle of software development, and monitored continuously when code is deployed:
+安全性不仅仅在于安装包时扫描安全漏洞，还应该与开发工作流程整合，在整个软件开发生命周期中有效地采用，并在代码部署时持续监控：
 
-- Scan for security vulnerabilities in [third-party open source projects](https://owasp.org/www-community/Component_Analysis)
-- Monitor snapshots of your project's manifests so you can receive alerts when new CVEs impact them
+- 扫描[第三方开源项目](https://owasp.org/www-community/Component_Analysis)中的安全漏洞
+- 监控项目清单的快照，以便在新的 CVE 影响它们时收到警报
 
-## 6) Use a local npm proxy
+## 6) 使用本地 npm 代理
 
-The npm registry is the biggest collection of packages that is available for all JavaScript developers and is also the home of the most of the Open Source projects for web developers. But sometimes you might have different needs in terms of security, deployments or performance. When this is true, npm allows you to switch to a different registry:
+npm 注册表是所有 JavaScript 开发者可用的最大包集合，也是大多数 Web 开发开源项目的家园。但有时你可能在安全性、部署或性能方面有不同的需求。当这是真的时，npm 允许你切换到不同的注册表：
 
-When you run `npm install`, it automatically starts a communication with the main registry to resolve all your dependencies; if you wish to use a different registry, that too is pretty straightforward:
+当你运行 `npm install` 时，它会自动开始与主注册表通信以解析所有依赖；如果你希望使用不同的注册表，这也很直接：
 
-- Set `npm set registry` to set up a default registry.
-- Use the argument `--registry` for one single registry.
+- 使用 `npm set registry` 设置默认注册表。
+- 使用 `--registry` 参数指定单个注册表。
 
-[Verdaccio](https://verdaccio.org/) is a simple lightweight zero-config-required private registry and installing it is as simple as follows: `$ npm install --global verdaccio`.
+[Verdaccio](https://verdaccio.org/) 是一个简单的轻量级零配置私有注册表，安装非常简单：`$ npm install --global verdaccio`。
 
-Hosting your own registry was never so easy! Let’s check the most important features of this tool:
+托管自己的注册表从未如此容易！让我们看看这个工具的最重要特性：
 
-- It supports the npm registry format including private package features, scope support, package access control and authenticated users in the web interface.
-- It provides capabilities to hook remote registries and the power to route each dependency to different registries and caching tarballs. To reduce duplicate downloads and save bandwidth in your local development and CI servers, you should proxy all dependencies.
-- As an authentication provider by default, it uses an htpasswd security, but also supports Gitlab, Bitbucket, LDAP. You can also use your own.
-- It’s easy to scale using a different storage provider.
-- If your project is based in Docker, using the official image is the best choice.
-- It enables really fast bootstrap for testing environments, and is handy for testing big mono-repos projects.
+- 支持 npm 注册表格式，包括私有包功能、作用域支持、包访问控制和 Web 界面中的已认证用户。
+- 提供钩子远程注册表的能力，并能将每个依赖路由到不同的注册表，并缓存 tarball。为了减少重复下载并在本地开发和 CI 服务器中节省带宽，你应该代理所有依赖。
+- 默认情况下，作为认证提供者使用 htpasswd 安全性，但也支持 Gitlab、Bitbucket、LDAP。你还可以使用自己的认证方式。
+- 易于使用不同的存储提供者进行扩展。
+- 如果你的项目基于 Docker，使用官方镜像是最佳选择。
+- 它能快速引导测试环境，并且对测试大型单一仓库项目很方便。
 
-## 7) Responsibly disclose security vulnerabilities
+## 7) 负责任地披露安全漏洞
 
-When security vulnerabilities are found, they pose a potentially serious threat if they are publicised without prior warning or appropriate remedial action for users who cannot protect themselves.
+当发现安全漏洞时，如果在没有事先警告或为无法自我保护的用户提供适当补救措施的情况下公开，可能会构成潜在的严重威胁。
 
-It is recommended that security researchers follow a responsible disclosure program, which is a set of processes and guidelines that aims to connect the researchers with the vendor or maintainer of the vulnerable asset, in order to convey the vulnerability, it’s impact and applicability. Once the vulnerability is correctly triaged, the vendor and researcher coordinate a fix and a publication date for the vulnerability in an effort to provide an upgrade-path or remediation for affected users before the security issue is made public.
+建议安全研究人员遵循负责任的披露计划，这是一套旨在将研究人员与易受攻击资产的供应商或维护者联系起来的流程和指南，以传达漏洞、其影响和适用性。一旦漏洞得到正确分类，供应商和研究人员会协调修复和漏洞公开日期，努力在安全问题公开之前为受影响的用户提供升级路径或补救措施。
 
-## 8) Enable 2FA
+## 8) 启用双因素认证
 
-In October 2017, npm officially announced support for two-factor authentication (2FA) for developers using the npm registry to host their closed and open source packages.
+2017 年 10 月，npm 正式宣布为使用 npm 注册表托管其封闭和开源包的开发者提供双因素认证（2FA）支持。
 
-Even though 2FA has been supported on the npm registry for a while now, it seems to be slowly adopted with one example being the eslint-scope incident in mid-2018 when a stolen developer account on the ESLint team lead to a [malicious version of eslint-scope](https://snyk.io/vuln/npm:eslint-scope) being published by bad actors.
+尽管 npm 注册表对 2FA 的支持已经有一段时间了，但似乎采用进度缓慢。一个例子是 2018 年中期的 eslint-scope 事件，当 ESLint 团队的一个开发者账户被盗时，导致恶意行为者发布了 [eslint-scope 的恶意版本](https://snyk.io/vuln/npm:eslint-scope)。
 
-Enabling 2FA is an easy and significant win for an npm security best practices. The registry supports two modes for enabling 2FA in a user’s account:
+启用 2FA 是 npm 安全最佳实践中简单而重要的一步。注册表支持两种启用用户账户 2FA 的模式：
 
-- Authorization-only—when a user logs in to npm via the website or the CLI, or performs other sets of actions such as changing profile information.
-- Authorization and write-mode—profile and log-in actions, as well as write actions such as managing tokens and packages, and minor support for team and package visibility information.
+- 仅授权模式 - 当用户通过网站或 CLI 登录 npm，或执行更改个人资料信息等操作时。
+- 授权和写入模式 - 包括个人资料和登录操作，以及管理令牌和包、团队和包可见性信息等写入操作。
 
-Equip yourself with an authentication application, such as Google Authentication, which you can install on a mobile device, and you’re ready to get started. One easy way to get started with the 2FA extended protection for your account is through npm’s user interface, which allows enabling it very easily. If you’re a command-line person, it’s also easy to enable 2FA when using a supported npm client version (>=5.5.1):
+准备一个认证应用程序，如可以安装在移动设备上的 Google 身份验证器，你就可以开始了。通过 npm 的用户界面启用 2FA 扩展保护是最简单的方法。如果你是命令行用户，在使用支持的 npm 客户端版本（>=5.5.1）时也可以轻松启用 2FA：
 
 ```sh
 npm profile enable-2fa auth-and-writes
 ```
 
-Follow the command-line instructions to enable 2FA, and to save emergency authentication codes. If you wish to enable 2FA mode for login and profile changes only, you may replace the `auth-and-writes` with `auth-only` in the code as it appears above.
+按照命令行说明启用 2FA 并保存紧急认证码。如果你只想为登录和个人资料更改启用 2FA 模式，可以将上面代码中的 `auth-and-writes` 替换为 `auth-only`。
 
-## 9) Use npm author tokens
+## 9) 使用 npm 作者令牌
 
-Every time you log in with the npm CLI, a token is generated for your user and authenticates you to the npm registry. Tokens make it easy to perform npm registry-related actions during CI and automated procedures, such as accessing private modules on the registry or publishing new versions from a build step.
+每次使用 npm CLI 登录时，都会为你的用户生成一个令牌，并向 npm 注册表进行认证。令牌使得在 CI 和自动化程序中执行 npm 注册表相关操作变得容易，如访问注册表上的私有模块或从构建步骤发布新版本。
 
-Tokens can be managed through the npm registry website, as well as using the npm command-line client. An example of using the CLI to create  a read-only token that is restricted to a specific IPv4 address range is as follows:
+可以通过 npm 注册表网站以及 npm 命令行客户端管理令牌。以下是使用 CLI 创建仅限读取且限制在特定 IPv4 地址范围的令牌的示例：
 
 ```sh
 npm token create --read-only --cidr=192.0.2.0/24
 ```
 
-To verify which tokens are created for your user or to revoke tokens in cases of emergency, you can use `npm token list` or `npm token revoke` respectively.
+要验证为你的用户创建了哪些令牌，或在紧急情况下撤销令牌，可以分别使用 `npm token list` 或 `npm token revoke`。
 
-Ensure you are following this npm security best practice by protecting and minimizing the exposure of your npm tokens.
+确保遵循这个 npm 安全最佳实践，保护并最小化 npm 令牌的暴露。
 
-## 10) Understand module naming conventions and typosquatting attacks
+## 10) 理解模块命名约定和拼写错误攻击
 
-Naming a module is the first thing you might do when creating a package, but before defining a final name, npm defines some rules that a package name must follow:
+在创建包时，命名模块可能是你做的第一件事，但在定义最终名称之前，npm 定义了一些包名必须遵循的规则：
 
-- It is limited to 214 characters
-- It cannot start with dot or underscore
-- No uppercase letters in the name
-- No trailing spaces
-- Only lowercase
-- Some special characters are not allowed: “~\’!()*”)’
-- Can’t start with . or _
-- Can’t use node_modules or favicon.ico due are banned
-- Even if you follow these rules, be aware that npm uses a spam detection mechanism when publishing new packages, based on score and whether a package name violates the terms of the service. If conditions are violated, the registry might deny the request.
+- 限制为 214 个字符
+- 不能以点或下划线开头
+- 名称中不能有大写字母
+- 不能有尾随空格
+- 只能使用小写字母
+- 不允许某些特殊字符："~\'!()*")'
+- 不能以 . 或 _ 开头
+- 不能使用 node_modules 或 favicon.ico
+- 即使遵循这些规则，也要注意 npm 在发布新包时使用基于分数和包名是否违反服务条款的垃圾检测机制。如果违反条件，注册表可能会拒绝请求。
 
-Typosquatting is an attack that relies on mistakes made by users, such as typos. With typosquatting, bad actors could publish malicious modules to the npm registry with names that look much like existing popular modules.
+拼写错误攻击是一种依赖用户错误（如打字错误）的攻击。通过拼写错误攻击，恶意行为者可以在 npm 注册表上发布恶意模块，其名称看起来非常类似于现有的流行模块。
 
-We have been tracking tens of malicious packages in the npm ecosystem; they have been seen on the PyPi Python registry as well. Perhaps some of the most popular incidents have been for [cross-env](https://snyk.io/vuln/npm:crossenv:20170802), [event-stream](https://snyk.io/vuln/SNYK-JS-EVENTSTREAM-72638), and [eslint-scope](https://snyk.io/vuln/npm:eslint-scope:20180712).
+我们一直在跟踪 npm 生态系统中的数十个恶意包；它们也出现在 PyPi Python 注册表上。也许一些最受关注的事件包括 [cross-env](https://snyk.io/vuln/npm:crossenv:20170802)、[event-stream](https://snyk.io/vuln/SNYK-JS-EVENTSTREAM-72638) 和 [eslint-scope](https://snyk.io/vuln/npm:eslint-scope:20180712)。
 
-One of the main targets for typosquatting attacks are the user credentials, since any package has access to environment variables via the global variable process.env. Other examples we’ve seen in the past include the case with event-stream, where the attack targeted developers in the hopes of [injecting malicious code](https://snyk.io/blog/a-post-mortem-of-the-malicious-event-stream-backdoor) into an application’s source code.
+拼写错误攻击的主要目标之一是用户凭据，因为任何包都可以通过全局变量 process.env 访问环境变量。我们过去看到的其他例子包括 event-stream 事件，攻击者希望[将恶意代码注入](https://snyk.io/blog/a-post-mortem-of-the-malicious-event-stream-backdoor)应用程序的源代码。
 
-Closing our list of ten npm security best practices are the following tips to reduce the risk of such attacks:
+为了减少此类攻击的风险，我们的十大 npm 安全最佳实践的结尾是以下建议：
 
-- Be extra-careful when copy-pasting package installation instructions into the terminal. Make sure to verify in the source code repository as well as on the npm registry that this is indeed the package you are intending to install. You might verify the metadata of the package with `npm info` to fetch more information about contributors and latest versions.
-- Default to having an npm logged-out user in your daily work routines so your credentials won’t be the weak spot that would lead to easily compromising your account.
-- When installing packages, append the `--ignore-scripts` to reduce the risk of arbitrary command execution. For example: `npm install my-malicious-package --ignore-scripts`
+- 在终端中复制粘贴包安装说明时要特别小心。确保在源代码仓库和 npm 注册表上验证这确实是你打算安装的包。你可以使用 `npm info` 验证包的元数据，以获取有关贡献者和最新版本的更多信息。
+- 在日常工作中默认保持 npm 登出状态，这样你的凭据就不会成为容易被攻击的弱点。
+- 安装包时，添加 `--ignore-scripts` 以降低任意命令执行的风险。例如：`npm install my-malicious-package --ignore-scripts`
