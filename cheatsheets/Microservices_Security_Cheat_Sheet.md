@@ -1,177 +1,192 @@
-# Microservices Security Cheat Sheet
+# 微服务安全备忘录
 
-## Introduction
+## 引言
 
-The microservice architecture is being increasingly used for designing and implementing application systems in both cloud-based and on-premise infrastructures, high-scale applications and services. There are many security challenges that need to be addressed in the application design and implementation phases. The fundamental security requirements that have to be addressed during design phase are authentication and authorization. Therefore, it is vital for applications security architects to understand and properly use existing architecture patterns to implement authentication and authorization in microservices-based systems. The goal of this cheat sheet is to identify such patterns and to do recommendations for applications security architects on possible ways to use them.
+微服务架构正越来越多地被用于设计和实现云端和本地基础设施中的应用系统、高规模应用和服务。在应用设计和实现阶段，需要解决许多安全挑战。在设计阶段必须解决的基本安全要求是身份认证和授权。因此，对于应用安全架构师来说，理解并正确使用现有的架构模式来在基于微服务的系统中实现身份认证和授权至关重要。本备忘录的目标是识别这些模式，并为应用安全架构师提供使用这些模式的可能方法建议。
 
-## Edge-level authorization
+## 边缘层授权
 
-In simple scenarios, authorization can happen only at the edge level (API gateway). The API gateway can be leveraged to centralize enforcement of authorization for all downstream microservices, eliminating the need to provide authentication and access control for each of the individual services. In such cases, NIST recommends implementing mitigating controls such as mutual authentication to prevent direct, anonymous connections to the internal services (API gateway bypass). It should be noted that authorization at the edge layer has the [following limitations](https://www.youtube.com/watch?v=UnXjwCWgBKU):
+在简单场景中，授权可以仅在边缘层（API 网关）进行。API 网关可以集中执行所有下游微服务的授权，消除了为每个单独的服务提供身份认证和访问控制的需要。在这种情况下，NIST 建议实施缓解控制措施，如双向认证，以防止对内部服务的直接匿名连接（绕过 API 网关）。需要注意的是，边缘层授权存在以下[局限性](https://www.youtube.com/watch?v=UnXjwCWgBKU)：
 
-- Pushing all authorization decisions to the API gateway can quickly become hard to manage in complex ecosystems with many roles and access control rules.
-- The API gateway may become a single point of decision that may violate the “defense in depth” principle.
-- Operation teams typically own the API gateway, so development teams cannot directly make authorization changes, slowing down velocity due to additional communication and process overhead.
-  
-In most cases, development teams implement authorization in both places – at the edge level at a coarse level of granularity, and at service level. To authenticate an external entity, the edge can use access tokens (referenced token or self-contained token) transmitted via HTTP headers (e.g., “Cookie” or “Authorization”) or use mTLS.
+- 将所有授权决策推送到 API 网关在具有多个角色和访问控制规则的复杂生态系统中可能变得难以管理。
+- API 网关可能成为单一决策点，这可能违反"纵深防御"原则。
+- 运维团队通常拥有 API 网关，因此开发团队无法直接进行授权更改，这会由于额外的沟通和流程开销而降低效率。
 
-## Service-level authorization
+在大多数情况下，开发团队在两个地方实现授权 - 在边缘层以粗粒度方式，并在服务层。要对外部实体进行身份认证，边缘层可以使用通过 HTTP 标头（例如"Cookie"或"Authorization"）传输的访问令牌（引用令牌或自包含令牌）或使用 mTLS。
 
-Service-level authorization gives each microservice more control to enforce access control policies.
-For further discussion, we will use terms and definitions according with [NIST SP 800-162](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-162.pdf). The functional components of an access control system can be classified as follows:
+## 服务层授权
 
-- Policy Administration Point (PAP): Provides a user interface for creating, managing, testing, and debugging access control rules.
-- Policy Decision Point (PDP): Computes access decisions by evaluating the applicable access control policy.
-- Policy Enforcement Point (PEP): Enforces policy decisions in response to a request from a subject requesting access to a protected object.
-- Policy Information Point (PIP): Serves as the retrieval source of attributes or the data required for policy evaluation to provide the information needed by the PDP to make decisions.
+服务层授权使每个微服务能够更好地执行访问控制策略。
+为进一步讨论，我们将使用[NIST SP 800-162](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-162.pdf)中的术语和定义。访问控制系统的功能组件可以分类如下：
 
-![NIST ABAC framework](../assets/NIST_ABAC.png)
+- 策略管理点（PAP）：提供创建、管理、测试和调试访问控制规则的用户界面。
+- 策略决策点（PDP）：通过评估适用的访问控制策略来计算访问决策。
+- 策略执行点（PEP）：响应主体请求访问受保护对象的请求，执行策略决策。
+- 策略信息点（PIP）：作为属性或策略评估所需数据的检索源，为 PDP 提供做出决策所需的信息。
 
-### Service-level authorization: existing patterns
+![NIST ABAC 框架](../assets/NIST_ABAC.png)
 
-#### Decentralized pattern
+### 服务层授权：现有模式
 
-The development team implements PDP and PEP directly at the microservice code level. All the access control rules and attributes that need to implement that rule are defined and stored on each microservice (step 1). When a microservice receives a request along with some authorization metadata (e.g., end user context or requested resource ID), the microservice analyzes it (step 3) to generate an access control policy decision and then enforces authorization (step 4).
-![Decentralized pattern HLD](../assets/Dec_pattern_HLD.png)
+#### 去中心化模式
 
-Existing programming language frameworks allow development teams to implement authorization at the microservice layer. For example, [Spring Security allows](https://www.youtube.com/watch?v=v2J32nd0g24) developers to enable scopes checking (e.g., using scopes extracted from incoming JWT) in the resource server and use it to enforce authorization.
+开发团队直接在微服务代码级别实现 PDP 和 PEP。所有需要实现该规则的访问控制规则和属性都在每个微服务上定义和存储（步骤 1）。当微服务接收到带有一些授权元数据（例如，最终用户上下文或请求的资源 ID）的请求时，微服务对其进行分析（步骤 3）以生成访问控制策略决策，然后执行授权（步骤 4）。
 
-Implementing authorization at the source code level means that the code must be updated whenever the development team wants to modify authorization logic.
+![去中心化模式高级设计](../assets/Dec_pattern_HLD.png)
 
-#### Centralized pattern with single policy decision point
+现有的编程语言框架允许开发团队在微服务层实现授权。例如，[Spring Security 允许](https://www.youtube.com/watch?v=v2J32nd0g24)开发人员在资源服务器中启用作用域检查（例如，使用从传入的 JWT 中提取的作用域）并用它来执行授权。
 
-In this pattern, access control rules are defined, stored, and evaluated centrally. Access control rules are defined using PAP (step 1) and delivered to a centralized PDP, along with attributes required to evaluate those rules (step 2). When a subject invokes a microservice endpoint (step 3), the microservice code invokes the centralized PDP via a network call, and the PDP generates an access control policy decision by evaluating the query input against access control rules and attributes (step 4). Based on the PDP decision, the microservice enforces authorization (step 5).
+在源代码级别实现授权意味着每当开发团队想要修改授权逻辑时，必须更新代码。
 
-![Centralized pattern with single policy decision point HLD](../assets/Single_PDP_HLD.png)
+#### 具有单一策略决策点的集中化模式
 
-To define access control rules, development/operation teams have to use some language or notation. An example is Extensible Access Control Markup Language (XACML) and Next Generation Access Control (NGAC), which is a standard to describe policy rules.
+在这种模式中，访问控制规则被集中定义、存储和评估。使用 PAP 定义访问控制规则（步骤 1），并将这些规则以及评估这些规则所需的属性传递给集中的 PDP（步骤 2）。当主体调用微服务端点（步骤 3）时，微服务代码通过网络调用调用集中的 PDP，PDP 通过根据访问控制规则和属性评估查询输入来生成访问控制策略决策（步骤 4）。基于 PDP 的决策，微服务执行授权（步骤 5）。
 
-This pattern can cause latency issues due to additional network calls to the remote PDP endpoint, but it can be mitigated by caching authorization policy decisions at the microservice level. It should be mentioned that the PDP must be operated in high-availability mode to prevent resilience and availability issues. Application security architects should combine it with other patterns (e.g., authorization on API gateway level) to enforce the "defense in depth" principle.
+![具有单一策略决策点的集中化模式高级设计](../assets/Single_PDP_HLD.png)
 
-#### Centralized pattern with embedded policy decision point
+要定义访问控制规则，开发/运维团队必须使用某种语言或符号。一个例子是可扩展访问控制标记语言（XACML）和下一代访问控制（NGAC），这是描述策略规则的标准。
 
-In this pattern, access control rules are defined centrally but stored and evaluated at the microservice level. Access control rules are defined using PAP (step 1) and delivered to an embedded PDP, along with attributes required to evaluate those rules (step 2). When a subject invokes a microservice endpoint (step 3), the microservice code invokes the PDP, and the PDP generates an access control policy decision by evaluating the query input against access control rules and attributes (step 4). Based on the PDP decision, the microservice enforces authorization (step 5).
+由于额外的网络调用到远程 PDP 端点，此模式可能导致延迟问题，但可以通过在微服务级别缓存授权策略决策来缓解。应该提到，PDP 必须以高可用性模式运行，以防止弹性和可用性问题。应用安全架构师应将其与其他模式（例如，API 网关级别的授权）结合，以执行"纵深防御"原则。
 
-![Centralized pattern with embedded policy decision point HLD](../assets/Embed_PDP_HLD.png)
+#### 具有嵌入式策略决策点的集中化模式
 
-The PDP code in this case, can be implemented as a microservice built-in library or sidecar in a service mesh architecture. Due to possible network/host failures and network latency, it is advisable to implement embedded PDP as a microservice library or sidecar on the same host as the microservice. Embedded PDP usually stores authorization policy and policy-related data in-memory to minimize external dependencies during authorization enforcement and get low latency. The main difference from the “Centralized pattern with single policy decision point” approach, is that authorization *decisions* do not store on the microservice side, up-to-date authorization *policy* is stored on the microservice side instead. It should be mentioned that caching authorization decisions may lead to applying outdated authorization rules and access control violations.
+在这种模式中，访问控制规则集中定义，但在微服务级别存储和评估。使用 PAP 定义访问控制规则（步骤 1），并将这些规则以及评估这些规则所需的属性传递给嵌入式 PDP（步骤 2）。当主体调用微服务端点（步骤 3）时，微服务代码调用 PDP，PDP 通过根据访问控制规则和属性评估查询输入来生成访问控制策略决策（步骤 4）。基于 PDP 的决策，微服务执行授权（步骤 5）。
 
-Netflix presented ([link](https://www.youtube.com/watch?v=R6tUNpRpdnY), [link](https://conferences.oreilly.com/velocity/vl-ca-2018/public/schedule/detail/66606.html)) a real case of using “Centralized pattern with embedded PDP” pattern to implement authorization on the microservices level.
+![具有嵌入式策略决策点的集中化模式高级设计](../assets/Embed_PDP_HLD.png)
 
-![Centralized pattern with embedded policy decision point HLD](../assets/Netflix_AC.png)
+在这种情况下，PDP 代码可以作为微服务内置库或服务网格架构中的边车实现。由于可能的网络/主机故障和网络延迟，建议将嵌入式 PDP 实现为与微服务位于同一主机上的微服务库或边车。嵌入式 PDP 通常将授权策略和策略相关数据存储在内存中，以最大限度地减少授权执行期间的外部依赖并获得低延迟。与"具有单一策略决策点的集中化模式"方法的主要区别在于，微服务端不存储授权*决策*，而是存储最新的授权*策略*。应该提到，缓存授权决策可能导致应用过时的授权规则和访问控制违规。
 
-- The Policy portal and Policy repository are UI-based systems for creating, managing, and versioning access control rules.
-- The Aggregator fetches data used in access control rules from all external sources and keeps it up to date.
-- The Distributor pulls access control rules (from the Policy repository) and data used in access control rules (from Aggregators) to distribute them among PDPs.
-- The PDP (library) asynchronously pulls access control rules and data and keeps them up to date to enforce authorization by the PEP component.
+Netflix 展示了[（链接）](https://www.youtube.com/watch?v=R6tUNpRpdnY)，[（链接）](https://conferences.oreilly.com/velocity/vl-ca-2018/public/schedule/detail/66606.html)使用"具有嵌入式 PDP 的集中化模式"在微服务级别实现授权的实际案例。
 
-### Recommendations on how to implement authorization
+![具有嵌入式策略决策点的集中化模式高级设计](../assets/Netflix_AC.png)
 
-1. To achieve scalability, it is not advisable to hardcode authorization policy in source code (decentralized pattern) but use a special language to express policy instead. The goal is to externalize/decouple authorization from code, and not just with a gateway/proxy acting as a checkpoint. The recommended pattern for service-level authorization is "Centralized pattern with embedded PDP" due to its resilience and wide adoption.
-2. The authorization solution should be a platform-level solution; a dedicated team (e.g., Platform security team) must be accountable for the development and operation of the authorization solution as well as sharing microservice blueprint/library/components that implement authorization among development teams.
-3. The authorization solution should be based on widely-used solutions because implementing a custom solution has the following cons:
-    - Security or engineering teams have to build and maintain a custom solution.
-    - It is necessary to build and maintain client library SDKs for every language used in the system architecture.
-    - There is a necessity to train every developer on custom authorization service API and integration, and there’s no open-source community to source information from.
-4. There is a probability that not all access control policies can be enforced by gateways/proxies and shared authorization library/components, so some specific access control rules still have to be implemented on microservice business code level. In order to do that, it is advisable to have microservice development teams use simple questionnaires/check-lists to uncover such security requirements and handle them properly during microservice development.
-5. It is advisable to implement the “defense in depth” principle and enforce authorization on:
-    - Gateway and proxy level, at a coarse level of granularity.
-    - Microservice level, using shared authorization library/components to enforce fine-granted decisions.
-    - Microservice business code level, to implement business-specific access control rules.
-6. Formal procedures on access control policy must be implemented on development, approval and rolling-out.
+- 策略门户和策略存储库是基于 UI 的系统，用于创建、管理和版本化访问控制规则。
+- 聚合器从所有外部源获取访问控制规则中使用的数据并保持其最新。
+- 分发器从策略存储库中提取访问控制规则，从聚合器中提取访问控制规则中使用的数据，以将它们分发到 PDP 中。
+- PDP（库）异步拉取访问控制规则和数据并保持其最新，以由 PEP 组件执行授权。
 
-## External Entity Identity Propagation
+### 关于如何实现授权的建议
 
-To make fine-grained authorization decisions at the microservice level, a microservice has to understand the caller’s context (e.g., user ID, user roles/groups). In order to allow the internal service layer to enforce authorization, the edge layer has to propagate an authenticated external entity identity (e.g., end user context) along with a request to downstream microservices. One of the simplest ways to propagate external entity identity is to reuse the access token received by the edge and pass it to internal microservices. However, it should be mentioned that this approach is highly insecure due to possible external access token leakage and may increase an attack surface because the communication relies on a proprietary token-based system implementation. If an internal service is unintentionally exposed to the external network, then it can be directly accessed using the leaked access token. This attack is not possible if the internal service only accepts a token format known only to internal services. This pattern is also not external access token agnostic, i.e., internal services have to understand external access tokens and support a wide range of authentication techniques to extract identity from different types of external tokens (e.g., JWT, cookie, OpenID Connect token).
+1. 为了实现可扩展性，不建议在源代码中硬编码授权策略（去中心化模式），而是使用特殊语言来表达策略。目标是将授权从代码中外部化/解耦，而不仅仅是网关/代理作为检查点。由于其弹性和广泛采用，推荐的服务层授权模式是"具有嵌入式 PDP 的集中化模式"。
+2. 授权解决方案应该是平台级解决方案；专门的团队（例如，平台安全团队）必须对授权解决方案的开发和运营负责，并在开发团队之间共享实现授权的微服务蓝图/库/组件。
+3. 授权解决方案应基于广泛使用的解决方案，因为实施自定义解决方案有以下缺点：
+    - 安全或工程团队必须构建和维护自定义解决方案。
+    - 需要为系统架构中使用的每种语言构建和维护客户端库 SDK。
+    - 需要培训每个开发人员使用自定义授权服务 API 和集成，并且没有开源社区可以获取信息。
+4. 可能并非所有访问控制策略都可以由网关/代理和共享授权库/组件执行，因此某些特定的访问控制规则仍然必须在微服务业务代码级别实现。为此，建议微服务开发团队使用简单的问卷/检查清单来发现此类安全需求并在微服务开发期间正确处理它们。
+5. 建议实施"纵深防御"原则，并在以下层面执行授权：
+    - 网关和代理层，以粗粒度方式。
+    - 微服务层，使用共享授权库/组件执行细粒度决策。
+    - 微服务业务代码层，以实施特定于业务的访问控制规则。
+6. 必须在开发、批准和推出过程中实施正式的访问控制策略程序。
 
-### Identity propagation: existing patterns
+## 外部实体身份传播
 
-#### Sending the external entity identity as clear or self-signed data structures
+为了在微服务级别做出细粒度的授权决策，微服务必须了解调用者的上下文（例如，用户 ID、用户角色/组）。为了允许内部服务层执行授权，边缘层必须将经过身份认证的外部实体身份（例如，最终用户上下文）与请求一起传播到下游微服务。传播外部实体身份的最简单方法之一是重用边缘层接收到的访问令牌并将其传递给内部微服务。然而，应该提到，由于可能的外部访问令牌泄露，这种方法极不安全，并且可能增加攻击面，因为通信依赖于专有的基于令牌的系统实现。如果内部服务无意中暴露在外部网络中，则可以直接使用泄露的访问令牌访问它。如果内部服务只接受仅内部服务已知的令牌格式，则此攻击是不可能的。这种模式也不是外部访问令牌不可知的，即内部服务必须理解外部访问令牌，并支持广泛的身份认证技术，以从不同类型的外部令牌（例如，JWT、Cookie、OpenID Connect 令牌）中提取身份。
 
-In this approach, the microservice extracts the external entity identity from the incoming request (e.g., by parsing the incoming access token), creates a data structure (e.g., JSON or self-signed JWT) with that context, and passes it on to an internal microservice.
-In this scenario, the recipient microservice has to trust the calling microservice. If the calling microservice wants to violate access control rules, it can do so by setting any user/client ID or user roles it wants in the HTTP header. This approach is suitable only in highly trusted environments where every microservice is developed by a trusted development team that applies secure software development practices.
+### 身份传播：现有模式
 
-#### Using a data structure signed by a trusted issuer
+#### 以明文或自签名数据结构发送外部实体身份
 
-In this pattern, after the external request is authenticated by the authentication service at the edge layer, a data structure representing the external entity identity (e.g., containing user ID, user roles/groups, or permissions) is generated, signed, or encrypted by the trusted issuer and propagated to internal microservices.
-![Signed ID propagation](../assets/Signed_ID_propogation.png)
+在这种方法中，微服务从传入请求中提取外部实体身份（例如，通过解析传入的访问令牌），创建包含该上下文的数据结构（例如，JSON 或自签名 JWT），并将其传递给内部微服务。
+在这种情况下，接收方微服务必须信任调用微服务。如果调用微服务想要违反访问控制规则，它可以在 HTTP 标头中设置任何它想要的用户/客户端 ID 或用户角色。这种方法仅适用于高度可信的环境，其中每个微服务都由应用安全软件开发实践的可信开发团队开发。
 
-[Netflix presented](https://www.infoq.com/presentations/netflix-user-identity/) a real-world case of using that pattern: a structure called “Passport” that contains the user ID and its attributes and which is HMAC protected at the edge level for each incoming request. This structure is propagated to internal microservices and never exposed outside.
+#### 使用受信任颁发者签名的数据结构
 
-1. The Edge Authentication Service (EAS) obtains a secret key from the Key Management System.
-2. EAS receives an access token (e.g., in a cookie, JWT, OAuth2 token) from the incoming request.
-3. EAS decrypts the access token, resolves the external entity identity, and sends it to the internal services in the signed “Passport” structure.
-4. Internal services can extract user identity to enforce authorization (e.g., to implement identity-based authorization) using wrappers.
-5. If necessary, internal service can propagate the “Passport” structure to downstream services in the call chain.
+在这种模式中，在边缘层的身份认证服务对外部请求进行身份认证后，生成一个代表外部实体身份的数据结构（例如，包含用户 ID、用户角色/组或权限），由受信任的颁发者签名或加密，并传播到内部微服务。
 
-![Netflix ID propagation approach](../assets/Netflix_ID_prop.png)
-It should be mentioned that the pattern is external access token agnostic and allows for decoupling of external entities from their internal representations.
+![签名身份传播](../assets/Signed_ID_propogation.png)
 
-### Recommendation on how to implement identity propagation
+[Netflix 展示了](https://www.infoq.com/presentations/netflix-user-identity/)使用该模式的真实案例：一个名为"Passport"的结构，其中包含用户 ID 及其属性，并在边缘层对每个传入请求进行 HMAC 保护。此结构传播到内部微服务，并且永不对外暴露。
 
-1. In order to implement an external access token agnostic and extendable system, decouple the access tokens issued for an external entity from its internal representation. Use a single data structure to represent and propagate the external entity identity among microservices. The edge-level service has to verify the incoming external access token, issue an internal entity representation structure, and propagate it to downstream services.
-2. Using an internal entity representation structure signed (symmetric or asymmetric encryption) by a trusted issuer is a recommended pattern adopted by the community.
-3. The internal entity representation structure should be extensible to enable adding more claims that may lead to low latency.
-4. The internal entity representation structure must not be exposed outside (e.g., to a browser or external device)
+1. 边缘身份认证服务（EAS）从密钥管理系统获取密钥。
+2. EAS 从传入请求中接收访问令牌（例如，在 Cookie、JWT、OAuth2 令牌中）。
+3. EAS 解密访问令牌，解析外部实体身份，并在签名的"Passport"结构中将其发送到内部服务。
+4. 内部服务可以使用包装器提取用户身份以执行授权（例如，实现基于身份的授权）。
+5. 如有必要，内部服务可以在调用链中将"Passport"结构传播到下游服务。
 
-## Service-to-service authentication
+![Netflix 身份传播方法](../assets/Netflix_ID_prop.png)
 
-### Existing patterns
+应该提到，该模式对外部访问令牌不可知，并允许将外部实体与其内部表示解耦。
 
-#### Mutual transport layer security
+### 关于如何实现身份传播的建议
 
-With an mTLS approach, each microservice can legitimately identify who it talks to, in addition to achieving confidentiality and integrity of the transmitted data. Each microservice in the deployment has to carry a public/private key pair and use that key pair to authenticate to the recipient microservices via mTLS. mTLS is usually implemented with a self-hosted Public Key Infrastructure. The main challenges of using mTLS are key provisioning and trust bootstrap, certificate revocation, and key rotation.
+1. 为了实现对外部访问令牌不可知且可扩展的系统，将为外部实体颁发的访问令牌与其内部表示解耦。使用单一数据结构在微服务之间表示和传播外部实体身份。边缘层服务必须验证传入的外部访问令牌，颁发内部实体表示结构，并将其传播到下游服务。
+2. 使用受信任颁发者签名（对称或非对称加密）的内部实体表示结构是社区采用的推荐模式。
+3. 内部实体表示结构应具有可扩展性，以便能够添加可能导致低延迟的更多声明。
+4. 内部实体表示结构不得对外暴露（例如，不得暴露给浏览器或外部设备）
 
-#### Token-based
+## 服务间身份认证
 
-The token-based approach works at the application layer. A token is a container that may contain the caller ID (microservice ID) and its permissions (scopes). The caller microservice can obtain a signed token by invoking a special security token service using its own service ID and password and then attaches it to every outgoing request, e.g., via HTTP headers. The called microservice can extract the token and validate it online or offline.
-![Signed ID propagation](../assets/Token_validation.png)
+### 现有模式
 
-1. Online scenario:
-    - To validate incoming tokens, the microservice invokes a centralized service token service via network call.
-    - Revoked (compromised) tokens can be detected.
-    - High latency.
-    - Should be applied to critical requests.
-2. Offline scenario:
-    - To validate incoming tokens, the microservice uses the downloaded service token service public key.
-    - Revoked (compromised) tokens may not be detected.
-    - Low latency.
-    - Should be applied to non-critical requests.
-In most cases, token-based authentication works over TLS, which provides confidentiality and integrity of data in transit.
+#### 双向传输层安全（mTLS）
 
-## Logging
+使用 mTLS 方法，每个微服务都可以合法地识别其通信对象，同时还实现传输数据的保密性和完整性。部署中的每个微服务必须携带公钥/私钥对，并使用该密钥对通过 mTLS 向接收方微服务进行身份认证。mTLS 通常使用自托管的公钥基础设施（PKI）实现。使用 mTLS 的主要挑战是密钥配置、信任引导、证书吊销和密钥轮换。
 
-Logging services in microservice-based systems aim to meet the principles of accountability and traceability and help detect security anomalies in operations via log analysis. Therefore, it is vital for application security architects to understand and adequately use existing architecture patterns to implement audit logging in microservices-based systems for security operations. A high-level architecture design is shown in the picture below and is based on the following principles:
+#### 基于令牌的认证
 
-- Each microservice writes a log message to a local file using standard output (via stdout, stderr).
-- The logging agent periodically pulls log messages and sends (publishes) them to the message broker (e.g., NATS, Apache Kafka).
-- The central logging service subscribes to messages in the message broker, receives them, and processes them.
-![Logging pattern](../assets/ms_logging_pattern.png)
+基于令牌的方法在应用层工作。令牌是一个可以包含调用者 ID（微服务 ID）及其权限（作用域）的容器。调用方微服务可以通过使用其自身的服务 ID 和密码调用特殊的安全令牌服务来获取签名令牌，然后将其附加到每个传出请求中，例如通过 HTTP 标头。被调用的微服务可以提取令牌并进行在线或离线验证。
 
-High-level recommendations to logging subsystem architecture with its rationales are listed below.
+![签名身份传播](../assets/Token_validation.png)
 
-1. Microservice shall not send log messages directly to the central logging subsystem using network communication. Microservice shall write its log message to a local log file:
-    - this allows to mitigate the threat of data loss due to logging service failure due to attack or in case of its flooding by legitimate microservice
-    - in case of logging service outage, microservice will still write log messages to the local file (without data loss), and after logging service recovery, logs will be available to shipping;
-2. There shall be a dedicated component (logging agent) decoupled from the microservice. The logging agent shall collect log data on the microservice  (read local log file) and send it to the central logging subsystem. Due to possible network latency issues, the logging agent shall be deployed on the same host (virtual or physical machine) with the microservice:
-    - this allows mitigating the threat of data loss due to logging service failure due to attack or in case of its flooding by legitimate microservice
-    - in case of logging agent failure, microservice still writes information to the log file, logging agent after recovery will read the file and send information to message broker;
-3. A possible DoS attack on the central logging subsystem logging agent shall not use an asynchronous request/response pattern to send log messages. There shall be a message broker to implement the asynchronous connection between the logging agent and central logging service:
-    - this allows to mitigate the threat of data loss due to logging service failure in case of its flooding by legitimate microservice
-    - in case of logging service outage, microservice will still write log messages to the local file (without data loss), and after logging service recovery, logs will be available to shipping;
-4. Logging agent and message broker shall use mutual authentication (e.g., based on TLS) to encrypt all transmitted data (log messages) and authenticate themselves:
-    - this allows mitigating threats such as: microservice spoofing, logging/transport system spoofing, network traffic injection, sniffing network traffic
-5. Message broker shall enforce access control policy to mitigate unauthorized access and implement the principle of least privileges:
-    - this allows mitigating the threat of microservice elevation of privileges
-6. Logging agent shall filter/sanitize output log messages to make sure that sensitive data (e.g., PII, passwords, API keys) is never sent to the central logging subsystem (data minimization principle). For a comprehensive overview of items that should be excluded from logging, please see the [OWASP Logging Cheat Sheet](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Logging_Cheat_Sheet.md#data-to-exclude).
-7. Microservices shall generate a correlation ID that uniquely identifies every call chain and helps group log messages to investigate them. The logging agent shall include a correlation ID in every log message.
-8. The logging agent shall periodically provide health and status data to indicate its availability or non-availability.
-9. The logging agent shall publish log messages in a structured logs format (e.g., JSON, CSV).
-10. The logging agent shall append log messages with context data, e.g., platform context (hostname, container name), runtime context (class name, filename).
+1. 在线场景：
+    - 要验证传入的令牌，微服务通过网络调用调用集中的服务令牌服务。
+    - 可以检测到已吊销（已泄露）的令牌。
+    - 高延迟。
+    - 应用于关键请求。
+2. 离线场景：
+    - 要验证传入的令牌，微服务使用下载的服务令牌服务公钥。
+    - 可能无法检测到已吊销（已泄露）的令牌。
+    - 低延迟。
+    - 应用于非关键请求。
 
-For a comprehensive overview of events that should be logged and possible data format, please see the [OWASP Logging Cheat Sheet](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Logging_Cheat_Sheet.md#which-events-to-log) and [Application Logging Vocabulary Cheat Sheet](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Logging_Vocabulary_Cheat_Sheet.md)
+在大多数情况下，基于令牌的身份认证通过 TLS 工作，提供传输中数据的保密性和完整性。
 
-## References
+## 日志记录
 
-- [NIST Special Publication 800-204](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204.pdf) “Security Strategies for Microservices-based Application Systems”
-- [NIST Special Publication 800-204A](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204A.pdf) “Building Secure Microservices-based Applications Using Service-Mesh Architecture”
-- [Microservices Security in Action](https://www.manning.com/books/microservices-security-in-action), Prabath Siriwardena and Nuwan Dias, 2020, Manning
+基于微服务的系统中的日志服务旨在满足问责制和可追溯性原则，并通过日志分析帮助检测操作中的安全异常。因此，对于应用安全架构师来说，理解并恰当地使用现有的架构模式在基于微服务的系统中实现审计日志记录至关重要。下图显示了高级架构设计，基于以下原则：
+
+- 每个微服务使用标准输出（通过 stdout、stderr）将日志消息写入本地文件。
+- 日志代理定期拉取日志消息并将其发送（发布）到消息代理（例如，NATS、Apache Kafka）。
+- 中央日志服务订阅消息代理中的消息，接收并处理它们。
+
+![日志记录模式](../assets/ms_logging_pattern.png)
+
+以下是日志子系统架构的高级建议及其原理：
+
+1. 微服务不得直接使用网络通信向中央日志子系统发送日志消息。微服务应将其日志消息写入本地日志文件：
+    - 这可以减轻由于日志服务因攻击或被合法微服务淹没而导致的数据丢失威胁
+    - 在日志服务中断的情况下，微服务仍将日志消息写入本地文件（不会丢失数据），并在日志服务恢复后可用于传输
+
+2. 应有一个与微服务解耦的专用组件（日志代理）。日志代理应收集微服务的日志数据（读取本地日志文件）并将其发送到中央日志子系统。由于可能存在网络延迟问题，日志代理应部署在与微服务相同的主机（虚拟或物理机）上：
+    - 这可以减轻由于日志服务因攻击或被合法微服务淹没而导致的数据丢失威胁
+    - 在日志代理故障的情况下，微服务仍会将信息写入日志文件，日志代理恢复后将读取文件并将信息发送到消息代理
+
+3. 为防止对中央日志子系统的可能 DoS 攻击，日志代理不应使用同步请求/响应模式发送日志消息。应使用消息代理在日志代理和中央日志服务之间实现异步连接：
+    - 这可以减轻由于日志服务被合法微服务淹没而导致的数据丢失威胁
+    - 在日志服务中断的情况下，微服务仍将日志消息写入本地文件（不会丢失数据），并在日志服务恢复后可用于传输
+
+4. 日志代理和消息代理应使用双向认证（例如，基于 TLS）来加密所有传输的数据（日志消息）并进行自身认证：
+    - 这可以减轻微服务欺骗、日志/传输系统欺骗、网络流量注入、嗅探网络流量等威胁
+
+5. 消息代理应执行访问控制策略以防止未经授权的访问并实施最小权限原则：
+    - 这可以减轻微服务权限提升的威胁
+
+6. 日志代理应过滤/净化输出日志消息，确保敏感数据（例如，个人可识别信息、密码、API 密钥）永远不会发送到中央日志子系统（数据最小化原则）。有关应从日志中排除的项目的全面概述，请参见 [OWASP 日志备忘录](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Logging_Cheat_Sheet.md#data-to-exclude)。
+
+7. 微服务应生成唯一标识每个调用链的关联 ID，并帮助对日志消息进行分组以进行调查。日志代理应在每个日志消息中包含关联 ID。
+
+8. 日志代理应定期提供运行状况和状态数据，以指示其可用性或不可用性。
+
+9. 日志代理应以结构化日志格式（例如，JSON、CSV）发布日志消息。
+
+10. 日志代理应附加上下文数据的日志消息，例如平台上下文（主机名、容器名）、运行时上下文（类名、文件名）。
+
+有关应记录的事件和可能的数据格式的全面概述，请参见 [OWASP 日志备忘录](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Logging_Cheat_Sheet.md#which-events-to-log) 和 [应用日志词汇备忘录](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Logging_Vocabulary_Cheat_Sheet.md)
+
+## 参考文献
+
+- [NIST 特别出版物 800-204](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204.pdf) "微服务应用系统的安全策略"
+- [NIST 特别出版物 800-204A](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204A.pdf) "使用服务网格架构构建安全的微服务应用"
+- [《微服务安全实战》](https://www.manning.com/books/microservices-security-in-action)，Prabath Siriwardena 和 Nuwan Dias，2020年，Manning出版社
