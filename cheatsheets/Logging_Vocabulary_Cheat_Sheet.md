@@ -1,4 +1,4 @@
-# 应用程序日志记录词汇速查表
+# 应用程序日志记录词汇备忘录
 
 本文档提出了记录安全事件的标准词汇。其意图是简化监控和警报，假设开发人员捕获错误并使用此词汇记录，通过简单地关注这些术语，监控和警报将得到改进。
 
@@ -83,15 +83,15 @@ _注意：所有日期都应以[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601
 
 ### authn_login_success[:userid]
 
-**Description**
-All login events should be recorded including success.
+**描述**
+应记录所有登录事件，包括成功的登录。
 
-**Level:**
+**级别:**
 INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -106,15 +106,15 @@ INFO
 
 ### authn_login_successafterfail[:userid,retries]
 
-**Description**
-The user successfully logged in after previously failing.
+**描述**
+用户在之前登录失败后成功登录。
 
-**Level:**
+**级别:**
 INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -129,15 +129,15 @@ INFO
 
 ### authn_login_fail[:userid]
 
-**Description**
-All login events should be recorded including failure.
+**描述**
+应记录所有登录事件，包括失败的登录。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -152,15 +152,15 @@ WARN
 
 ### authn_login_fail_max[:userid,maxlimit(int)]
 
-**Description**
-All login events should be recorded including failure.
+**描述**
+应记录所有登录事件，包括失败的登录。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -175,22 +175,22 @@ WARN
 
 ### authn_login_lock[:userid,reason]
 
-**Description**
-When the feature exists to lock an account after x retries or other condition, the lock should be logged with relevant data.
+**描述**
+当存在在x次重试或其他条件后锁定账户的功能时，应记录锁定及相关数据。
 
-**Level:**
+**级别:**
 WARN
 
-**Reasons:**
+**原因:**
 
-- maxretries: The maximum number of retries was reached
-- suspicious: Suspicious activity was observed on the account
-- customer: The customer requested their account be locked
-- other: Other
+- maxretries: 达到最大重试次数
+- suspicious: 观察到账户存在可疑活动
+- customer: 客户要求锁定其账户
+- other: 其他
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -205,15 +205,15 @@ WARN
 
 ### authn_password_change[:userid]
 
-**Description**
-Every password change should be logged, including the userid that it was for.
+**描述**
+每次密码更改都应被记录，包括更改密码的用户ID。
 
-**Level:**
+**级别:**
 INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -228,15 +228,15 @@ INFO
 
 ### authn_password_change_fail[:userid]
 
-**Description**
-An attempt to change a password that failed. May also trigger other events such as `authn_login_lock`.
+**描述**
+密码更改尝试失败。可能还会触发其他事件，如 `authn_login_lock`。
 
-**Level:**
+**级别:**
 INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -251,14 +251,15 @@ INFO
 
 ### authn_impossible_travel[:userid,region1,region2]
 
-**Description**
-When a user is logged in from one city and suddenly appears in another, too far away to have traveled in a reasonable timeframe, this often indicates a potential account takeover.
+**描述**
+当用户从一个城市登录，然后突然出现在另一个距离太远、无法在合理时间内行程的城市时，这通常表明可能存在账户接管。
 
-**Level:**: CRITICAL
+**级别:** 
+CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -273,14 +274,15 @@ When a user is logged in from one city and suddenly appears in another, too far 
 
 ### authn_token_created[:userid, entitlement(s)]
 
-**Description**
-When a token is created for service access it should be recorded
+**描述**
+创建服务访问令牌时应被记录。
 
-**Level:**: INFO
+**级别:** 
+INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "aws.foobar.com",
@@ -295,14 +297,15 @@ When a token is created for service access it should be recorded
 
 ### authn_token_revoked[:userid,tokenid]
 
-**Description**
-A token has been revoked for the given account.
+**描述**
+已为给定账户撤销令牌。
 
-**Level:**: INFO
+**级别:** 
+INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "aws.foobar.com",
@@ -317,14 +320,15 @@ A token has been revoked for the given account.
 
 ### authn_token_reuse[:userid,tokenid]
 
-**Description**
-A previously revoked token was attempted to be reused.
+**描述**
+尝试重用之前已撤销的令牌。
 
-**Level:**: CRITICAL
+**级别:** 
+CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "aws.foobar.com",
@@ -339,14 +343,15 @@ A previously revoked token was attempted to be reused.
 
 ### authn_token_delete[:appid]
 
-**Description**
-When a token is deleted it should be recorded
+**描述**
+删除令牌时应被记录。
 
-**Level:**: WARN
+**级别:** 
+WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -359,20 +364,21 @@ When a token is deleted it should be recorded
 
 ---
 
-## Authorization [AUTHZ]
+## 授权 [AUTHZ]
 
 ---
 
 ### authz_fail[:userid,resource]
 
-**Description**
-An attempt was made to access a resource which was unauthorized
+**描述**
+尝试访问未经授权的资源。
 
-**Level:**: CRITICAL
+**级别:** 
+CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -387,14 +393,15 @@ An attempt was made to access a resource which was unauthorized
 
 ### authz_change[:userid,from,to]
 
-**Description**
-The user or entity entitlements was changed
+**描述**
+用户或实体的权限已更改。
 
-**Level:**: WARN
+**级别:** 
+WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -409,14 +416,15 @@ The user or entity entitlements was changed
 
 ### authz_admin[:userid,event]
 
-**Description**
-All activity by privileged users such as admin should be recorded.
+**描述**
+应记录特权用户（如管理员）的所有活动。
 
-**Level:**: WARN
+**级别:** 
+WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -429,18 +437,19 @@ All activity by privileged users such as admin should be recorded.
 
 ---
 
-## Excessive Use [EXCESS]
+## 过度使用 [EXCESS]
 
 ### excess_rate_limit_exceeded[userid,max]
 
-**Description**
-Expected service limit ceilings should be established and alerted when exceeded, even if simply for managing costs and scaling.
+**描述**
+应建立预期的服务限制上限，并在超出时发出警报，即使仅用于管理成本和扩展。
 
-**Level:**: WARN
+**级别:** 
+WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -453,19 +462,20 @@ Expected service limit ceilings should be established and alerted when exceeded,
 
 ---
 
-## File Upload [UPLOAD]
+## 文件上传 [UPLOAD]
 
 ### upload_complete[userid,filename,type]
 
-**Description**
-On successful file upload the first step in the validation process is that the upload has completed.
+**描述**
+在成功上传文件时，验证过程的第一步是确认上传已完成。
 
-**Level:**: INFO
+**级别:** 
+INFO
 
-**Example:**
+**示例:**
 
-```
-    {
+```json
+{
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "upload_complete:joebob1,user_generated_content.png,PNG",
@@ -479,14 +489,15 @@ On successful file upload the first step in the validation process is that the u
 
 ### upload_stored[filename,from,to]
 
-**Description**
-One step in good file upload validation is to move/rename the file and when providing the content back to end users, never reference the original filename in the download. This is true both when storing in a filesystem as well as in block storage.
+**描述**
+文件上传验证的一个步骤是移动/重命名文件，并在向最终用户提供内容时，永远不要在下载中引用原始文件名。这适用于文件系统和块存储。
 
-**Level:**: INFO
+**级别:** 
+INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -501,14 +512,15 @@ One step in good file upload validation is to move/rename the file and when prov
 
 ### upload_validation[filename,(virusscan|imagemagick|...):(FAILED|incomplete|passed)]
 
-**Description**
-All file uploads should have some validation performed, both for correctness (is in fact of file type x), and for safety (does not contain a virus).
+**描述**
+所有文件上传都应进行某种验证，包括正确性（是否确实是文件类型x）和安全性（是否不包含病毒）。
 
-**Level:**: INFO|CRITICAL
+**级别:** 
+INFO|CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -523,14 +535,15 @@ All file uploads should have some validation performed, both for correctness (is
 
 ### upload_delete[userid,fileid]
 
-**Description**
-When a file is deleted for normal reasons it should be recorded.
+**描述**
+当出于正常原因删除文件时应被记录。
 
-**Level:**: INFO
+**级别:** 
+INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -543,19 +556,19 @@ When a file is deleted for normal reasons it should be recorded.
 
 ---
 
-## Input Validation [INPUT]
+## 输入验证 [INPUT]
 
 ### input_validation_fail[:field,userid]
 
-**Description**
-When input validation fails on the server-side it must either be because a) sufficient validation was not provided on the client, or b) client-side validation was bypassed. In either case it's an opportunity for attack and should be mitigated quickly.
+**描述**
+当服务器端输入验证失败时，要么是因为客户端未提供足够的验证，要么是客户端验证被绕过。无论哪种情况，这都是攻击的机会，应尽快缓解。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -568,19 +581,19 @@ WARN
 
 ---
 
-## Malicious Behavior [MALICIOUS
+## 恶意行为 [MALICIOUS]
 
 ### malicious_excess_404:[userid|IP,useragent]
 
-**Description**
-When a user makes numerous requests for files that don't exist it often is an indicator of attempts to "force-browse" for files that could exist and is often behavior indicating malicious intent.
+**描述**
+当用户多次请求不存在的文件时，这通常是试图"强制浏览"可能存在的文件，常常表明存在恶意意图。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -595,15 +608,15 @@ WARN
 
 ### malicious_extraneous:[userid|IP,inputname,useragent]
 
-**Description**
-When a user submits data to a backend handler that was not expected it can indicate probing for input validation errors. If your backend service receives data it does not handle or have an input for this is an indication of likely malicious abuse.
+**描述**
+当用户向后端处理程序提交未预期的数据时，可能表明正在探测输入验证错误。如果后端服务收到未处理或没有输入的数据，这通常表明可能存在恶意滥用。
 
-**Level:**
+**级别:**
 CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
@@ -616,567 +629,567 @@ CRITICAL
 
 ---
 
-### malicious_attack_tool:[userid|IP,toolname,useragent]
+### 恶意攻击工具:[用户ID|IP,工具名,用户代理]
 
-**Description**
-When obvious attack tools are identified either by signature or by user agent they should be logged.
+**描述**
+当通过签名或用户代理识别出明显的攻击工具时，应记录这些信息。
 
-**TODO:** A future version of this standard should link to known attack tools, signatures and user-agent strings. For instance, the tool "Nikto" leaves behind its user agent by default with a string like **_"Mozilla/5.00 (Nikto/2.1.6) (Evasions:None) (Test:Port Check)"_**
+**待办事项:** 此标准的未来版本应链接已知的攻击工具、签名和用户代理字符串。例如，"Nikto"工具默认会在其用户代理中留下类似 **_"Mozilla/5.00 (Nikto/2.1.6) (Evasions:None) (Test:Port Check)"_** 的字符串。
 
-**Level:**
+**级别:**
 CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "malicious_attack_tool:127.0.0.1,nikto,Mozilla/5.00 (Nikto/2.1.6) (Evasions:None) (Test:Port Check)",
     "level": "WARN",
-    "description": "Attack traffic indicating use of Nikto coming from 127.0.0.1",
+    "description": "来自127.0.0.1的攻击流量，使用了Nikto工具",
     ...
 }
 ```
 
 ---
 
-### malicious_cors:[userid|IP,useragent,referer]
+### 恶意跨域请求:[用户ID|IP,用户代理,引用页]
 
-**Description**
-When attempts are made from unauthorized origins they should of course be blocked, but also logged whenever possible. Even if we block an illegal cross-origin request the fact that the request is being made could be an indication of attack.
+**描述**
+当从未经授权的源发出请求时，不仅应该阻止，还应尽可能记录这些请求。即使我们阻止了非法的跨域请求，但请求本身也可能是攻击的迹象。
 
-_NOTE: Did you know that the word "referer" is misspelled in the original HTTP specification? The correct spelling should be "referrer" but the original typo persists to this day and is used here intentionally._
+_注意：你知道吗？"referer"在原始HTTP规范中是拼写错误的。正确的拼写应该是"referrer"，但原始的拼写错误至今仍然存在，并在此处有意使用。_
 
-**Level:**
+**级别:**
 CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "malicious_cors:127.0.0.1,Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0,attack.evil.com",
     "level": "WARN",
-    "description": "An illegal cross-origin request from 127.0.0.1 was referred from attack.evil.com"
+    "description": "来自127.0.0.1的非法跨域请求，引用页为attack.evil.com"
     ...
 }
 ```
 
 ---
 
-### malicious_direct_reference:[userid|IP, useragent]
+### 恶意直接引用:[用户ID|IP, 用户代理]
 
-**Description**
-A common attack against authentication and authorization is to directly access an object without credentials or appropriate access authority. Failing to prevent this flaw used to be one of the OWASP Top Ten called **Insecure Direct Object Reference**. Assuming you've correctly prevented this attack, logging the attempt is valuable to identify malicious users.
+**描述**
+针对身份验证和授权的常见攻击是在没有凭据或适当访问权限的情况下直接访问对象。未能防止这种缺陷曾经是OWASP十大安全风险中的**不安全的直接对象引用**。假设你已正确防止了这种攻击，记录这种尝试对识别恶意用户很有价值。
 
-**Level:**
+**级别:**
 CRITICAL
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "malicious_direct:joebob1, Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
     "level": "WARN",
-    "description": "User joebob1 attempted to access an object to which they are not authorized",
+    "description": "用户joebob1尝试访问未经授权的对象",
     ...
 }
 ```
 
 ---
 
-## Privilege Changes [PRIVILEGE]
+## 权限变更 [PRIVILEGE]
 
-This section focuses on object privilege changes such as read/write/execute permissions or objects in a database having authorization meta-information changed.
+本节重点关注对象权限变更，如读/写/执行权限，或数据库中对象的授权元信息发生变化。
 
-Changes to user/account are covered in the User Management section.
+用户/账户的变更在用户管理部分已涵盖。
 
 ---
 
-### privilege_permissions_changed:[userid,file|object,fromlevel,tolevel]
+### 权限变更:[用户ID,文件|对象,原权限级别,新权限级别]
 
-**Description**
-Tracking changes to objects to which there are access control restrictions can uncover attempt to escalate privilege on those files by unauthorized users.
+**描述**
+跟踪具有访问控制限制的对象的变更，可以揭示未经授权的用户试图提升这些文件的权限。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "malicious_direct:joebob1, /users/admin/some/important/path,0511,0777",
     "level": "WARN",
-    "description": "User joebob1 changed permissions on /users/admin/some/important/path",
+    "description": "用户joebob1更改了/users/admin/some/important/path的权限",
     ...
 }
 ```
 
 ---
 
-## Sensitive Data Changes [DATA]
+## 敏感数据变更 [DATA]
 
-It's not necessary to log or alert on changes to all files, but in the case of highly sensitive files or data it is important that we monitor and alert on changes.
+并非所有文件的变更都需要记录或发出警报，但对于高度敏感的文件或数据，监控和警报非常重要。
 
 ---
 
-### sensitive_create:[userid,file|object]
+### 敏感数据创建:[用户ID,文件|对象]
 
-**Description**
-When a new piece of data is created and marked as sensitive or placed into a directory/table/repository where sensitive data is stored, that creation should be logged and reviewed periodically.
+**描述**
+当创建一个新的数据并标记为敏感，或放置在存储敏感数据的目录/表/仓库中时，应记录该创建过程并定期审查。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sensitive_create:joebob1, /users/admin/some/important/path",
     "level": "WARN",
-    "description": "User joebob1 created a new file in /users/admin/some/important/path",
+    "description": "用户joebob1在/users/admin/some/important/path创建了新文件",
     ...
 }
 ```
 
 ---
 
-### sensitive_read:[userid,file|object]
+### 敏感数据读取:[用户ID,文件|对象]
 
-**Description**
-All data marked as sensitive or placed into a directory/table/repository where sensitive data is stored should be have access logged and reviewed periodically.
+**描述**
+所有标记为敏感或放置在存储敏感数据的目录/表/仓库中的数据，其访问应被记录并定期审查。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sensitive_read:joebob1, /users/admin/some/important/path",
     "level": "WARN",
-    "description": "User joebob1 read file /users/admin/some/important/path",
+    "description": "用户joebob1读取了文件 /users/admin/some/important/path",
     ...
 }
 ```
 
 ---
 
-### sensitive_update:[userid,file|object]
+### 敏感数据更新:[用户ID,文件|对象]
 
-**Description**
-All data marked as sensitive or placed into a directory/table/repository where sensitive data is stored should be have updates to the data logged and reviewed periodically.
+**描述**
+所有标记为敏感或放置在存储敏感数据的目录/表/仓库中的数据，其更新应被记录并定期审查。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sensitive_update:joebob1, /users/admin/some/important/path",
     "level": "WARN",
-    "description": "User joebob1 modified file /users/admin/some/important/path",
+    "description": "用户joebob1修改了文件 /users/admin/some/important/path",
     ...
 }
 ```
 
 ---
 
-### sensitive_delete:[userid,file|object]
+### 敏感数据删除:[用户ID,文件|对象]
 
-**Description**
-All data marked as sensitive or placed into a directory/table/repository where sensitive data is stored should have deletions of the data logged and reviewed periodically. The file should not be immediately deleted but marked for deletion and an archive of the file should be maintained according to legal/privacy requirements.
+**描述**
+所有标记为敏感或放置在存储敏感数据的目录/表/仓库中的数据，其删除应被记录并定期审查。文件不应立即删除，而是应标记为删除，并根据法律/隐私要求保留文件归档。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sensitive_delete:joebob1, /users/admin/some/important/path",
     "level": "WARN",
-    "description": "User joebob1 marked file /users/admin/some/important/path for deletion",
+    "description": "用户joebob1标记文件 /users/admin/some/important/path 为删除",
     ...
 }
 ```
 
 ---
 
-## Sequence Errors [SEQUENCE]
+## 序列错误 [SEQUENCE]
 
-Also called a **_business logic attack_**, if a specific path is expected through a system and an attempt is made to skip or change the order of that path it could indicate malicious intent.
+也称为**业务逻辑攻击**，如果系统中预期有特定的路径，而有人试图跳过或更改该路径的顺序，可能表明存在恶意意图。
 
 ---
 
-### sequence_fail:[userid]
+### 序列失败:[用户ID]
 
-**Description**
-When a user reaches a part of the application out of sequence it may indicate intentional abuse of the business logic and should be tracked.
+**描述**
+当用户以非顺序方式到达应用程序的某个部分时，可能表明故意滥用业务逻辑，应予以跟踪。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sequence_fail:joebob1",
     "level": "WARN",
-    "description": "User joebob1 has reached a part of the application out of the normal application flow.",
+    "description": "用户joebob1已到达应用程序正常流程之外的部分。",
     ...
 }
 ```
 
 ---
 
-## Session Management [SESSION]
+## 会话管理 [SESSION]
 
-### session_created:[userid]
+### 会话创建:[用户ID]
 
-**Description**
-When a new authenticated session is created that session may be logged and activity monitored.
+**描述**
+当创建新的经过身份验证的会话时，可以记录该会话并监控活动。
 
-**Level:**
+**级别:**
 INFO
 
-**Example:**
+**示例:**
 
-```
-    {
+```json
+{
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "session_created:joebob1",
     "level": "INFO",
-    "description": "User joebob1 has started a new session",
+    "description": "用户joebob1已开始新会话",
     ...
 }
 ```
 
 ---
 
-### session_renewed:[userid]
+### 会话续期:[用户ID]
 
-**Description**
-When a user is warned of session to be expired/revoked and chooses to extend their session that activity should be logged. Also, if the system in question contains highly confidential data then extending a session may require additional verification.
+**描述**
+当用户收到会话即将过期/撤销的警告并选择延长会话时，应记录该活动。此外，如果相关系统包含高度机密的数据，则延长会话可能需要额外的验证。
 
-**Level:**
+**级别:**
 INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "session_renewed:joebob1",
     "level": "WARN",
-    "description": "User joebob1 was warned of expiring session and extended.",
+    "description": "用户joebob1被警告会话即将过期并已延长。",
     ...
 }
 ```
 
 ---
 
-### session_expired:[userid,reason]
+### 会话过期:[用户ID,原因]
 
-**Description**
-When a session expires, especially in the case of an authenticated session or with sensitive data, then that session expiry may be logged and clarifying data included. The reason code may be any such as: logout, timeout, revoked, etc. Sessions should never be deleted but rather expired in the case of revocation requirement.
+**描述**
+当会话过期时，尤其是对于经过身份验证的会话或涉及敏感数据的会话，应记录会话过期并包含澄清数据。原因代码可以是：注销、超时、撤销等。会话不应被删除，而是在需要撤销时应标记为过期。
 
-**Level:**
+**级别:**
 INFO
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "session_expired:joebob1,revoked",
     "level": "WARN",
-    "description": "User joebob1 session expired due to administrator revocation.",
+    "description": "由于管理员撤销，用户joebob1的会话已过期。",
     ...
 }
 ```
 
 ---
 
-### session_use_after_expire:[userid]
+### 过期后使用会话:[用户ID]
 
-**Description**
-In the case a user attempts to access systems with an expire session it may be helpful to log, especially if combined with subsequent login failure. This could identify a case where a malicious user is attempting a session hijack or directly accessing another person's machine/browser.
+**描述**
+如果用户尝试使用已过期的会话访问系统，记录这一行为可能很有帮助，尤其是与后续的登录失败结合时。这可能识别出恶意用户正在尝试会话劫持或直接访问他人的机器/浏览器。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "session_use_after_expire:joebob1",
     "level": "WARN",
-    "description": "User joebob1 attempted access after session expired.",
+    "description": "用户joebob1在会话过期后尝试访问。",
     ...
 }
 ```
 
 ---
 
-## System Events [SYS]
+## 系统事件 [SYS]
 
-### sys_startup:[userid]
+### 系统启动:[用户ID]
 
-**Description**
-When a system is first started it can be valuable to log the startup, even if the system is serverless or a container, especially if possible to log the user that initiated the system.
+**描述**
+系统首次启动时记录启动过程可能很有价值，即使是无服务器或容器系统，尤其是在可能记录启动系统的用户时。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sys_startup:joebob1",
     "level": "WARN",
-    "description": "User joebob1 spawned a new instance",
+    "description": "用户joebob1spawned了一个新实例",
     ...
 }
 ```
 
 ---
 
-### sys_shutdown:[userid]
+### 系统关闭:[用户ID]
 
-**Description**
-When a system is shut down it can be valuable to log the event, even if the system is serverless or a container, especially if possible to log the user that initiated the system.
+**描述**
+系统关闭时记录该事件可能很有价值，即使是无服务器或容器系统，尤其是在可能记录启动系统的用户时。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sys_shutdown:joebob1",
     "level": "WARN",
-    "description": "User joebob1 stopped this instance",
+    "description": "用户joebob1停止了此实例",
     ...
 }
 ```
 
 ---
 
-### sys_restart:[userid]
+### 系统重启:[用户ID]
 
-**Description**
-When a system is restarted it can be valuable to log the event, even if the system is serverless or a container, especially if possible to log the user that initiated the system.
+**描述**
+系统重启时记录该事件可能很有价值，即使是无服务器或容器系统，尤其是在可能记录启动系统的用户时。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sys_restart:joebob1",
     "level": "WARN",
-    "description": "User joebob1 initiated a restart",
+    "description": "用户joebob1发起了重启",
     ...
 }
 ```
 
 ---
 
-### sys_crash[:reason]
+### 系统崩溃[:原因]
 
-**Description**
-If possible to catch an unstable condition resulting in the crash of a system, logging that event could be helpful, especially if the event is triggered by an attack.
+**描述**
+如果可能捕获导致系统崩溃的不稳定条件，记录该事件可能很有帮助，尤其是当事件由攻击触发时。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
-    "event": "sys_crash:outofmemory,
+    "event": "sys_crash:outofmemory",
     "level": "WARN",
-    "description": "The system crashed due to Out of Memory error.",
+    "description": "系统因内存不足错误而崩溃。",
     ...
 }
 ```
 
 ---
 
-### sys_monitor_disabled:[userid,monitor]
+### 系统监控禁用:[用户ID,监控器]
 
-**Description**
-If your systems contain agents responsible for file integrity, resources, logging, virus, etc. it is especially valuable to know if they are halted and by whom.
+**描述**
+如果系统包含负责文件完整性、资源、日志记录、病毒等的代理，了解它们被谁暂停尤其有价值。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sys_monitor_disabled:joebob1,crowdstrike",
     "level": "WARN",
-    "description": "User joebob1 has disabled CrowdStrike",
+    "description": "用户joebob1已禁用CrowdStrike",
     ...
 }
 ```
 
 ---
 
-### sys_monitor_enabled:[userid,monitor]
+### 系统监控启用:[用户ID,监控器]
 
-**Description**
-If your systems contain agents responsible for file integrity, resources, logging, virus, etc. it is especially valuable to know if they are started again after being stopped, and by whom.
+**描述**
+如果系统包含负责文件完整性、资源、日志记录、病毒等的代理，了解它们在停止后是否再次启动以及由谁启动尤其有价值。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "sys_monitor_enabled:joebob1,crowdstrike",
     "level": "WARN",
-    "description": "User joebob1 has enabled CrowdStrike",
+    "description": "用户joebob1已启用CrowdStrike",
     ...
 }
 ```
 
 ---
 
-## User Management [USER]
+## 用户管理 [USER]
 
-### user_created:[userid,newuserid,attributes[one,two,three]]
+### 用户创建:[用户ID,新用户ID,属性[一,二,三]]
 
-**Description**
-When creating new users, logging the specifics of the user creation event is helpful, especially if new users can be created with administration privileges.
+**描述**
+创建新用户时，记录用户创建事件的具体细节很有帮助，尤其是在可以使用管理员权限创建新用户的情况下。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "user_created:joebob1,user1,admin:create,update,delete",
     "level": "WARN",
-    "description": "User joebob1 created user1 with admin:create,update,delete privilege attributes",
+    "description": "用户joebob1创建了用户user1，具有admin:create,update,delete权限属性",
     ...
 }
 ```
 
 ---
 
-### user_updated:[userid,onuserid,attributes[one,two,three]]
+### 用户更新:[用户ID,目标用户ID,属性[一,二,三]]
 
-**Description**
-When updating users, logging the specifics of the user update event is helpful, especially if users can be updated with administration privileges.
+**描述**
+更新用户时，记录用户更新事件的具体细节很有帮助，尤其是在可以更新用户管理员权限的情况下。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "user_updated:joebob1,user1,admin:create,update,delete",
     "level": "WARN",
-    "description": "User joebob1 updated user1 with attributes admin:create,update,delete privilege attributes",
+    "description": "用户joebob1更新了用户user1的admin:create,update,delete权限属性",
     ...
 }
 ```
 
 ---
 
-### user_archived:[userid,onuserid]
+### 用户归档:[用户ID,目标用户ID]
 
-**Description**
-It is always best to archive users rather than deleting, except where required. When archiving users, logging the specifics of the user archive event is helpful. A malicious user could use this feature to deny service to legitimate users.
+**描述**
+除非必要，否则最好归档用户而不是删除。归档用户时，记录用户归档事件的具体细节很有帮助。恶意用户可能利用此功能拒绝合法用户的服务。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "user_archived:joebob1,user1",
     "level": "WARN",
-    "description": "User joebob1 archived user1",
+    "description": "用户joebob1归档了用户user1",
     ...
 }
 ```
 
 ---
 
-### user_deleted:[userid,onuserid]
+### 用户删除:[用户ID,目标用户ID]
 
-**Description**
-It is always best to archive users rather than deleting, except where required. When deleting users, logging the specifics of the user delete event is helpful. A malicious user could use this feature to deny service to legitimate users.
+**描述**
+除非必要，否则最好归档用户而不是删除。删除用户时，记录用户删除事件的具体细节很有帮助。恶意用户可能利用此功能拒绝合法用户的服务。
 
-**Level:**
+**级别:**
 WARN
 
-**Example:**
+**示例:**
 
-```
+```json
 {
     "datetime": "2019-01-01 00:00:00,000",
     "appid": "foobar.netportal_auth",
     "event": "user_deleted:joebob1,user1",
     "level": "WARN",
-    "description": "User joebob1 has deleted user1",
+    "description": "用户joebob1删除了用户user1",
     ...
 }
 ```
 
 ---
 
-## Exclusions
+## 排除项
 
-As important as what you DO log is what you DON'T log. Private or secret information, source code, keys, certs, etc. should never be logged.
+与记录什么一样重要的是不记录什么。私人或秘密信息、源代码、密钥、证书等绝不应被记录。
 
-For comprehensive overview of items that should be excluded from logging, please see the [OWASP Logging Cheat Sheet](../cheatsheets/Logging_Cheat_Sheet.md#data-to-exclude).
+有关应从日志中排除的项目的全面概述，请参阅 [OWASP日志作弊表](../cheatsheets/Logging_Cheat_Sheet.md#data-to-exclude)。
