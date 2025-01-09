@@ -25,12 +25,6 @@
 
 # Welcome to the OWASP Cheat Sheet Series
 
-[原 README 其余内容保持不变...]
-
-
-
-# Welcome to the OWASP Cheat Sheet Series
-
 [![OWASP Flagship](https://img.shields.io/badge/owasp-flagship%20project-48A646.svg)](https://www.owasp.org/index.php/OWASP_Project_Inventory#tab=Flagship_Projects)
 [![Creative Commons License](https://img.shields.io/github/license/OWASP/CheatSheetSeries)](https://creativecommons.org/licenses/by-sa/4.0/ "CC BY-SA 4.0")
 
