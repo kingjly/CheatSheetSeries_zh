@@ -1,426 +1,426 @@
-# Multifactor Authentication Cheat Sheet
+# 多因素认证备忘录
 
-## Introduction
+## 引言
 
-Multifactor Authentication (MFA) or Two-Factor Authentication (2FA) is when a user is required to present more than one type of evidence in order to authenticate on a system. There are five different types of evidence (or factors) and any combination of these can be used, however in practice only the first three are common in web applications. The five types are as follows:
+多因素认证（MFA）或双因素认证（2FA）是指用户需要提供多种类型的证据才能在系统上进行身份验证。存在五种不同类型的证据（或因素），可以使用任意组合，但在实践中，Web 应用程序通常只使用前三种。这五种类型如下：
 
-| Factor | Examples |
+| 因素 | 示例 |
 |--------|----------|
-| [Something You Know](#something-you-know) | [Passwords and PINs](#passwords-and-pins), [Security Questions](#security-questions) |
-| [Something You Have](#something-you-have) | [OTP Tokens](#one-time-password-tokens), [U2F Tokens](#universal-second-factor), [Certificates](#certificates),[Smart Cards](#smart-cards), [Email](#email), [SMS and Phone Calls](#sms-messages-and-phone-calls) |
-| [Something You Are](#something-you-are) | [Fingerprints, Facial Recognition, Iris Scans](#biometrics) |
-| [Somewhere You Are](#somewhere-you-are) | [Source IP Address](#source-ip-address), [Geolocation](#geolocation), [Geofencing](#geofencing) |
-| [Something You Do](#something-you-do) | [Behavioral Profiling](#behavioral-profiling), [Keystroke & Mouse Dynamics](#keystroke--mouse-dynamics), [Gait Analysis](#gait-analysis) |
+| [你知道的](#你知道的) | [密码和 PIN](#密码和-pin)，[安全问题](#安全问题) |
+| [你拥有的](#你拥有的) | [一次性密码令牌](#一次性密码令牌)，[U2F 令牌](#通用第二因素)，[证书](#证书)，[智能卡](#智能卡)，[电子邮件](#电子邮件)，[短信和电话](#短信消息和电话) |
+| [你是什么](#你是什么) | [指纹、面部识别、虹膜扫描](#生物特征) |
+| [你在哪里](#你在哪里) | [源 IP 地址](#源-ip-地址)，[地理位置](#地理位置)，[地理围栏](#地理围栏) |
+| [你做什么](#你做什么) | [行为分析](#行为分析)，[键盘和鼠标动态](#键盘和鼠标动态)，[步态分析](#步态分析) |
 
-It should be noted that requiring multiple instances of the same authentication factor (such as needing both a password and a PIN) **does not constitute MFA** and offers minimal additional security. The factors used should be independent of each other and should not be able to be compromised by the same attack. While the following sections discuss the disadvantage and weaknesses of various different types of MFA, in many cases these are only relevant against targeted attacks. **Any MFA is better than no MFA**.
+需要注意的是，要求同一认证因素的多个实例（如同时需要密码和 PIN）**不构成 MFA**，并且提供的额外安全性很小。使用的因素应相互独立，不应能被同一攻击方式破坏。尽管以下章节讨论了各种 MFA 类型的缺点和弱点，但在许多情况下，这些只与针对性攻击相关。**任何 MFA 都比没有 MFA 好**。
 
-## Advantages
+## 优势
 
-The most common way that user accounts get compromised on applications is through weak, re-used or stolen passwords. Despite any technical security controls implemented on the application, users are liable to choose weak passwords, or to use the same password on different applications. As developers or system administrators, it should be assumed that users' passwords will be compromised at some point, and the system should be designed in order to defend against this.
+用户账户被入侵最常见的方式是使用弱密码、重复使用密码或密码被盗。尽管应用程序上实施了技术安全控制，但用户仍可能选择弱密码，或在不同应用程序上使用相同密码。作为开发者或系统管理员，应该假设用户的密码将在某个时候被泄露，并相应地设计系统。
 
-MFA is by far the best defense against the majority of password-related attacks, including brute-force, [credential stuffing](Credential_Stuffing_Prevention_Cheat_Sheet.md) and password spraying, with analysis by Microsoft suggesting that it would have stopped [99.9% of account compromises](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984).
+MFA 是防范大多数与密码相关的攻击（包括暴力破解、[凭证填充](Credential_Stuffing_Prevention_Cheat_Sheet.md)和密码喷洒）的最佳防御手段，微软的分析表明，它可以阻止 [99.9% 的账户入侵](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984)。
 
-## Disadvantages
+## 缺点
 
-The biggest disadvantage of MFA is the increase in management complexity for both administrators and end users. Many less technical users may find it difficult to configure and use MFA. Additionally, there are a number of other common issues encountered:
+MFA 最大的缺点是增加了管理复杂性，无论对管理员还是最终用户都是如此。许多技术水平较低的用户可能会发现配置和使用 MFA 很困难。此外，还存在一些常见问题：
 
-- Types of MFA that require users to have specific hardware can introduce significant costs and administrative overheads.
-- Users may become locked out of their accounts if they lose or are unable to use their other factors.
-- MFA introduces additional complexity into the application.
-- Many MFA solutions add external dependencies to systems, which can introduce security vulnerabilities or single points of failure.
-- Processes implemented to allow users to bypass or reset MFA may be exploitable by attackers.
-- Requiring MFA may prevent some users from accessing the application.
+- 需要用户拥有特定硬件的 MFA 类型可能会引入显著的成本和管理开销。
+- 如果用户丢失或无法使用其他因素，可能会被锁定在账户之外。
+- MFA 为应用程序增加了额外的复杂性。
+- 许多 MFA 解决方案为系统增加了外部依赖，可能引入安全漏洞或单点故障。
+- 允许用户绕过或重置 MFA 的流程可能被攻击者利用。
+- 要求 MFA 可能会阻止某些用户访问应用程序。
 
-## Quick Recommendations
+## 快速建议
 
-Exactly when and how MFA is implemented in an application will vary on a number of different factors, including the threat model of the application, the technical level of the users, and the level of administrative control over the users. These need to be considered on a per-application basis.
+在应用程序中具体何时以及如何实施 MFA 将取决于多个因素，包括应用程序的威胁模型、用户的技术水平以及对用户的管理控制水平。这些需要针对每个应用程序进行考虑。
 
-However, the following recommendations are generally appropriate for most applications, and provide an initial starting point to consider.
+然而，以下建议通常适用于大多数应用程序，并提供了一个初步的考虑起点：
 
-- Require some form of MFA for all users.
-- Provide the option for users to enable MFA on their accounts using [TOTP](#software-otp-tokens).
-- Require MFA for administrative or other high privileged users.
-- Implement a secure procedure to allow users to reset their MFA.
-- Consider [MFA as a service](#consider-using-a-third-party-service).
+- 为所有用户要求某种形式的 MFA。
+- 提供选项让用户使用 [TOTP](#软件-otp-令牌) 在其账户上启用 MFA。
+- 对管理员或其他高权限用户要求 MFA。
+- 实施安全程序以允许用户重置其 MFA。
+- 考虑[使用第三方服务](#考虑使用第三方服务)。
 
-## Implementing MFA
+## 实施 MFA
 
-MFA is a critical security control, and is recommended for all applications. The following sections provide guidance on how to implement MFA, and the considerations that should be taken into account.
+MFA 是一个关键的安全控制，建议在所有应用程序中使用。以下章节提供了如何实施 MFA 的指导，以及应考虑的因素。
 
-### Regulatory and Compliance Requirements
+### 法规和合规要求
 
-Many industries and countries have regulations that require the use of MFA. This is particularly common in the finance and healthcare sectors, and is often required in order to comply with the General Data Protection Regulation (GDPR) in the European Union. It is important to consider these requirements when implementing MFA.
+许多行业和国家都有要求使用 MFA 的法规。这在金融和医疗保健行业尤为常见，并且通常需要遵守欧盟的通用数据保护条例（GDPR）。在实施 MFA 时，考虑这些要求很重要。
 
-### When to Require MFA
+### 何时要求 MFA
 
-The most important place to require MFA on an application is when the user logs in. However, depending on the functionality available, it may also be appropriate to require MFA for performing sensitive actions, such as:
+在应用程序中要求 MFA 最重要的地方是用户登录时。然而，根据可用功能，对于执行敏感操作，可能也适合要求 MFA，例如：
 
-- Changing passwords or security questions.
-- Changing the email address associated with the account.
-- Disabling MFA.
-- Elevating a user session to an administrative session.
+- 更改密码或安全问题。
+- 更改与账户关联的电子邮件地址。
+- 禁用 MFA。
+- 将用户会话提升为管理员会话。
 
-If the application provides multiple ways for a user to authenticate these should all require MFA, or have other protections implemented. A common area that is missed is if the application provides a separate API that can be used to login, or has an associated mobile application.
+如果应用程序为用户提供多种认证方式，这些方式都应要求 MFA，或实施其他保护措施。一个常被忽视的常见区域是应用程序是否提供可用于登录的单独 API，或有关联的移动应用程序。
 
-### Improving User Experience
+### 改善用户体验
 
-#### Risk Based Authentication
+#### 基于风险的认证
 
-Having to frequently login with MFA creates an additional burden for users, and may cause them to disable MFA on the application. Risk based authentication can be used to reduce the frequency of MFA prompts, by only requiring MFA when the user is performing an action that is considered to be high risk. Some examples of this include:
+频繁使用 MFA 登录会给用户带来额外负担，并可能导致用户在应用程序上禁用 MFA。基于风险的认证可用于减少 MFA 提示的频率，仅在用户执行被认为高风险的操作时才要求 MFA。一些示例包括：
 
-- Requiring MFA when the user logs in from a new device or location.
-- Requiring MFA when the user logs in from a location that is considered to be high risk.
-- Allowing corporate IP ranges (or using [geolocation](#geolocation) as an additional factor).
+- 当用户从新设备或新位置登录时要求 MFA。
+- 当用户从被认为高风险的位置登录时要求 MFA。
+- 允许企业 IP 范围（或使用[地理位置](#地理位置)作为额外因素）。
 
-#### Passkeys
+#### 通行密钥
 
-[Passkeys](https://passkeys.dev/) based on the FIDO2 standard are a new form of MFA that combines characteristics of [possession-based](#something-you-have) and either [knowledge-based](#something-you-know) or [inherence-based](#something-you-are) authentication. The user is required to have a physical device (such as a mobile phone) and to enter a [PIN](#passwords-and-pins) or use [biometric authentication](#biometrics) in order to authenticate. The user's device then generates a cryptographic key that is used to authenticate with the server. This is a very secure form of MFA and is resistant to phishing attacks while also being frictionless for the user.
+基于 FIDO2 标准的[通行密钥](https://passkeys.dev/)是一种新的 MFA 形式，结合了[基于拥有](#你拥有的)和[基于知识](#你知道的)或[基于固有](#你是什么)认证的特征。用户需要拥有物理设备（如手机）并输入 [PIN](#密码和-pin) 或使用[生物识别认证](#生物特征)进行认证。用户的设备随后生成用于与服务器认证的加密密钥。这是一种非常安全的 MFA 形式，能抵御钓鱼攻击，同时对用户来说又相当流畅。
 
-### Failed Login Attempts
+### 登录失败尝试
 
-When a user enters their password, but fails to authenticate using a second factor, this could mean one of two things:
+当用户输入密码但未能使用第二因素进行认证时，可能意味着以下两种情况之一：
 
-- The user has lost their second factor, or doesn't have it available (for example, they don't have their mobile phone, or have no signal).
-- The user's password has been compromised.
+- 用户已丢失其第二因素，或无法使用（例如，他们没有手机，或没有信号）。
+- 用户的密码已被泄露。
 
-There are a number of steps that should be taken when this occurs:
+发生这种情况时，应采取以下步骤：
 
-- Prompt the user to try another form of MFA.
-- Allow the user to attempt to [reset their MFA](#resetting-mfa).
-- Notify the user of the failed login attempt, and encourage them to change their password if they don't recognize it.
-    - The notification should include the time, browser and geographic location of the login attempt.
-    - This should be displayed next time they login, and optionally emailed to them as well.
+- 提示用户尝试另一种 MFA 形式。
+- 允许用户尝试[重置其 MFA](#重置-mfa)。
+- 通知用户登录尝试失败，并鼓励他们在不认识该登录时更改密码。
+    - 通知应包括登录尝试的时间、浏览器和地理位置。
+    - 这应在他们下次登录时显示，并可选择通过电子邮件发送。
 
-### Resetting MFA
+### 重置 MFA
 
-One of the biggest challenges with implementing MFA is handling users who forget or lose their additional factors. There are many ways this could happen, such as:
+实施 MFA 最大的挑战之一是处理用户遗忘或丢失额外因素的情况。可能发生的情况包括：
 
-- Re-installing a workstation without backing up digital certificates.
-- Wiping or losing a phone without backing up OTP codes.
-- Changing mobile numbers.
+- 重新安装工作站时未备份数字证书。
+- 擦除或丢失手机且未备份 OTP 码。
+- 更换手机号码。
 
-In order to prevent users from being locked out of the application, there needs to be a mechanism for them to regain access to their account if they can't use their existing MFA; however it is also crucial that this doesn't provide an attacker with a way to bypass MFA and hijack their account.
+为防止用户被锁在应用程序之外，需要提供一种机制让他们在无法使用现有 MFA 的情况下重新获得账户访问权；但同时也至关重要的是，这不能为攻击者提供绕过 MFA 劫持账户的方法。
 
-There is no definitive "best way" to do this, and what is appropriate will vary hugely based on the security of the application, and also the level of control over the users. Solutions that work for a corporate application where all the staff know each other are unlikely to be feasible for a publicly available application with thousands of users all over the world. Every recovery method has its own advantages and disadvantages, and these need to be evaluated in the context of the application.
+对此没有绝对的"最佳方法"，适当的方法将极大地取决于应用程序的安全性以及对用户的控制水平。适用于所有员工相互认识的企业应用程序的解决方案，对于全球拥有数千用户的公开可用应用程序来说可能是不可行的。每种恢复方法都有其优缺点，需要在应用程序的背景下进行评估。
 
-Some suggestions of possible methods include:
+一些可能的方法建议包括：
 
-- Providing the user with a number of single-use recovery codes when they first setup MFA.
-- Requiring the user to setup multiple types of MFA (such as a digital certificate, OTP core and phone number for SMS), so that they are unlikely to lose access to all of them at once.
-- Mailing a one-use recovery code (or new hardware token) to the user's registered address.
-- Requiring the user contact the support team and having a rigorous process in place to verify their identity.
-- Requiring another trusted user to vouch for them.
+- 在用户首次设置 MFA 时提供若干一次性恢复码。
+- 要求用户设置多种 MFA 类型（如数字证书、OTP 核心和短信电话号码），以使他们不太可能同时失去所有访问权限。
+- 将一次性恢复码（或新的硬件令牌）邮寄到用户注册的地址。
+- 要求用户联系支持团队，并建立严格的身份验证流程。
+- 要求另一个可信用户为其担保。
 
-### Consider Using a Third Party Service
+### 考虑使用第三方服务
 
-There are a number of third party services that provide MFA as a service. These can be a good option for applications that don't have the resources to implement MFA themselves, or for applications that require a high level of assurance in their MFA. However, it is important to consider the security of the third party service, and the implications of using it. For example, if the third party service is compromised, it could allow an attacker to bypass MFA on all of the applications that use it.
+有许多第三方服务提供 MFA 即服务。对于没有资源自行实施 MFA 的应用程序，或需要对其 MFA 提供高水平保证的应用程序来说，这些可能是一个不错的选择。然而，重要的是要考虑第三方服务的安全性以及使用它的影响。例如，如果第三方服务被攻破，可能允许攻击者绕过使用该服务的所有应用程序的 MFA。
 
-## Something You Know
+## 你知道的
 
-Knowledge-based, the most common type of authentication is based on something the users knows - typically a password. The biggest advantage of this factor is that it has very low requirements for both the developers and the end user, as it does not require any special hardware, or integration with other services.
+基于知识的认证是最常见的认证类型，基于用户知道的内容 - 通常是密码。这种因素的最大优势是对开发者和最终用户都有很低的要求，因为它不需要任何特殊硬件，也不需要与其他服务集成。
 
-### Passwords and PINs
+### 密码和 PIN
 
-Passwords and PINs are the most common form of authentication due to the simplicity of implementing them. The [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md#implement-proper-password-strength-controls) has guidance on how to implement a strong password policy, and the [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md) has guidance on how to securely store passwords. Most multifactor authentication systems make use of a password, as well as at least one other factor.
+由于实施简单，密码和 PIN 是最常见的认证形式。[认证备忘录](Authentication_Cheat_Sheet.md#implement-proper-password-strength-controls)提供了如何实施强密码策略的指导，[密码存储备忘录](Password_Storage_Cheat_Sheet.md)则提供了如何安全存储密码的指导。大多数多因素认证系统使用密码，以及至少一个其他因素。
 
-#### Pros
+#### 优点
 
-- Simple and well understood.
-- Native support in every authentication framework.
-- Easy to implement.
+- 简单且易于理解。
+- 在每个认证框架中都有原生支持。
+- 易于实施。
 
-#### Cons
+#### 缺点
 
-- Users are prone to choosing weak passwords.
-- Passwords are commonly re-used between systems.
-- Susceptible to phishing.
+- 用户倾向于选择弱密码。
+- 密码在不同系统间常被重复使用。
+- 容易受到钓鱼攻击。
 
-### Security Questions
+### 安全问题
 
-**Security questions are no longer recognized as an acceptable authentication factor** per [NIST SP 800-63](https://pages.nist.gov/800-63-3/sp800-63b.html). Account recovery is just an alternate way to authenticate so it should be no weaker than regular authentication.
+根据 [NIST SP 800-63](https://pages.nist.gov/800-63-3/sp800-63b.html)，**安全问题不再被认为是可接受的认证因素**。账户恢复只是另一种认证方式，因此不应比常规认证更弱。
 
-#### Pros
+#### 优点
 
-- None that are not also present in passwords.
+- 没有不同于密码的优点。
 
-#### Cons
+#### 缺点
 
-- No longer recognized as an acceptable authentication factor.
-- Questions often have easily guessable answers.
-- Answers to questions can often be obtained from social media or other sources.
-- Questions must be carefully chosen so that users will remember answers years later.
-- Susceptible to phishing.
+- 不再被认为是可接受的认证因素。
+- 问题的答案通常很容易猜测。
+- 问题的答案通常可以从社交媒体或其他来源获得。
+- 必须仔细选择问题，以便用户能在多年后记住答案。
+- 容易受到钓鱼攻击。
 
-## Something You Have
+## 你拥有的
 
-Possession-based authentication is based on the user having a physical or digital item that is required to authenticate. This is the most common form of MFA, and is often used in conjunction with passwords. The most common types of possession-based authentication are hardware and software tokens, and digital certificates. If properly implemented then this can be significantly more difficult for a remote attacker to compromise; however it also creates an additional administrative burden on the user, as they must keep the authentication factor with them whenever they wish to use it.
+基于拥有的认证是基于用户拥有认证所需的物理或数字项目。这是最常见的 MFA 形式，通常与密码一起使用。基于拥有的认证最常见的类型是硬件和软件令牌，以及数字证书。如果正确实施，这对远程攻击者来说可能更难破坏；然而，它也给用户带来了额外的管理负担，因为他们必须在每次希望使用时随身携带认证因素。
 
-### One Time Password Tokens
+### 一次性密码令牌
 
-One Time Password (OTP) tokens are a form of possession-based authentication, where the user is required to submit a constantly changing numeric code in order to authenticate. The most common of which is Time-based One Time Password (TOTP) tokens, which can be both hardware and software based.
+一次性密码（OTP）令牌是一种基于拥有的认证形式，用户需要提交不断变化的数字码进行认证。其中最常见的是基于时间的一次性密码（TOTP）令牌，可以是硬件或软件形式。
 
-#### Hardware OTP Tokens
+### 硬件 OTP 令牌
 
-Hardware OTP Tokens generate a constantly changing numeric codes, which must be submitted when authenticating. Most well-known of these is the [RSA SecureID](https://en.wikipedia.org/wiki/RSA_SecurID), which generates a six digit number that changes every 60 seconds.
+硬件 OTP 令牌生成不断变化的数字码，在认证时必须提交。最著名的是 [RSA SecureID](https://en.wikipedia.org/wiki/RSA_SecurID)，它生成每 60 秒变化一次的六位数字。
 
-##### Pros
+#### 优点
 
-- As the tokens are separate physical devices, they are almost impossible for an attacker to compromise remotely.
-- Tokens can be used without requiring the user to have a mobile phone or other device.
+- 由于令牌是独立的物理设备，几乎不可能被远程攻击者破坏。
+- 无需用户拥有手机或其他设备即可使用令牌。
 
-##### Cons
+#### 缺点
 
-- Deploying physical tokens to users is expensive and complicated.
-- If a user loses their token it could take a significant amount of time to purchase and ship them a new one.
-- Some implementations require a backend server, which can introduce new vulnerabilities as well as a single point of failure.
-- Stolen tokens can be used without a PIN or device unlock code.
-- Susceptible to phishing (although short-lived).
+- 向用户部署物理令牌成本高昂且复杂。
+- 如果用户丢失令牌，购买和运送新令牌可能需要相当长的时间。
+- 某些实施需要后端服务器，可能引入新的漏洞和单点故障。
+- 被盗令牌可以在没有 PIN 或设备解锁码的情况下使用。
+- 容易受到钓鱼攻击（尽管生命周期短）。
 
-#### Software OTP Tokens
+### 软件 OTP 令牌
 
-A cheaper and easier alternative to hardware tokens is using software to generate Time-based One Time Password (TOTP) codes. This would typically involve the user installing a TOTP application on their mobile phone, and then scanning a QR code provided by the web application which provides the initial seed. The authenticator app then generates a six digit number every 60 seconds, in much the same way as a hardware token.
+使用软件生成基于时间的一次性密码（TOTP）码是硬件令牌的一种更便宜、更简单的替代方案。这通常涉及用户在手机上安装 TOTP 应用程序，然后扫描 Web 应用程序提供的二维码以获取初始种子。认证器应用程序随后每 60 秒生成一个六位数字，与硬件令牌的工作方式非常相似。
 
-Most websites use standardized TOTP tokens, allowing the user to install any authenticator app that supports TOTP. However, a small number of applications use their own variants of this (such as Symantec), which requires the users to install a specific app in order to use the service. This should be avoided in favour of a standards-based approach.
+大多数网站使用标准化的 TOTP 令牌，允许用户安装任何支持 TOTP 的认证器应用程序。然而，少数应用程序使用自己的变体（如 Symantec），这要求用户安装特定应用程序才能使用服务。应避免这种做法，转而采用基于标准的方法。
 
-##### Pros
+#### 优点
 
-- The absence of physical tokens greatly reduces the cost and administrative overhead of implementing the system.
-- When users lose access to their TOTP app, a new one can be configured without needing to ship a physical token to them.
-- TOTP is widely used, and many users will already have at least one TOTP app installed.
-- As long as the user has a screen lock on their phone, an attacker will be unable to use the code if they steal the phone.
+- 没有物理令牌大大降低了系统实施的成本和管理开销。
+- 当用户无法访问 TOTP 应用程序时，可以配置新的应用程序，无需运送物理令牌。
+- TOTP 被广泛使用，许多用户已经安装了至少一个 TOTP 应用程序。
+- 只要用户的手机有屏幕锁，攻击者即使偷走手机也无法使用码。
 
-##### Cons
+#### 缺点
 
-- TOTP apps are usually installed on mobile devices, which are vulnerable to compromise.
-- The TOTP app may be installed on the same mobile device (or workstation) that is used to authenticate.
-- Users may store the backup seeds insecurely.
-- Not all users have mobile devices to use with TOTP.
-- If the user's mobile device is lost, stolen or out of battery, they will be unable to authenticate.
-- Susceptible to phishing (although short-lived).
+- TOTP 应用程序通常安装在移动设备上，容易受到破坏。
+- TOTP 应用程序可能安装在用于认证的同一移动设备（或工作站）上。
+- 用户可能不安全地存储备份种子。
+- 并非所有用户都有可用于 TOTP 的移动设备。
+- 如果用户的移动设备丢失、被盗或电池耗尽，他们将无法认证。
+- 容易受到钓鱼攻击（尽管生命周期短）。
 
-### Universal Second Factor
+### 通用第二因素
 
-Hardware U2F tokens
+#### 硬件 U2F 令牌
 
-Universal Second Factor (U2F) is a standard for USB/NFC hardware tokens that  implement challenge-response based authentication, rather than requiring the user to manually enter the code. This would typically be done by the user pressing a button on the token, or tapping it against their NFC reader. The most common U2F token is the [YubiKey](https://www.yubico.com/products/yubikey-hardware/).
+通用第二因素（U2F）是一种 USB/NFC 硬件令牌的标准，它实现基于挑战-响应的认证，而不是要求用户手动输入码。这通常是通过用户按下令牌上的按钮，或将其靠近 NFC 读取器来完成的。最常见的 U2F 令牌是 [YubiKey](https://www.yubico.com/products/yubikey-hardware/)。
 
-#### Pros
+#### 优点
 
-- U2F tokens are resistant to phishing since the private key never leaves the token.
-- Users can simply press a button rather than typing in a code.
-- As the tokens are separate physical devices, they are almost impossible for an attacker to compromise remotely.
-- U2F is natively supported by a number of major web browsers.
-- U2F tokens can be used without requiring the user to have a mobile phone or other device.
+- U2F 令牌对钓鱼具有抵抗力，因为私钥永远不会离开令牌。
+- 用户只需按下按钮，而不是输入码。
+- 由于令牌是独立的物理设备，几乎不可能被远程攻击者破坏。
+- 主要 Web 浏览器原生支持 U2F。
+- U2F 令牌可以使用，无需用户拥有手机或其他设备。
 
-#### Cons
+#### 缺点
 
-- As with hardware OTP tokens, the use of physical tokens introduces significant costs and administrative overheads.
-- Stolen tokens can be used without a PIN or device unlock code.
-- As the tokens are usually connected to the workstation via USB, users are more likely to forget them.
+- 与硬件 OTP 令牌一样，使用物理令牌会引入显著的成本和管理开销。
+- 被盗令牌可以在没有 PIN 或设备解锁码的情况下使用。
+- 由于令牌通常通过 USB 连接到工作站，用户更容易忘记它们。
 
-### Certificates
+### 证书
 
-Digital certificates are files that are stored on the user's device which are automatically provided alongside the user's password when authenticating. The most common type is X.509 certificates more commonly known as [client certificates](Transport_Layer_Security_Cheat_Sheet.md#client-certificates-and-mutual-tls). Certificates are supported by all major web browsers, and once installed require no further interaction from the user. The certificates should be linked to an individual's user account in order to prevent users from trying to authenticate against other accounts.
+数字证书是存储在用户设备上的文件，在认证时自动与用户密码一起提供。最常见的类型是 X.509 证书，更常被称为[客户端证书](Transport_Layer_Security_Cheat_Sheet.md#client-certificates-and-mutual-tls)。所有主要 Web 浏览器都支持证书，一旦安装，就不需要用户进一步交互。证书应链接到个人用户账户，以防止用户尝试对其他账户进行认证。
 
-#### Pros
+#### 优点
 
-- There is no need to purchase and manage hardware tokens.
-- Once installed, certificates are very simple for users.
-- Certificates can be centrally managed and revoked.
-- Resistant to phishing.
+- 无需购买和管理硬件令牌。
+- 安装后，证书对用户来说非常简单。
+- 证书可以集中管理和撤销。
+- 对钓鱼具有抵抗力。
 
-#### Cons
+#### 缺点
 
-- Using digital certificates requires a backend Private Key Infrastructure (PKI).
-- Installing certificates can be difficult for users, particularly in a highly restricted environment.
-- Enterprise proxy servers which perform SSL decryption will prevent the use of certificates.
-- The certificates are stored on the user's workstation, and as such can be stolen if their system is compromised.
+- 使用数字证书需要后端公钥基础设施（PKI）。
+- 对于用户来说，特别是在高度受限的环境中，安装证书可能很困难。
+- 执行 SSL 解密的企业代理服务器将阻止使用证书。
+- 证书存储在用户的工作站上，因此如果系统被入侵，可能会被盗。
 
-### Smart Cards
+### 智能卡
 
-Smartcards are credit-card size cards with a chip containing a digital certificate for the user, which is unlocked with a PIN. They are commonly used for operating system authentication, but are rarely used in web applications.
+智能卡是信用卡大小的卡片，其芯片包含用户的数字证书，通过 PIN 解锁。它们通常用于操作系统认证，但在 Web 应用程序中很少使用。
 
-#### Pros
+#### 优点
 
-- Stolen smartcards cannot be used without the PIN.
-- Smartcards can be used across multiple applications and systems.
-- Resistant to phishing.
+- 没有 PIN 不能使用被盗的智能卡。
+- 智能卡可以跨多个应用程序和系统使用。
+- 对钓鱼具有抵抗力。
 
-#### Cons
+#### 缺点
 
-- Managing and distributing smartcards has the same costs and overheads as hardware tokens.
-- Smartcards are not natively supported by modern browsers, so require third party software.
-- Although most business-class laptops have smartcard readers built in, home systems often do not.
-- The use of smartcards requires backend PKIs.
+- 管理和分发智能卡的成本和开销与硬件令牌相同。
+- 现代浏览器不原生支持智能卡，需要第三方软件。
+- 尽管大多数商务级笔记本电脑内置智能卡读卡器，但家用系统通常没有。
+- 使用智能卡需要后端 PKI。
 
-### SMS Messages and Phone Calls
+### 短信消息和电话
 
-SMS messages or phone calls can be used to provide users with a single-use code that they must submit as an additional factor. Due to the risks posed by these methods, they should not be used to protect applications that hold Personally Identifiable Information (PII) or where there is financial risk. e.g. healthcare and banking. [NIST SP 800-63](https://pages.nist.gov/800-63-3/sp800-63b.html) does not allow these factors for applications containing PII.
+可以使用短信或电话向用户提供单次使用的码，作为额外因素提交。由于这些方法存在风险，不应用于保护包含个人可识别信息（PII）或存在财务风险的应用程序，如医疗保健和银行。[NIST SP 800-63](https://pages.nist.gov/800-63-3/sp800-63b.html) 不允许在包含 PII 的应用程序中使用这些因素。
 
-#### Pros
+#### 优点
 
-- Relatively simple to implement.
-- Requires user to link their account to a mobile number.
+- 相对简单实施。
+- 要求用户将其账户链接到手机号码。
 
-#### Cons
+#### 缺点
 
-- Requires the user to have a mobile device or landline.
-- Require user to have signal or internet access to receive the call or message.
-- Calls and SMS messages may cost money to send need to protect against attackers requesting a large number of messages to exhaust funds.
-- Susceptible to SIM swapping attacks.
-- SMS messages may be received on the same device the user is authenticating from.
-- Susceptible to phishing.
-- SMS may be previewed when the device is locked.
-- SMS may be read by malicious or insecure applications.
+- 要求用户拥有移动设备或固定电话。
+- 需要用户有信号或互联网接入以接收呼叫或消息。
+- 呼叫和短信发送可能需要付费，需要防止攻击者请求大量消息以耗尽资金。
+- 容易受到 SIM 卡交换攻击。
+- 短信可能在用户认证的同一设备上接收。
+- 容易受到钓鱼攻击。
+- 短信可能在设备锁定时预览。
+- 短信可能被恶意或不安全的应用程序读取。
 
-### Email
+### 电子邮件
 
-Email verification requires that the user enters a code or clicks a link sent to their email address. There is some debate as to whether email constitutes a form of MFA, because if the user does not have MFA configured on their email account, it simply requires knowledge of the user's email password (which is often the same as their application password). However, it is included here for completeness.
+电子邮件验证要求用户输入发送到其电子邮件地址的码或点击链接。关于电子邮件是否构成 MFA 的形式存在一些争议，因为如果用户没有在其电子邮件账户上配置 MFA，它仅仅需要知道用户的电子邮件密码（通常与其应用程序密码相同）。但是，为了完整性，这里仍然包含了它。
 
-#### Pros
+#### 优点
 
-- Very easy to implement.
-- No requirements for separate hardware or a mobile device.
+- 非常容易实施。
+- 不需要单独的硬件或移动设备。
 
-#### Cons
+#### 缺点
 
-- Relies entirely on the security of the email account, which often lacks MFA.
-- Email passwords are commonly the same as application passwords.
-- Provides no protection if the user's email is compromised first.
-- Email may be received by the same device the user is authenticating from.
-- Susceptible to phishing.
+- 完全依赖于电子邮件账户的安全性，而电子邮件账户通常缺乏 MFA。
+- 电子邮件密码通常与应用程序密码相同。
+- 如果用户的电子邮件首先被入侵，则无法提供保护。
+- 电子邮件可能在用户认证的同一设备上接收。
+- 容易受到钓鱼攻击。
 
-## Something You Are
+## 你是什么
 
-Inherence-based authentication is based on the physical attributes of the user. This is less common for web applications as it requires the user to have specific hardware, and is often considered to be the most invasive in terms of privacy. However, it is commonly used for operating system authentication, and is also used in some mobile applications.
+基于固有的认证基于用户的物理属性。这在 Web 应用程序中不太常见，因为它要求用户拥有特定硬件，并且在隐私方面通常被认为是最具侵入性的。然而，它在操作系统认证中很常见，在某些移动应用程序中也有使用。
 
-### Biometrics
+### 生物特征
 
-The are a number of common types of biometrics that are used, including:
+使用的常见生物特征类型包括：
 
-- Fingerprint scans
-- Facial recognition
-- Iris scans
-- Voice recognition
+- 指纹扫描
+- 面部识别
+- 虹膜扫描
+- 语音识别
 
-#### Pros
+#### 优点
 
-- Well-implemented biometrics are hard to spoof, and require a targeted attack.
-- Fast and convenient for users.
+- 实施良好的生物特征很难被欺骗，需要有针对性的攻击。
+- 对用户来说快速且方便。
 
-#### Cons
+#### 缺点
 
-- Manual enrollment is required for the user.
-- Custom (sometimes expensive) hardware is often required to read biometrics.
-- Privacy concerns: Sensitive physical information must be stored about users.
-- If compromised, biometric data can be difficult to change.
-- Hardware may be vulnerable to additional attack vectors.
+- 需要用户手动注册。
+- 通常需要定制（有时昂贵）的硬件来读取生物特征。
+- 隐私问题：必须存储关于用户的敏感物理信息。
+- 如果被入侵，生物特征数据很难更改。
+- 硬件可能容易受到额外的攻击向量。
 
-## Somewhere You Are
+## 你在哪里
 
-Location-based authentication is based on the user's physical location. It is sometimes argued that location is used when deciding whether or not to require MFA (as discussed [above](#when-to-require-mfa)) however this is effectively the same as considering it to be a factor in its own right. Two prominent examples of this are the [Conditional Access Policies](https://docs.microsoft.com/en-us/azure/active-directory/conditional-access/overview) available in Microsoft Azure, and the [Network Unlock](https://docs.microsoft.com/en-us/windows/security/information-protection/bitlocker/bitlocker-how-to-enable-network-unlock) functionality in BitLocker.
+基于位置的认证基于用户的物理位置。有时有人争论位置是在决定是否需要 MFA 时使用的（如[上文](#何时要求-mfa)所讨论），但这实际上与将其视为独立因素没有实质性区别。两个突出的例子是 Microsoft Azure 中可用的[条件访问策略](https://docs.microsoft.com/en-us/azure/active-directory/conditional-access/overview)和 BitLocker 中的[网络解锁](https://docs.microsoft.com/en-us/windows/security/information-protection/bitlocker/bitlocker-how-to-enable-network-unlock)功能。
 
-### Source IP Address
+### 源 IP 地址
 
-The source IP address the user is connecting from can be used as a factor, typically in an allow-list based approach. This could either be based on a static list (such as corporate office ranges) or a dynamic list (such as previous IP addresses the user has authenticated from).
+用户连接的源 IP 地址可以作为一个因素使用，通常采用允许列表方法。这可以基于静态列表（如企业办公室范围）或动态列表（如用户之前认证的 IP 地址）。
 
-#### Pros
+#### 优点
 
-- Very easy for users.
-- Requires minimal configuration and management from administrative staff.
+- 对用户非常容易。
+- 需要管理人员进行最少的配置和管理。
 
-#### Cons
+#### 缺点
 
-- Doesn't provide any protection if the user's system is compromised.
-- Doesn't provide any protection against rogue insiders.
-- Trusted IP addresses must be carefully restricted (for example, if the open guest Wi-Fi uses the main corporate IP range).
+- 如果用户系统被入侵，无法提供任何保护。
+- 无法防范内部恶意用户。
+- 必须仔细限制受信任的 IP 地址（例如，如果开放的访客 Wi-Fi 使用主要企业 IP 范围）。
 
-### Geolocation
+### 地理位置
 
-Rather than using the exact IP address of the user, the geographic location that the IP address is registered to can be used. This is less precise, but may be more feasible to implement in environments where IP addresses are not static. A common usage would be to require additional authentication factors when an authentication attempt is made from outside of the user's normal country.
+与使用用户的确切 IP 地址不同，可以使用 IP 地址注册的地理位置。这不太精确，但在 IP 地址不静态的环境中可能更可行。常见用法是当认证尝试来自用户正常国家/地区之外时，要求额外的认证因素。
 
-#### Pros
+#### 优点
 
-- Very easy for users.
+- 对用户非常容易。
 
-#### Cons
+#### 缺点
 
-- Doesn't provide any protection if the user's system is compromised.
-- Doesn't provide any protection against rogue insiders.
-- Easy for an attacker to bypass by obtaining IP addresses in the trusted country or location.
-- Privacy features such as Apple's [iCloud Private Relay](https://support.apple.com/en-us/102602) and VPNs can make this less accurate.
+- 如果用户系统被入侵，无法提供任何保护。
+- 无法防范内部恶意用户。
+- 攻击者可以通过获取受信任国家/地区的 IP 地址轻松绕过。
+- Apple 的 [iCloud 私有中继](https://support.apple.com/en-us/102602)等隐私功能和 VPN 可能会降低准确性。
 
-### Geofencing
+### 地理围栏
 
-Geofencing is a more precise version of geolocation, which allows the user to define a specific area in which they are allowed to authenticate. This is often used in mobile applications, where the user's location can be determined with a high degree of accuracy using geopositioning hardware like GPS.
+地理围栏是地理位置的更精确版本，允许用户定义他们被允许认证的特定区域。这在移动应用程序中经常使用，用户的位置可以使用 GPS 等地理定位硬件高精度地确定。
 
-#### Pros
+#### 优点
 
-- Very easy for users.
-- Provides a high level of protection against remote attackers.
+- 对用户非常容易。
+- 对远程攻击者提供高级别保护。
 
-#### Cons
+#### 缺点
 
-- Doesn't provide any protection if the user's system is compromised.
-- Doesn't provide any protection against rogue insiders.
-- Doesn't provide any protection against attackers who are physically close to the trusted location.
+- 如果用户系统被入侵，无法提供任何保护。
+- 无法防范内部恶意用户。
+- 无法防范靠近受信任位置的攻击者。
 
-## Something You Do
+## 你做什么
 
-Behavior-based authentication is based on the user's behavior, such as the way they type, move their mouse, or use their mobile device. This is the least common form of MFA and is combined with other factors to increase the level of assurance in the user's identity. It is also the most difficult to implement and may require specific hardware along with a significant amount of data and processing power to analyze the user's behavior.
+基于行为的认证基于用户的行为，如打字方式、鼠标移动或使用移动设备的方式。这是最不常见的 MFA 形式，通常与其他因素结合以提高对用户身份的保证水平。这也是最难实施的，可能需要特定硬件以及大量数据和处理能力来分析用户行为。
 
-### Behavioral Profiling
+### 行为分析
 
-Behavioral profiling is based on the way the user interacts with the application, such as the time of day they log in, the devices they use, and the way they navigate the application. This is rapidly becoming more common in web applications when combined with [Risk Based Authentication](#risk-based-authentication) and [User and Entity Behavior Analytics](https://learn.microsoft.com/en-us/azure/sentinel/identify-threats-with-entity-behavior-analytics) (UEBA) systems.
+行为分析基于用户与应用程序交互的方式，如登录时间、使用的设备以及浏览应用程序的方式。这在与[基于风险的认证](#基于风险的认证)和[用户与实体行为分析](https://learn.microsoft.com/en-us/azure/sentinel/identify-threats-with-entity-behavior-analytics)（UEBA）系统结合使用时，正迅速在 Web 应用程序中变得更加常见。
 
-#### Pros
+#### 优点
 
-- Doesn't require user interaction.
-- Can be used to continuously authenticate the user.
-- Combines well with other factors to increase the level of assurance in the user's identity.
+- 不需要用户交互。
+- 可用于持续认证用户。
+- 与其他因素结合良好，可提高对用户身份的保证水平。
 
-#### Cons
+#### 缺点
 
-- Early implementations of behavioral profiling were often inaccurate and caused a significant number of false positives.
-- Requires large amounts of data and processing power to analyze the user's behavior.
-- May be difficult to implement in environments where the user's behavior is likely to change frequently.
+- 早期的行为分析实施常常不准确，导致大量误报。
+- 需要大量数据和处理能力来分析用户行为。
+- 在用户行为可能频繁变化的环境中可能难以实施。
 
-### Keystroke & Mouse Dynamics
+### 键盘和鼠标动态
 
-Keystroke and mouse dynamics are based on the way the user types and moves their mouse. For example, the time between key presses, the time between key presses and releases, and the speed and acceleration of the mouse. Largely theoretical, and not widely used in practice.
+键盘和鼠标动态基于用户打字和移动鼠标的方式。例如，按键之间的时间、按键按下和释放之间的时间，以及鼠标的速度和加速度。这在很大程度上是理论性的，在实践中并未广泛使用。
 
-#### Pros
+#### 优点
 
-- Can be used without requiring any additional hardware.
-- Can be used without requiring any additional interaction from the user.
-- Can be used to continuously authenticate the user.
-- Can be used to detect when the user is not the one using the system.
-- Can be used to detect when the user is under duress.
-- Can be used to detect when the user is not in a fit state to use the system.
+- 无需额外硬件即可使用。
+- 无需用户额外交互。
+- 可用于持续认证用户。
+- 可用于检测系统使用者是否为用户。
+- 可用于检测用户是否在受到胁迫。
+- 可用于检测用户是否处于不适合使用系统的状态。
 
-#### Cons
+#### 缺点
 
-- Unlikely to be accurate enough to be used as a standalone factor.
-- May be spoofed by AI or other advanced attacks.
+- 不太可能准确到可以作为独立因素使用。
+- 可能被 AI 或其他高级攻击欺骗。
 
-### Gait Analysis
+### 步态分析
 
-Gait analysis is based on the way the user walks using cameras and sensors. They are often used in physical security systems, but are not widely used in web applications. Mobile device applications may be able to use the accelerometer to detect the user's gait and use this as an additional factor, however this is still largely theoretical.
+步态分析基于使用摄像机和传感器分析用户走路的方式。它们常用于物理安全系统，但在 Web 应用程序中并不广泛使用。移动设备应用程序可能能够使用加速度计检测用户的步态并将其作为额外因素，但这仍然主要是理论性的。
 
-#### Pros
+#### 优点
 
-- Very difficult to spoof.
-- May be used without requiring any additional interaction from the user.
+- 非常难以欺骗。
+- 可能无需用户额外交互即可使用。
 
-#### Cons
+#### 缺点
 
-- Requires specific hardware to implement.
-- Use outside of physical security systems is not widely tested.
+- 需要特定硬件实施。
+- 在物理安全系统之外的使用尚未广泛测试。
 
-## References and Further Reading
+## 参考文献和进一步阅读
 
 - [NIST SP 800-63](https://pages.nist.gov/800-63-3/sp800-63b.html)
-- [Your Pa$$word doesn't matter](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984)
+- [你的密码并不重要](https://techcommunity.microsoft.com/t5/Azure-Active-Directory-Identity/Your-Pa-word-doesn-t-matter/ba-p/731984)
 - [FIDO2](https://fidoalliance.org/fido2/)
-- [ENISA Handbook on Security of Personal Data Processing](https://www.enisa.europa.eu/publications/handbook-on-security-of-personal-data-processing/@@download/fullReport)
-- [Google Cloud Adding MFA](https://cloud.google.com/identity-platform/docs/web/mfa)
+- [ENISA 个人数据处理安全手册](https://www.enisa.europa.eu/publications/handbook-on-security-of-personal-data-processing/@@download/fullReport)
+- [Google Cloud 添加 MFA](https://cloud.google.com/identity-platform/docs/web/mfa)
