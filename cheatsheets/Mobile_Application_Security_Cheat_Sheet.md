@@ -1,258 +1,224 @@
-# Mobile Application Security Cheat Sheet
+# 移动应用安全备忘录
 
-Mobile application development presents certain security challenges that are
-unique compared to web applications and other forms of software. This cheat
-sheet provides guidance on security considerations for mobile app development.
-It is not a comprehensive guide by any means, but rather a starting point for
-developers to consider security in their mobile app development.
+与 Web 应用和其他软件形式相比，移动应用开发呈现出一些独特的安全挑战。本备忘录为移动应用开发提供安全考虑指导。这并非一份全面的指南，而是开发者考虑移动应用安全的起点。
 
-## Architecture & Design
+## 架构与设计
 
-### 1. Secure by Design
+### 1. 安全设计
 
-- Opt for a secure design at the beginning of development, not as an
-  afterthought.
-- Keep in mind security principles like least privilege, defense in depth, and
-  separation of concerns.
-- Follow industry standards and best practices, such as:
-    - National Institute of Standards and Technology (NIST)
-    - Internet Engineering Task Force (IETF)
+- 从开发初期就选择安全设计，而非事后考虑。
+- 牢记最小权限、纵深防御和关注点分离等安全原则。
+- 遵循行业标准和最佳实践，例如：
+    - 国家标准与技术研究院（NIST）
+    - 互联网工程任务组（IETF）
 
-For more information, see the
-[Secure Product Design Cheat Sheet](Secure_Product_Design_Cheat_Sheet.md).
+更多信息，请参见[安全产品设计备忘录](Secure_Product_Design_Cheat_Sheet.md)。
 
-### 2. Secure APIs
+### 2. 安全 API
 
-- Ensure that your mobile app communicates securely with backend services.
-- Use OAuth2, JWT, or similar for secure authentication.
-- Regularly update and rotate any used API keys or tokens.
+- 确保移动应用与后端服务安全通信。
+- 使用 OAuth2、JWT 或类似方案进行安全认证。
+- 定期更新和轮换所使用的 API 密钥或令牌。
 
-### 3. Principle of Least Privilege
+### 3. 最小权限原则
 
-- Request only the permissions your app needs.
-- This applies not only to device permissions granted by the user, but also to
-  permissions granted to the app by backend services.
-- Avoid storing application files with overly permissive permissions.
-- Secure by default: applications should have the most secure settings by default.
+- 仅请求应用所需的权限。
+- 这不仅适用于用户授予的设备权限，还适用于后端服务授予的权限。
+- 避免使用过度宽松的权限存储应用文件。
+- 默认安全：应用应默认使用最安全的设置。
 
-### 4. Supply Chain
+### 4. 供应链
 
-Developing with third-party libraries and components introduces the possibility
-of security unknowns.
+使用第三方库和组件会引入安全未知因素。
 
-- Ensure app signing.
-- Use only trusted and validated third-party libraries & components.
-- Establish security controls for app updates, patches, and releases.
-- Monitor and detect security incidents of used third-party products.
+- 确保应用签名。
+- 仅使用可信且经过验证的第三方库和组件。
+- 为应用更新、补丁和发布建立安全控制。
+- 监控和检测所用第三方产品的安全事件。
 
-See the [Vulnerable Dependency Management Cheat Sheet](Vulnerable_Dependency_Management_Cheat_Sheet.md)
-for recommendations on managing third-party dependencies when vulnerabilities are discovered.
+请参见[脆弱依赖管理备忘录](Vulnerable_Dependency_Management_Cheat_Sheet.md)，了解在发现漏洞时管理第三方依赖的建议。
 
-## Authentication & Authorization
+## 认证与授权
 
-Authentication is a complex topic and there are many pitfalls. Authentication
-logic must be written and tested with extreme care. The tips here are only a
-starting point and barely scratch the surface. For more information, see the
-[Authentication Cheat Sheet](Authentication_Cheat_Sheet.md) and
-[M1: Insecure Authentication/Authorization](https://owasp.org/www-project-mobile-top-10/2023-risks/m1-insecure-authentication-authorization.html) from the OWASP Mobile Top 10.
+认证是一个复杂的话题，存在许多陷阱。认证逻辑必须极其谨慎地编写和测试。此处的建议仅为起点，barely 触及表面。更多信息，请参见 [认证备忘录](Authentication_Cheat_Sheet.md) 和 OWASP 移动 Top 10 中的 [M1：不安全的认证/授权](https://owasp.org/www-project-mobile-top-10/2023-risks/m1-insecure-authentication-authorization.html)。
 
-### 1. Don't Trust the Client
+### 1. 不要信任客户端
 
-- Perform authentication/authorization server-side and only load data on the device after successful authentication.
-- If storing data locally, encrypt it using a key derived from the user’s login credentials.
-- Do not store user passwords on the device; use device-specific tokens that can be revoked.
-- Avoid using spoofable values like device identifiers for authentication.
-- Assume all client-side controls can be bypassed and perform them server-side as well.
-- Include client side code to detect code/binary tampering.
+- 在服务器端执行认证/授权，仅在成功认证后在设备上加载数据。
+- 如果本地存储数据，使用从用户登录凭证派生的密钥加密。
+- 不要在设备上存储用户密码；使用可撤销的设备特定令牌。
+- 避免使用可伪造的值（如设备标识符）进行认证。
+- 假设所有客户端控制都可以绕过，并在服务器端同样执行。
+- 包含客户端代码以检测代码/二进制篡改。
 
-### 2. Credential Handling
+### 2. 凭证处理
 
-- Do not hardcode credentials in the mobile app.
-- Encrypt credentials in transmission.
-- Do not store user credentials on the device. Consider using secure, revocable access tokens.
+- 不要在移动应用中硬编码凭证。
+- 传输时加密凭证。
+- 不要在设备上存储用户凭证。考虑使用安全的、可撤销的访问令牌。
 
-### 3. Passwords and PIN Policy
+### 3. 密码和 PIN 策略
 
-- Require password complexity.
-- Do not allow short PINs such as 4 digits.
-- Use platform specific secure storage mechanisms, such as Keychain (iOS) or Keystore (Android).
+- 要求密码复杂性。
+- 不允许短 PIN，如 4 位数。
+- 使用平台特定的安全存储机制，如 Keychain（iOS）或 Keystore（Android）。
 
-### 4. Biometric Authentication
+### 4. 生物识别认证
 
-- Use platform-supported methods for biometric authentication.
-- Always provide a fallback, such as a PIN.
+- 使用平台支持的生物识别认证方法。
+- 始终提供备用方案，如 PIN。
 
-### 5. Session Management
+### 5. 会话管理
 
-- Sessions should timeout after inactivity.
-- Offer a remote logout feature.
-- Use randomly generated session tokens.
-- Secure session data, both client and server side.
+- 非活动后会话超时。
+- 提供远程注销功能。
+- 使用随机生成的会话令牌。
+- 保护客户端和服务器端的会话数据。
 
-### 6. Token Storage
+### 6. 令牌存储
 
-- Store authentication tokens securely.
-- Handle token expiration gracefully.
+- 安全存储认证令牌。
+- 优雅地处理令牌过期。
 
-### 7. Sensitive Operations
+### 7. 敏感操作
 
-- Require users to re-authenticate for sensitive operations like changing
-  passwords or updating payment information.
-- Consider requring re-authentication before displaying highly sensitive
-  information as well.
-- Require authorization checks on any backend functionality.
+- 对敏感操作（如更改密码或更新支付信息）要求用户重新认证。
+- 考虑在显示高度敏感信息前要求重新认证。
+- 对任何后端功能进行授权检查。
 
-## Data Storage & Privacy
+## 数据存储与隐私
 
-### 1. Data Encryption
+### 1. 数据加密
 
-- Encrypt sensitive data both at rest and in transit.
-- Store private data on the device's internal storage.
-- Use platform APIs for encryption. Do not attempt to implement your own
-  encryption algorithms.
+- 对敏感数据进行静态和传输中加密。
+- 将私有数据存储在设备内部存储中。
+- 使用平台 API 进行加密。不要尝试自行实现加密算法。
 
-### 2. Data Leakage
+### 2. 数据泄露
 
-- Beware of caching, logging, and background snapshots. Ensure that sensitive
-  data is not leaked through these mechanisms.
+- 警惕缓存、日志和后台快照。确保敏感数据不会通过这些机制泄露。
 
-See the [Logging Cheat Sheet](Logging_Cheat_Sheet.md#data-to-exclude) for
-examples of data that should not be logged.
+请参见[日志备忘录](Logging_Cheat_Sheet.md#data-to-exclude)，了解不应记录的数据示例。
 
-### 3. Use HTTPS
+### 3. 使用 HTTPS
 
-- Always use HTTPS for network communications.
+- 网络通信始终使用 HTTPS。
 
-### 4. Third-Party Libraries
+### 4. 第三方库
 
-- Ensure all third-party libraries are secure and up to date.
+- 确保所有第三方库安全且最新。
 
-### 5. Personally Identifiable Information (PII)
+### 5. 个人可识别信息（PII）
 
-- Minimise any PII to neccessity.
-- Attempt to replace PII with less critical information if possible.
-- Reduce PII, e.g. less frequent location updates.
-- Implement automatic expiration and deletion of PII to minimize retention.
-- Ask for user consent before collecting or using PII.
+- 将 PII 最小化至必要程度。
+- 尽可能用不太关键的信息替代 PII。
+- 减少 PII，例如减少位置更新频率。
+- 实施 PII 自动过期和删除，以最小化保留。
+- 在收集或使用 PII 前征求用户同意。
 
-## Network Communication
+## 网络通信
 
-### 1. Don't Trust the Network
+### 1. 不信任网络
 
-- Assume that all network communication is insecure and can be intercepted.
+- 假设所有网络通信都是不安全的，可能被拦截。
 
-### 2. Use Secure Protocols
+### 2. 使用安全协议
 
-- Use HTTPS for all network communication.
-- Do not override SSL certificate validation to allow self-signed or invalid
-  certificates.
-- Avoid mixed version SSL sessions.
-- Encrypt data even if sent over SSL, in case of future SSL vulnerabilities.
-- Use strong, industry standard cipher suites, with appropriate key lengths.
-- Use certificates signed by a trusted CA provider
-- Avoid sending sensitive data via SMS.
+- 所有网络通信使用 HTTPS。
+- 不要覆盖 SSL 证书验证以允许自签名或无效证书。
+- 避免混合版本的 SSL 会话。
+- 即使通过 SSL 发送数据，也要加密，以防未来出现 SSL 漏洞。
+- 使用强大的、行业标准的密码套件，并使用适当的密钥长度。
+- 使用由可信 CA 提供商签名的证书。
+- 避免通过短信发送敏感数据。
 
-### 3. Certificate Pinning
+### 3. 证书锁定
 
-- Consider certificate pinning. See the [Pinning Cheat Sheet](Pinning_Cheat_Sheet.md)
-  for pros and cons of this approach.
+- 考虑使用证书锁定。请参见[证书锁定备忘录](Pinning_Cheat_Sheet.md)，了解这种方法的利弊。
 
-## User Interface
+## 用户界面
 
-### 1. UI Data Masking
+### 1. UI 数据遮蔽
 
-- Mask sensitive information on UI fields to prevent shoulder surfing.
+- 在 UI 字段中遮蔽敏感信息，以防止肩窥攻击。
 
-### 2. User Notifications
+### 2. 用户通知
 
-- Inform the user about security-related activities, such as logins from new
-  devices.
+- 通知用户安全相关活动，如从新设备登录。
 
-### 3. Input Validation
+### 3. 输入验证
 
-- Validate and sanitize user input. See the
-  [Input Validation Cheat Sheet](Input_Validation_Cheat_Sheet.md) for more
-  information.
+- 验证和净化用户输入。更多信息请参见[输入验证备忘录](Input_Validation_Cheat_Sheet.md)。
 
-### 4. Output Validation
+### 4. 输出验证
 
-- Validate and sanitize output to prevent injection and execution attacks.
+- 验证和净化输出，以防止注入和执行攻击。
 
-## Code Quality
+## 代码质量
 
-### 1. Static Analysis
+### 1. 静态分析
 
-- Use static analysis tools to identify vulnerabilities.
+- 使用静态分析工具识别漏洞。
 
-### 2. Code Reviews
+### 2. 代码审查
 
-- Make security a focal point during code reviews.
+- 在代码审查中将安全作为重点。
 
-### 3. Update Libraries
+### 3. 更新库
 
-- Keep all your libraries up to date to patch known vulnerabilities.
+- 保持所有库为最新版本，以修补已知漏洞。
 
-## Application Integrity
+## 应用完整性
 
-- Disable debugging.
-- Include code to validate integrity of application code.
-- Obfuscate the app binary.
+- 禁用调试。
+- 包含验证应用代码完整性的代码。
+- 混淆应用二进制文件。
 
-## Testing
+## 测试
 
-### 1. Penetration Testing
+### 1. 渗透测试
 
-- Perform ethical hacking to identify vulnerabilities.
-- Example tests:
-    - Cryptographic vulnerability assessment.
-    - Attempt to execute backend server functionality anonymously by removing any session tokens from POST/GET requests.
+- 进行合规的黑客测试以识别漏洞。
+- 示例测试：
+    - 加密漏洞评估。
+    - 尝试通过从 POST/GET 请求中移除会话令牌来匿名执行后端服务器功能。
 
-### 2. Automated Tests
+### 2. 自动化测试
 
-- Leverage automated tests to ensure that security features are working as
-  expected and that access controls are enforced.
+- 利用自动化测试确保安全功能按预期工作，并强制执行访问控制。
 
-### 3. Usability Testing
+### 3. 可用性测试
 
-- Ensure that security features do not harm usability, which could cause users
-  to bypass security features.
+- 确保安全功能不会损害可用性，避免用户绕过安全功能。
 
-## Post-Deployment
+## 部署后
 
-### 1. Incident Response
+### 1. 事件响应
 
-- Have a clear incident response plan in place.
+- 制定明确的事件响应计划。
 
-### 2. Updates
+### 2. 更新
 
-- Plan for regular updates and patches. In the case of mobile apps, this is
-  especially important due to the delay between when a patch is released and
-  when users actually receive the updated version due to app store review
-  processes and the time it takes for users to update their apps.
+- 计划定期更新和补丁。对于移动应用，这尤其重要，因为补丁发布和用户实际接收更新版本之间存在延迟，这是由应用商店审核流程和用户更新应用所需时间造成的。
 
-- Use a mechanism to force users to update their app version when necessary.
+- 使用机制在必要时强制用户更新应用版本。
 
-### 3. Monitoring and Analytics
+### 3. 监控和分析
 
-- Use real-time monitoring to detect and respond to threats.
+- 使用实时监控来检测和响应威胁。
 
-## Platform-Specific Guidance
+## 平台特定指导
 
 ### Android
 
-- Use Android’s ProGuard for code obfuscation.
-- Avoid storing sensitive data in SharedPreferences. See the
-  [Android docs](https://developer.android.com/topic/security/data)
-  on working with data securely for more details.
-- Disable backup mode to prevent sensitive data being stored in backups.
+- 使用 Android 的 ProGuard 进行代码混淆。
+- 避免在 SharedPreferences 中存储敏感数据。请参见 [Android 文档](https://developer.android.com/topic/security/data)，了解安全处理数据的更多细节。
+- 禁用备份模式，防止敏感数据存储在备份中。
 
 ### iOS
 
-- Use ATS (App Transport Security) to enforce strong security policies for
-  network communication.
-- Do not store sensitive data in plist files.
+- 使用 ATS（应用传输安全）强制执行网络通信的强安全策略。
+- 不要在 plist 文件中存储敏感数据。
 
-For further reading, visit the
-[OWASP Mobile Top 10 Project](https://owasp.org/www-project-mobile-top-10/).
-For a more detailed framework for mobile security, see the
-[OWASP Mobile Application Security Project](https://mas.owasp.org/).
+欲了解更多，请访问 [OWASP 移动 Top 10 项目](https://owasp.org/www-project-mobile-top-10/)。
+关于移动安全的更详细框架，请参见 [OWASP 移动应用安全项目](https://mas.owasp.org/)。
