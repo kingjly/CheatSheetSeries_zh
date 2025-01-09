@@ -1,3 +1,34 @@
+# OWASP Cheat Sheet Series 中文版
+
+[![OWASP Flagship](https://img.shields.io/badge/owasp-flagship%20project-48A646.svg)](https://www.owasp.org/index.php/OWASP_Project_Inventory#tab=Flagship_Projects)
+[![Creative Commons License](https://img.shields.io/github/license/OWASP/CheatSheetSeries)](https://creativecommons.org/licenses/by-sa/4.0/ "CC BY-SA 4.0")
+![Translation Status](https://img.shields.io/badge/翻译进度-进行中-yellow)
+
+## 📢 翻译项目说明
+
+这是 OWASP Cheat Sheet Series 项目的中文翻译版本。我们希望通过翻译来帮助中文开发者更好地了解和实践 Web 应用安全。
+
+- 🔗 [原项目地址](https://github.com/OWASP/CheatSheetSeries)
+- 📚 [原项目官网](https://cheatsheetseries.owasp.org)
+- 🌐 [OWASP 主页](https://owasp.org/www-project-cheat-sheets/)
+
+### 翻译说明
+
+- 本项目专注于翻译 `cheatsheets` 目录下的核心内容
+- 翻译力求准确、通顺，同时保留重要的专业术语
+- 欢迎社区贡献者参与翻译和审校工作
+
+### 翻译进度
+
+- 目前翻译工作正在进行中
+- 已翻译文件位于 `cheatsheets` 目录
+
+# Welcome to the OWASP Cheat Sheet Series
+
+[原 README 其余内容保持不变...]
+
+
+
 # Welcome to the OWASP Cheat Sheet Series
 
 [![OWASP Flagship](https://img.shields.io/badge/owasp-flagship%20project-48A646.svg)](https://www.owasp.org/index.php/OWASP_Project_Inventory#tab=Flagship_Projects)
@@ -86,3 +117,41 @@ A special thank you to the following people for their help provided during the m
 - [Jakub Maćkowski](https://github.com/mackowski): For valuable help in updating the OWASP Wiki links for all the migrated cheat sheets.
 
 Open Web Application Security Project and OWASP are registered trademarks of the OWASP Foundation, Inc.
+
+
+## 🤝 参与贡献
+
+我们欢迎任何形式的贡献，特别是：
+
+1. 翻译校对
+2. 文档改进
+3. 术语表维护
+4. 问题反馈
+
+### 如何贡献
+
+1. Fork 本仓库
+2. 创建你的特性分支 (`git checkout -b translate-xxx`)
+3. 提交你的改动 (`git commit -m '翻译: xxx'`)
+4. 推送到分支 (`git push origin translate-xxx`)
+5. 创建一个 Pull Request
+
+### 翻译指南
+
+1. 保持专业术语的准确性
+2. 对重要的英文术语保留原文，并在首次出现时附上中文翻译
+3. 保持语言通顺，避免直译
+4. 遵循原文档的格式规范
+
+## 📝 许可证
+
+本项目采用与原项目相同的许可证 [Creative Commons License](https://creativecommons.org/licenses/by-sa/4.0/)
+
+## 致谢
+
+- 感谢所有参与翻译的贡献者
+- 感谢原项目的所有贡献者
+- 特别感谢 OWASP 基金会提供这么棒的原创内容
+
+---
+Open Web Application Security Project 和 OWASP 是 OWASP 基金会的注册商标。
