@@ -1,57 +1,57 @@
-# Application Logging Vocabulary Cheat Sheet
+# 应用程序日志记录词汇速查表
 
-This document proposes a standard vocabulary for logging security events. The intent is to simplify monitoring and alerting such that, assuming developers trap errors and log them using this vocabulary, monitoring and alerting would be improved by simply keying on these terms.
+本文档提出了记录安全事件的标准词汇。其意图是简化监控和警报，假设开发人员捕获错误并使用此词汇记录，通过简单地关注这些术语，监控和警报将得到改进。
 
-## Overview
+## 概述
 
-Each year IBM Security commissions the Ponemon Institute to survey companies around the world for information related to security breaches, mitigation, and the associated costs; the result is called the Cost of a Data Breach Report.
+每年，IBM安全部门委托Ponemon研究所对全球公司进行调查，收集与安全漏洞、缓解和相关成本有关的信息；其结果被称为"数据泄露成本报告"。
 
-In addition to the millions of dollars lost due to breaches the report finds that the **mean time to identify** a breach continues to hover around **200 days**. Clearly our ability to monitor applications and alert on anomalous behavior would improve our time to identify and mitigate an attack against our applications.
+除了由于漏洞造成的数百万美元损失外，报告发现**识别漏洞的平均时间**仍徘徊在**约200天**。显然，我们监控应用程序和对异常行为发出警报的能力将改善我们识别和缓解针对应用程序的攻击的时间。
 
-![IBM Cost of Data Breach Report 2020](../assets/cost-of-breach-2020.png)
+![IBM数据泄露成本报告2020](../assets/cost-of-breach-2020.png)
 
-> IBM Cost of a Data Breach Study 2020, Fig.34, pg.52, [https://www.ibm.com/security/data-breach]
+> IBM数据泄露研究2020年，图34，第52页，[https://www.ibm.com/security/data-breach]
 
-This logging standard would seek to define specific keywords which, when applied consistently across software, would allow groups to simply monitor for these events terms across all applications and respond quickly in the event of attack.
+这个日志记录标准旨在定义特定关键词，当在软件中一致应用时，将使团队能够简单地监控所有应用程序中的这些事件术语，并在发生攻击时快速响应。
 
-## Assumptions
+## 假设
 
-- Observability/SRE groups must support the use of this standard and encourage developers to use it
-- Incident Response must either ingest this data OR provide a means by which other monitoring teams can send a notification of alert, preferably programmatically.
-- Architects must support, adopt, and contribute to this standard
-- Developers must embrace this standard and begin to implement (requires knowledge and intent to understand potential attacks and trap those errors in code).
+- 可观测性/SRE团队必须支持使用此标准并鼓励开发人员使用它
+- 事件响应必须要么摄取这些数据，要么提供其他监控团队可以发送通知或警报的方式，最好是以编程方式
+- 架构师必须支持、采用并为此标准做出贡献
+- 开发人员必须接受此标准并开始实施（需要了解潜在攻击并在代码中捕获这些错误）
 
-## Getting Started
+## 入门
 
-As a reminder, the goal of logging is to be able to alert on specific security events. Of course, the first step to logging these events is good error handling, if you're not trapping the events, you don't have an event to log.
+提醒一下，日志记录的目标是能够对特定安全事件发出警报。当然，记录这些事件的第一步是良好的错误处理，如果你没有捕获事件，就没有事件可记录。
 
-### Identifying Events
+### 识别事件
 
-In order to better understand security event logging a good high-level understanding of threat modeling would be helpful, even if it's a simple approach of:
+为了更好地理解安全事件日志记录，对威胁建模有一个良好的高级理解会很有帮助，即使只是采用简单的方法：
 
-1. **What could go wrong?**
+1. **可能出现什么问题？**
 
-- Orders: could someone order on behalf of another?
-- Authentication: could I log in as someone else?
-- Authorization: could I see someone else' account?
+- 订单：是否有人可以代表他人下单？
+- 身份验证：我是否可以以他人身份登录？
+- 授权：我是否可以查看他人的账户？
 
-2. **What would happen if it did?**
+2. **如果真的发生了，会怎样？**
 
-- Orders: I've placed an order on behalf of another... to an abandoned warehouse in New Jersey. Oops.
-- Then I bragged about it on 4Chan.
-- Then I told the New York Times about it.
+- 订单：我代表他人下了一个订单...到新泽西州的一个废弃仓库。糟糕了。
+- 然后我在4Chan上吹嘘这件事。
+- 然后我告诉纽约时报。
 
-3. **Who might intend to do this?**
+3. **谁可能有意这样做？**
 
-- Intentional attacks by hackers.
-- An employee "testing" how things work.
-- An API coded incorrectly doing things the author did not intend.
+- 黑客的有意攻击
+- 员工"测试"系统工作方式
+- 编码不正确的API执行作者未intended的操作
 
-## Format
+## 格式
 
-_NOTE: All dates should be logged in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format **WITH** UTC offset to ensure maximum portability_
+_注意：所有日期都应以[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)格式记录，**带有** UTC偏移，以确保最大的可移植性_
 
-```
+```json
 {
     "datetime": "2021-01-01T01:01:01-0700",
     "appid": "foobar.netportal_auth",
@@ -71,15 +71,15 @@ _NOTE: All dates should be logged in [ISO 8601](https://en.wikipedia.org/wiki/IS
 }
 ```
 
-## The Vocabulary
+## 词汇表
 
-What follows are the various event types that should be captured. For each event type there is a prefix like "authn" and additional data that should be included for that event.
+接下来是应该捕获的各种事件类型。对于每种事件类型，都有一个前缀（如"authn"）和应包含的其他数据。
 
-Portions of the full logging format are included for example, but a complete event log should follow the format above.
+示例中包含了完整日志格式的部分内容，但完整的事件日志应遵循上述格式。
 
 ---
 
-## Authentication [AUTHN]
+## 身份验证 [AUTHN]
 
 ### authn_login_success[:userid]
 
