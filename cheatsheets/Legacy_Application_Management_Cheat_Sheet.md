@@ -1,76 +1,108 @@
-# Legacy Application Management Cheat Sheet
+# 遗留应用程序管理备忘录
 
-## Introduction
+## 引言
 
-Legacy applications are applications that are recognized as being outdated but remain in active use by an organization. This may occur if a viable alternative to the application is not available, replacement is currently too expensive, or if the application is highly bespoke and services a very niche role within an organization's digital ecosystem. Legacy applications often introduce significant security risks to an organization for the following reasons:
+遗留应用程序是指被认为已过时但仍在组织中actively使用的应用程序。这可能发生在以下情况：
+- 没有可行的应用程序替代方案
+- 替换成本目前过高
+- 应用程序高度定制，在组织的数字生态系统中服务于非常特定的角色
 
-- Legacy applications might have reached End-of-Life (EoL) meaning that the application no longer receives patching or vendor support. This drastically increases the risk of vulnerability in the application being left in an exploitable state.
-- Some applications have been built using technologies that are no longer conventionally used or taught to technical staff. This can mean that the knowledge required to troubleshoot or fix vulnerabilities when they arise may be lacking.
-- Legacy applications may produce data in custom formats and/or use old interfaces or networking protocols. This may stifle efforts to use data produced by the application with services used for vulnerability management or security logging, such as a SIEM (Security Information and Event Management) solution.
+遗留应用程序常常会为组织引入重大安全风险，原因如下：
 
-As there is no one-size fits all approach to securing legacy applications, this cheat sheet is intended to act as a resource offering some practical suggestions on hardening legacy applications when alternatives to the use of legacy applications do not exist. The preferred approach will depend on factors such as the type of data stored and produced by the legacy application, whether the application and associated infrastructure have known vulnerabilities, and the extent to which it is possible to restrict access to the legacy application or some of its riskier components. Engaging with security domain experts (in-house or external) who can provide specific and contextualized advice may be necessary.
+- 遗留应用程序可能已达到生命周期终止（EoL），意味着应用程序不再接收补丁或供应商支持。这极大地增加了应用程序漏洞保持可利用状态的风险。
+- 某些应用程序是使用不再常规使用或不再教授给技术人员的技术构建的。这意味着在出现漏洞时，可能缺乏所需的故障排除或修复知识。
+- 遗留应用程序可能以自定义格式生成数据，和/或使用旧接口或网络协议。这可能阻碍使用应用程序生成的数据与用于漏洞管理或安全日志记录的服务（如 SIEM）的工作。
 
-## Inventory and Asset Management
+由于没有一种适用于所有情况的方法来保护遗留应用程序，本备忘录旨在作为资源，提供一些在不存在遗留应用程序替代方案时加固遗留应用程序的实用建议。首选方法将取决于多个因素，如：
+- 遗留应用程序存储和生成的数据类型
+- 应用程序及其关联基础设施是否存在已知漏洞
+- 限制遗留应用程序或其某些高风险组件访问的可能程度
 
-At a baseline, organizations should have a clear understanding about what legacy applications are currently in use and what the expected risk of the use of these legacy solutions are.
+可能需要与安全领域专家（内部或外部）合作，以提供具体和情境化的建议。
 
-**Inventory Management:** Start by compiling documentation identifying the legacy applications used by your organization including version numbers, date of production, and relevant configuration settings. Ideally, this will include details regarding what network hosts need to be situated on to reach the application and associated infrastructure. A record of the services running on infrastructure used for hosting the application and/or for data storage should also be outlined. In some circumstances documentation could include information about the physical location of and permitted access to servers associated with the application. Organizations might opt to generate a formal SBOM (Software Bill of Materials) as part of this process. SBOMs serve a useful role when an application relies on third-party dependencies in order to function.
+## 清单和资产管理
 
-**Risk Assessment and Threat Modeling:** Ensure your organization has a clear understanding of the level of risk and the kinds of threats theoretically posed by using the legacy application and its specific components (e.g. specific API routes or open ports on hosting infrastructure). This may be informed by formal or informal threat-modeling of an application, as described in the [Threat Modeling Cheat Sheet](Threat_Modeling_Cheat_Sheet.md). Qualifying the risk posed by legacy software might also be aided by using an industry standard risk assessment framework, such as the NIST (National Institute of Standards and Technology) [Risk Management Framework](https://csrc.nist.gov/Projects/risk-management). There are many threat modeling and risk assessment frameworks and tools that have different strengths and weaknesses.
+作为基准，组织应清楚地了解当前正在使用哪些遗留应用程序，以及使用这些遗留解决方案的预期风险。
 
-As a more informal indicator of how conservative security measures used to protect the application ought to be, consider the questions below. These may help to contextualize what the risk profile of a particular legacy application or it's components might be:
+**清单管理：** 首先编制文档，识别组织使用的遗留应用程序，包括：
+- 版本号
+- 生产日期
+- 相关配置设置
+- 需要位于哪些网络主机上才能访问应用程序和相关基础设施
+- 托管应用程序和/或数据存储的基础设施上运行的服务记录
 
-- What information is handled/stored by the application? If this information were to be compromised, how would this impact your business and potentially its regulatory/compliance requirements?
-- Do the application/application dependencies/infrastructure used to support the application have known vulnerabilities? If so, how easily exploitable are these? Can these be patched with the right resources including skilled professionals?
-- How critical is the availability of the legacy application to your organization's business continuity?
-- If an attacker were able to gain access to this application, is there a risk that they could use it to exfiltrate other critical information from your organization? Could an attacker establish access to a particularly privileged network or environment by compromising the legacy application?
+在某些情况下，文档可能包括：
+- 与应用程序相关的服务器的物理位置
+- 服务器的允许访问权限
 
-## Authentication/Authorization
+组织可以选择在此过程中生成正式的软件材料清单（SBOM）。当应用程序依赖第三方依赖项才能运行时，SBOM 会发挥有用的作用。
 
-Authorization measures enforce rules around who can access a given resource and how they can establish access to that resource. Authorization is covered in significant depth in the [Authorization Cheat Sheet](Authorization_Cheat_Sheet.md).
+**风险评估和威胁建模：** 确保组织清楚地了解：
+- 使用遗留应用程序的风险水平
+- 遗留应用程序及其特定组件（如特定 API 路由或托管基础设施上的开放端口）可能带来的威胁类型
 
-When it comes to applying authorization controls to legacy systems, organizations should consider the applications to be inherently high risk. The security principle of least privilege (allowing only as much access as is strictly required for staff/users/systems to perform their required roles and to facilitate business operations) applies especially to legacy applications. Consider implementing the following as applicable:
+这可以通过以下方式实现：
+- 正式或非正式的应用程序威胁建模（参见[威胁建模备忘录](Threat_Modeling_Cheat_Sheet.md)）
+- 使用行业标准风险评估框架，如 NIST（国家标准与技术研究院）[风险管理框架](https://csrc.nist.gov/Projects/risk-management)
 
-- Apply network-level access controls to the application. This might entail hosting the application within a restricted subnet and/or applying IP allow-listing to prevent arbitrary users from interacting particularly with public-facing legacy applications from arbitrary hosts. In some circumstances the application may be required to run in an air-gapped environment.
-- Authorization controls could be considered at a more granular level by reducing the feature set available to end users. For example, it might be necessary to disable certain high risk functionalities, particularly administrative functionalities.
-- Ensure that only authenticated users can access the application. This could be enforced by the application itself, or by use of an IdP (Identity Provider) service. If the application is hosted in a restricted network environment, authentication should also be required to access this network environment (e.g. users could be required to authenticate to a VPN server before accessing the application). Implementing one or more of these controls will both slow down an attacker and assist with investigations if an incident were to occur. See the [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md) for further information regarding authentication controls.
-- Close any ports on hosts used to run the application that are not strictly needed in order for the application to perform only the tasks required of it by your organization. Access to certain ports may also be restricted using firewall/application firewall rules to lock down server infrastructure.
-- In some circumstances it may be possible to restrict almost all users from directly accessing the legacy application by developing an intermediary service (e.g. a separate set of APIs) that handles essential movement of data into and out of the legacy application without an end user having any requirement to interact directly with the legacy application.
+作为衡量保护应用程序的安全措施应有多么保守的非正式指标，请考虑以下问题：
 
-## Vulnerability Management
+1. 应用程序处理/存储什么信息？如果这些信息被泄露，将如何影响您的业务和潜在的监管/合规要求？
+2. 应用程序/应用程序依赖项/支持应用程序的基础设施是否存在已知漏洞？如果是，这些漏洞有多容易被利用？是否可以通过适当的资源（包括熟练的专业人员）进行修补？
+3. 遗留应用程序对您组织的业务连续性有多关键？
+4. 如果攻击者能够访问此应用程序，是否有风险他们可以用它从您的组织中窃取其他关键信息？通过破坏遗留应用程序，攻击者是否可以建立对特权网络或环境的访问？
 
-**Vulnerability Scanning:** Legacy applications should be subject to regular vulnerability scanning with an industry standard vulnerability assessment tool, where possible, such as Nessus and Qualys. This should occur on a regular basis, ideally with scans scheduled to occur automatically at some set time interval. Where appropriate, some vulnerabilities might also be identified using code scanning tools, such as a SAST (Static Application Security Testing) tool to check the codebase for obvious vulnerabilities or SCA (Software Composition Analysis) tool identify vulnerable dependencies used by the application. In some cases none of the above options will be viable for the application and, in this case, direct human assessment of host configuration and manual code reviews might be the only suitable option for assessing the security posture of the legacy application.
+## 身份验证/授权
 
-**Patch Management:** Where possible, apply patches raised by the tools described above. Patching efforts should be prioritized on the basis of the severity of the vulnerability and whether the vulnerability has a published CVE (Common Vulnerabilities and Exposures) and/or a publicly listed exploit. In circumstances where patching is not practically possible for the legacy application, consider applying additional restrictions to the application/affected components as noted in the section on Authentication/Authorization.
+授权措施强制执行关于谁可以访问给定资源以及如何建立对该资源的访问的规则。[授权备忘录](Authorization_Cheat_Sheet.md)对授权进行了深入讨论。
 
-## Data Storage
+处理遗留系统的授权控制时，组织应将应用程序视为固有的高风险。最小特权安全原则（仅允许员工/用户/系统执行其所需角色和促进业务运营所严格需要的访问）特别适用于遗留应用程序。考虑实施以下内容（如适用）：
 
-Confirm that, where ever possible, data handled by the application is both encrypted at rest (i.e. when stored in a database) and in transit. Cheat Sheets on [Cryptographic Storage](Cryptographic_Storage_Cheat_Sheet.md) and [HTTP Strict Transport Security](HTTP_Strict_Transport_Security_Cheat_Sheet.md) may provide some useful further context. In some circumstances legacy applications might be restricted to the use of older network protocols that only support transmission of data in plain text. In this case it is especially important to apply the most restrictive network access controls possible to the application. This could necessitate temporary or permanent air-gapping (functional isolation) of the application.
+- 对应用程序应用网络级访问控制
+- 在更细粒度级别考虑授权控制
+- 确保只有经过身份验证的用户可以访问应用程序
+- 关闭主机上不严格需要的端口
+- 在某些情况下，可以通过开发中间服务来限制几乎所有用户直接访问遗留应用程序
 
-## Ensuring Maintainability
+## 漏洞管理
 
-Where possible, aim to maintain a high degree of institutional expertise regarding the application, so that staff can both remediate security vulnerabilities and troubleshoot the application as needed to ensure business continuity. The following recommendations apply:
+**漏洞扫描：** 遗留应用程序应接受：
+- 使用行业标准漏洞评估工具的定期漏洞扫描
+- 代码扫描工具（如 SAST 和 SCA）
+- 在某些情况下，可能需要直接人工评估
 
-- More than one staff member should be adequately trained to troubleshoot/reconfigure the legacy application. This will reduce the risk of complete loss of maintenance capability for the legacy application if one trained member of staff leaves the organization.
-- Encourage staff to regularly document processes including recording troubleshoot guides for common failure scenarios for the legacy application.
-- It might be necessary to teach a core group of staff to write basic programs in the language used by the legacy application, where this expertise does not exist in your organization.
+**补丁管理：** 在可能的情况下：
+- 应用由工具提出的补丁
+- 根据漏洞严重性和是否有已发布的 CVE 或公开列出的漏洞来确定补丁工作的优先级
+- 在无法实际修补的情况下，考虑对应用程序/受影响组件应用额外限制
 
-## Change Management
+## 数据存储
 
-The ultimate goal for most legacy applications will be to migrate from the unmaintainable system to a solution which is both maintainable and architected to be resilient to contemporary threats. Staged change management may take into account the following factors:
+确认尽可能对应用程序处理的数据进行：
+- 静态加密（存储在数据库中时）
+- 传输中加密
 
-- What budget can practically be allocated for upgrading to a modern solution and within what time frame could budget be made available?
-- Do people with the necessary expertise required to handle migration exist within your organization or could these people be acquired/developed?
-- How urgently does a migration to an upgraded solution need to happen based on the risk profile of the application and the risk appetite of your organization?
+## 确保可维护性
 
-A change management plan, formal or informal, should include a clear description of granular steps to be taken towards migration to an upgraded solution, an explicit date of expected completion, and a clear articulation of the business and security case for the change. To produce a realistic plan for migration, staff involved in overseeing and using the existing solution should be consulted extensively to get a sense for how critical the legacy application is to your organization and what barriers there might be to facilitating migration or completely decommissioning the application.
+目标是：
+- 维护关于应用程序的高度机构专业知识
+- 确保多名员工能够排除故障/重新配置遗留应用程序
+- 鼓励员工定期记录流程
+- 必要时教授员工使用遗留应用程序语言编写基本程序
 
-## Continuous Monitoring and Incident Response
+## 变更管理
 
-Legacy applications should be subject to an especially high degree of security monitoring with rapid response efforts made to investigate potential incidents. This might be challenged by intra-operability issues that mean that logs produced by the application are in a format that cannot be readily ingested by security monitoring tools used by your organization. Potential workarounds might include:
+最终目标是迁移到可维护且能够抵御当代威胁的解决方案。变更管理应考虑：
+- 可分配的预算
+- 所需专业知识
+- 迁移的紧迫程度
 
-- Developing custom APIs for modifying security-applicable information from your legacy application and/or its logs into a format ingestible by security monitoring solutions used by your organization.
-- Where the above is not possible, consider using automation scripts to generate reports that assess for indicators of compromise.
-- Be vigilant to any anomalous network traffic into and out of the legacy application environment and to any surges in network activity.
-- If you have access to an internal or hired incident response team, ensure that they are aware that incident response and investigation of unusual events should be prioritized for critical legacy systems. Processes for handling application downtime and compromise ideally are to be documented in advance as a part of an incident response playbook. This needs to give staff a clear rundown of emergency procedures including escalation contacts and details of incident response leaders.
-- Incident response planning should occur within the broader context of a business continuity plan.
+## 持续监控和事件响应
+
+遗留应用程序应：
+- 接受高度安全监控
+- 快速响应潜在事件
+- 开发自定义 API 或自动化脚本以处理日志
+- 警惕异常网络流量
+- 确保事件响应团队优先处理关键遗留系统
+- 制定业务连续性计划
