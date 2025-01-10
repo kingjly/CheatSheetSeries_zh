@@ -1,208 +1,208 @@
-# REST Security Cheat Sheet
+# REST 安全备忘录
 
-## Introduction
+## 介绍
 
-[REST](http://en.wikipedia.org/wiki/Representational_state_transfer) (or **RE**presentational **S**tate **T**ransfer) is an architectural style first described in [Roy Fielding](https://en.wikipedia.org/wiki/Roy_Fielding)'s Ph.D. dissertation on [Architectural Styles and the Design of Network-based Software Architectures](https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm).
+[REST](http://en.wikipedia.org/wiki/Representational_state_transfer)（或**RE**presentational **S**tate **T**ransfer）是一种架构风格，最初在 [Roy Fielding](https://en.wikipedia.org/wiki/Roy_Fielding) 的博士论文《[架构风格与基于网络的软件架构设计](https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm)》中首次描述。
 
-It evolved as Fielding wrote the HTTP/1.1 and URI specs and has been proven to be well-suited for developing distributed hypermedia applications. While REST is more widely applicable, it is most commonly used within the context of communicating with services via HTTP.
+它是在 Fielding 编写 HTTP/1.1 和 URI 规范时演进的，并已被证明非常适合开发分布式超媒体应用。虽然 REST 更广泛适用，但它最常用于通过 HTTP 与服务通信。
 
-The key abstraction of information in REST is a resource. A REST API resource is identified by a URI, usually a HTTP URL. REST components use connectors to perform actions on a resource by using a representation to capture the current or intended state of the resource and transferring that representation.
+REST 中信息的关键抽象是资源。REST API 资源由 URI 标识，通常是 HTTP URL。REST 组件使用连接器通过表示来捕获资源的当前或预期状态并传输该表示，从而对资源执行操作。
 
-The primary connector types are client and server, secondary connectors include cache, resolver and tunnel.
+主要连接器类型是客户端和服务器，次要连接器包括缓存、解析器和隧道。
 
-REST APIs are stateless. Stateful APIs do not adhere to the REST architectural style. State in the REST acronym refers to the state of the resource which the API accesses, not the state of a session within which the API is called. While there may be good reasons for building a stateful API, it is important to realize that managing sessions is complex and difficult to do securely.
+REST API 是无状态的。有状态的 API 不遵循 REST 架构风格。REST 首字母缩写中的"状态"指的是 API 访问的资源的状态，而不是调用 API 的会话状态。尽管构建有状态 API 可能有充分的理由，但重要的是要认识到管理会话是复杂且难以安全地进行的。
 
-Stateful services are out of scope of this Cheat Sheet: *Passing state from client to backend, while making the service technically stateless, is an anti-pattern that should also be avoided as it is prone to replay and impersonation attacks.*
+有状态服务不在本备忘录的讨论范围内：*从客户端向后端传递状态，同时使服务在技术上无状态，是一种反模式，应该避免，因为它容易遭受重放和模仿攻击。*
 
-In order to implement flows with REST APIs, resources are typically created, read, updated and deleted. For example, an ecommerce site may offer methods to create an empty shopping cart, to add items to the cart and to check out the cart. Each of these REST calls is stateless and the endpoint should check whether the caller is authorized to perform the requested operation.
+为了使用 REST API 实现流程，通常会创建、读取、更新和删除资源。例如，电子商务网站可能提供创建空购物车、向购物车添加商品和结账的方法。每个 REST 调用都是无状态的，端点应检查调用者是否有权执行请求的操作。
 
-Another key feature of REST applications is the use of standard HTTP verbs and error codes in the pursuit or removing unnecessary variation among different services.
+REST 应用的另一个关键特征是使用标准 HTTP 动词和错误代码，以消除不同服务之间不必要的变化。
 
-Another key feature of REST applications is the use of [HATEOAS or Hypermedia As The Engine of Application State](https://en.wikipedia.org/wiki/HATEOAS). This provides REST applications a self-documenting nature making it easier for developers to interact with a REST service without prior knowledge.
+REST 应用的另一个关键特征是使用 [HATEOAS 或超媒体作为应用状态引擎](https://en.wikipedia.org/wiki/HATEOAS)。这为 REST 应用提供了自文档的特性，使开发者更容易在没有先验知识的情况下与 REST 服务交互。
 
 ## HTTPS
 
-Secure REST services must only provide HTTPS endpoints. This protects authentication credentials in transit, for example passwords, API keys or JSON Web Tokens. It also allows clients to authenticate the service and guarantees integrity of the transmitted data.
+安全的 REST 服务必须仅提供 HTTPS 端点。这保护传输中的身份验证凭据，例如密码、API 密钥或 JSON Web 令牌。它还允许客户端验证服务并保证传输数据的完整性。
 
-See the [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md) for additional information.
+有关更多信息，请参见[传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)。
 
-Consider the use of mutually authenticated client-side certificates to provide additional protection for highly privileged web services.
+考虑使用双向认证的客户端证书为高权限 Web 服务提供额外保护。
 
-## Access Control
+## 访问控制
 
-Non-public REST services must perform access control at each API endpoint. Web services in monolithic applications implement this by means of user authentication, authorization logic and session management. This has several drawbacks for modern architectures which compose multiple microservices following the RESTful style.
+非公开的 REST 服务必须在每个 API 端点执行访问控制。单体应用中的 Web 服务通过用户身份验证、授权逻辑和会话管理来实现这一点。对于遵循 RESTful 风格的多个微服务组成的现代架构来说，这有几个缺点。
 
-- in order to minimize latency and reduce coupling between services, the access control decision should be taken locally by REST endpoints
-- user authentication should be centralised in a Identity Provider (IdP), which issues access tokens
+- 为了最小化延迟并减少服务间耦合，访问控制决策应由 REST 端点本地做出
+- 用户身份验证应集中在身份提供者（IdP）中，由其颁发访问令牌
 
 ## JWT
 
-There seems to be a convergence towards using [JSON Web Tokens](https://tools.ietf.org/html/rfc7519) (JWT) as the format for security tokens. JWTs are JSON data structures containing a set of claims that can be used for access control decisions. A cryptographic signature or message authentication code (MAC) can be used to protect the integrity of the JWT.
+似乎正在趋向使用 [JSON Web 令牌](https://tools.ietf.org/html/rfc7519)（JWT）作为安全令牌的格式。JWT 是包含可用于访问控制决策的一组声明的 JSON 数据结构。可以使用加密签名或消息认证码（MAC）来保护 JWT 的完整性。
 
-- Ensure JWTs are integrity protected by either a signature or a MAC. Do not allow the unsecured JWTs: `{"alg":"none"}`.
-    - See [here](https://tools.ietf.org/html/rfc7519#section-6.1)
-- In general, signatures should be preferred over MACs for integrity protection of JWTs.
+- 确保 JWT 通过签名或 MAC 进行完整性保护。不允许不安全的 JWT：`{"alg":"none"}`。
+    - 参见[此处](https://tools.ietf.org/html/rfc7519#section-6.1)
+- 通常，签名应优先于 MAC 用于 JWT 的完整性保护。
 
-If MACs are used for integrity protection, every service that is able to validate JWTs can also create new JWTs using the same key. This means that all services using the same key have to mutually trust each other. Another consequence of this is that a compromise of any service also compromises all other services sharing the same key. See [here](https://tools.ietf.org/html/rfc7515#section-10.5) for additional information.
+如果使用 MAC 进行完整性保护，每个能够验证 JWT 的服务也可以使用相同的密钥创建新的 JWT。这意味着使用相同密钥的所有服务必须相互信任。这的另一个后果是任何服务的泄露也会危及所有共享相同密钥的其他服务。参见[此处](https://tools.ietf.org/html/rfc7515#section-10.5)了解更多信息。
 
-The relying party or token consumer validates a JWT by verifying its integrity and claims contained.
+依赖方或令牌消费者通过验证其完整性和包含的声明来验证 JWT。
 
-- A relying party must verify the integrity of the JWT based on its own configuration or hard-coded logic. It must not rely on the information of the JWT header to select the verification algorithm. See [here](https://www.chosenplaintext.ca/2015/03/31/jwt-algorithm-confusion.html) and [here](https://www.youtube.com/watch?v=bW5pS4e_MX8>)
+- 依赖方必须根据自身配置或硬编码逻辑验证 JWT 的完整性。不得依赖 JWT 头部信息选择验证算法。参见[此处](https://www.chosenplaintext.ca/2015/03/31/jwt-algorithm-confusion.html)和[此处](https://www.youtube.com/watch?v=bW5pS4e_MX8>)
 
-Some claims have been standardized and should be present in JWT used for access controls. At least the following of the standard claims should be verified:
+一些声明已被标准化，并且应出现在用于访问控制的 JWT 中。至少应验证以下标准声明：
 
-- `iss` or issuer - is this a trusted issuer? Is it the expected owner of the signing key?
-- `aud` or audience - is the relying party in the target audience for this JWT?
-- `exp` or expiration time - is the current time before the end of the validity period of this token?
-- `nbf` or not before time - is the current time after the start of the validity period of this token?
+- `iss`（发行者）- 这是可信的发行者吗？是否是签名密钥的预期所有者？
+- `aud`（受众）- 依赖方是否在此 JWT 的目标受众中？
+- `exp`（过期时间）- 当前时间是否在此令牌有效期结束之前？
+- `nbf`（不早于时间）- 当前时间是否在此令牌有效期开始之后？
 
-As JWTs contain details of the authenticated entity (user etc.) a disconnect can occur between the JWT and the current state of the users session, for example, if the session is terminated earlier than the expiration time due to an explicit logout or an idle timeout. When an explicit session termination event occurs, a digest or hash of any associated JWTs should be submitted to a denylist on the API which will invalidate that JWT for any requests until the expiration of the token. See the [JSON_Web_Token_for_Java_Cheat_Sheet](JSON_Web_Token_for_Java_Cheat_Sheet.md#token-explicit-revocation-by-the-user) for further details.
+由于 JWT 包含经过身份验证的实体（用户等）的详细信息，可能会出现 JWT 与用户会话当前状态不一致的情况，例如，如果由于显式注销或空闲超时而提前终止会话。当发生显式会话终止事件时，应将任何相关 JWT 的摘要或哈希提交到 API 的拒绝列表，这将使该 JWT 在令牌到期之前对任何请求无效。有关更多详细信息，请参见 [Java JSON Web 令牌备忘录](JSON_Web_Token_for_Java_Cheat_Sheet.md#token-explicit-revocation-by-the-user)。
 
-## API Keys
+## API 密钥
 
-Public REST services without access control run the risk of being farmed leading to excessive bills for bandwidth or compute cycles. API keys can be used to mitigate this risk. They are also often used by organisation to monetize APIs; instead of blocking high-frequency calls, clients are given access in accordance to a purchased access plan.
+没有访问控制的公共 REST 服务有被滥用的风险，可能导致带宽或计算周期的过度账单。API 密钥可用于缓解此风险。组织也经常使用它们来实现 API 商业化；与其阻止高频调用，不如根据购买的访问计划授予客户访问权限。
 
-API keys can reduce the impact of denial-of-service attacks. However, when they are issued to third-party clients, they are relatively easy to compromise.
+API 密钥可以减少拒绝服务攻击的影响。然而，当它们颁发给第三方客户端时，相对容易被泄露。
 
-- Require API keys for every request to the protected endpoint.
-- Return `429 Too Many Requests` HTTP response code if requests are coming in too quickly.
-- Revoke the API key if the client violates the usage agreement.
-- Do not rely exclusively on API keys to protect sensitive, critical or high-value resources.
+- 要求每个对受保护端点的请求都使用 API 密钥。
+- 如果请求来得太快，返回 `429 请求过多` HTTP 响应代码。
+- 如果客户端违反使用协议，撤销 API 密钥。
+- 不要仅依赖 API 密钥来保护敏感、关键或高价值资源。
 
-## Restrict HTTP methods
+## 限制 HTTP 方法
 
-- Apply an allowlist of permitted HTTP Methods e.g. `GET`, `POST`, `PUT`.
-- Reject all requests not matching the allowlist with HTTP response code `405 Method not allowed`.
-- Make sure the caller is authorised to use the incoming HTTP method on the resource collection, action, and record
+- 应用被允许的 HTTP 方法的白名单，例如 `GET`、`POST`、`PUT`。
+- 拒绝所有不匹配白名单的请求，并返回 HTTP 响应代码 `405 不允许的方法`。
+- 确保调用者有权对资源集合、操作和记录使用传入的 HTTP 方法。
 
-In Java EE in particular, this can be difficult to implement properly. See [Bypassing Web Authentication and Authorization with HTTP Verb Tampering](../assets/REST_Security_Cheat_Sheet_Bypassing_VBAAC_with_HTTP_Verb_Tampering.pdf) for an explanation of this common misconfiguration.
+特别是在 Java EE 中，正确实现这一点可能很困难。参见[使用 HTTP 动词篡改绕过 Web 身份验证和授权](../assets/REST_Security_Cheat_Sheet_Bypassing_VBAAC_with_HTTP_Verb_Tampering.pdf)以了解这种常见的错误配置。
 
-## Input validation
+## 输入验证
 
-- Do not trust input parameters/objects.
-- Validate input: length / range / format and type.
-- Achieve an implicit input validation by using strong types like numbers, booleans, dates, times or fixed data ranges in API parameters.
-- Constrain string inputs with regexps.
-- Reject unexpected/illegal content.
-- Make use of validation/sanitation libraries or frameworks in your specific language.
-- Define an appropriate request size limit and reject requests exceeding the limit with HTTP response status 413 Request Entity Too Large.
-- Consider logging input validation failures. Assume that someone who is performing hundreds of failed input validations per second is up to no good.
-- Have a look at input validation cheat sheet for comprehensive explanation.
-- Use a secure parser for parsing the incoming messages. If you are using XML, make sure to use a parser that is not vulnerable to [XXE](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_%28XXE%29_Processing) and similar attacks.
+- 不要信任输入参数/对象。
+- 验证输入：长度/范围/格式和类型。
+- 通过在 API 参数中使用强类型（如数字、布尔值、日期、时间或固定数据范围）来实现隐式输入验证。
+- 使用正则表达式约束字符串输入。
+- 拒绝意外/非法内容。
+- 使用特定语言的验证/净化库或框架。
+- 定义适当的请求大小限制，并使用 HTTP 响应状态 413 拒绝超过限制的请求。
+- 考虑记录输入验证失败。假设每秒执行数百次输入验证失败的人意图不轨。
+- 查看输入验证备忘录以获得全面解释。
+- 使用安全解析器解析传入消息。如果使用 XML，请确保使用不易受 [XXE](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_%28XXE%29_Processing) 等攻击的解析器。
 
-## Validate content types
+## 验证内容类型
 
-A REST request or response body should match the intended content type in the header. Otherwise this could cause misinterpretation at the consumer/producer side and lead to code injection/execution.
+REST 请求或响应体应与请求头中的预期内容类型匹配。否则，可能导致消费者/生产者端的误解，并引发代码注入/执行。
 
-- Document all supported content types in your API.
+- 在您的 API 中记录所有支持的内容类型。
 
-### Validate request content types
+### 验证请求内容类型
 
-- Reject requests containing unexpected or missing content type headers with HTTP response status `406 Unacceptable` or `415 Unsupported Media Type`. For requests with `Content-Length: 0` however, a `Content-type` header is optional.
-- For XML content types ensure appropriate XML parser hardening, see the [XXE cheat sheet](XML_External_Entity_Prevention_Cheat_Sheet.md).
-- Avoid accidentally exposing unintended content types by explicitly defining content types e.g. [Jersey](https://jersey.github.io/) (Java) `@consumes("application/json"); @produces("application/json")`. This avoids [XXE-attack](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_%28XXE%29_Processing) vectors for example.
+- 对包含意外或缺失内容类型请求头的请求，使用 HTTP 响应状态 `406 不可接受` 或 `415 不支持的媒体类型` 进行拒绝。对于 `Content-Length: 0` 的请求，`Content-type` 请求头是可选的。
+- 对于 XML 内容类型，确保适当的 XML 解析器强化，参见 [XXE 备忘录](XML_External_Entity_Prevention_Cheat_Sheet.md)。
+- 通过显式定义内容类型来避免意外暴露非预期的内容类型，例如 [Jersey](https://jersey.github.io/)（Java）`@consumes("application/json"); @produces("application/json")`。这可以避免 [XXE 攻击](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_%28XXE%29_Processing)向量。
 
-### Send safe response content types
+### 发送安全的响应内容类型
 
-It is common for REST services to allow multiple response types (e.g. `application/xml` or `application/json`, and the client specifies the preferred order of response types by the Accept header in the request.
+REST 服务通常允许多种响应类型（例如 `application/xml` 或 `application/json`），客户端通过请求中的 Accept 请求头指定首选响应类型顺序。
 
-- **Do NOT** simply copy the `Accept` header to the `Content-type` header of the response.
-- Reject the request (ideally with a `406 Not Acceptable` response) if the `Accept` header does not specifically contain one of the allowable types.
+- **不要** 简单地将 `Accept` 请求头复制到响应的 `Content-type` 请求头。
+- 如果 `Accept` 请求头未明确包含可接受的类型之一，则拒绝请求（理想情况下返回 `406 不可接受` 响应）。
 
-Services including script code (e.g. JavaScript) in their responses must be especially careful to defend against header injection attack.
+在响应中包含脚本代码（例如 JavaScript）的服务必须特别小心，防御请求头注入攻击。
 
-- Ensure sending intended content type headers in your response matching your body content e.g. `application/json` and not `application/javascript`.
+- 确保在响应中发送与正文内容匹配的预期内容类型请求头，例如 `application/json`，而不是 `application/javascript`。
 
-## Management endpoints
+## 管理端点
 
-- Avoid exposing management endpoints via Internet.
-- If management endpoints must be accessible via the Internet, make sure that users must use a strong authentication mechanism, e.g. multi-factor.
-- Expose management endpoints via different HTTP ports or hosts preferably on a different NIC and restricted subnet.
-- Restrict access to these endpoints by firewall rules  or use of access control lists.
+- 避免通过互联网暴露管理端点。
+- 如果管理端点必须通过互联网访问，请确保用户必须使用强身份验证机制，例如多因素认证。
+- 通过不同的 HTTP 端口或主机（最好在不同的网卡和受限子网上）公开管理端点。
+- 通过防火墙规则或访问控制列表限制对这些端点的访问。
 
-## Error handling
+## 错误处理
 
-- Respond with generic error messages - avoid revealing details of the failure unnecessarily.
-- Do not pass technical details (e.g. call stacks or other internal hints) to the client.
+- 响应通用错误消息 - 避免不必要地泄露失败的详细信息。
+- 不要向客户端传递技术细节（例如调用堆栈或其他内部提示）。
 
-## Audit logs
+## 审计日志
 
-- Write audit logs before and after security related events.
-- Consider logging token validation errors in order to detect attacks.
-- Take care of log injection attacks by sanitizing log data beforehand.
+- 在安全相关事件之前和之后写入审计日志。
+- 考虑记录令牌验证错误以检测攻击。
+- 通过预先净化日志数据来防范日志注入攻击。
 
-## Security Headers
+## 安全请求头
 
-There are a number of [security related headers](https://owasp.org/www-project-secure-headers/) that can be returned in the HTTP responses to instruct browsers to act in specific ways. However, some of these headers are intended to be used with HTML responses, and as such may provide little or no security benefits on an API that does not return HTML.
+有许多[安全相关请求头](https://owasp.org/www-project-secure-headers/)可以在 HTTP 响应中返回，以指示浏览器以特定方式行动。然而，这些请求头中的一些旨在与 HTML 响应一起使用，因此对不返回 HTML 的 API 可能几乎没有或没有安全益处。
 
-The following headers should be included in all API responses:
+所有 API 响应都应包含以下请求头：
 
-| Header | Rationale |
-|--------|-----------|
-| `Cache-Control: no-store` | Header used to direct caching done by browsers. Providing `no-store` indicates that any caches of any kind (private or shared) should not store the response that contains the header. A browser must make a new request everytime the API is called to fetch the latest response. This header with a `no-store` value prevents sensitive information from being cached or stored. |
-| `Content-Security-Policy: frame-ancestors 'none'` | Header used to specify whether a response can be framed in a `<frame>`, `<iframe>`, `<embed>` or `<object>` element. For an API response, there is no requirement to be framed in any of those elements. Providing `frame-ancestors 'none'` prevents any domain from framing the response returned by the API call. This header protects against [drag-and-drop](https://www.w3.org/Security/wiki/Clickjacking_Threats#Drag_and_drop_attacks) style clickjacking attacks. |
-| `Content-Type` | Header to specify the content type of a response. This must be specified as per the type of content returned by an API call. If not specified or if specified incorrectly, a browser might attempt to guess the content type of the response. This can return in MIME sniffing attacks. One common content type value is `application/json` if the API response is JSON. |
-| `Strict-Transport-Security` | Header to instruct a browser that the domain should only be accessed using HTTPS, and that any future attempts to access it using HTTP should automatically be converted to HTTPS. This header ensures that API calls are made over HTTPS and protects against spoofed certificates. |
-| `X-Content-Type-Options: nosniff` | Header to instruct a browser to always use the MIME type that is declared in the `Content-Type` header rather than trying to determine the MIME type based on the file's content. This header with a `nosniff` value prevents browsers from performing MIME sniffing, and inappropriately interpreting responses as HTML. |
-| `X-Frame-Options: DENY` | Header used to specify whether a response can be framed in a `<frame>`, `<iframe>`, `<embed>` or `<object>` element. For an API response, there is no requirement to be framed in any of those elements. Providing `DENY` prevents any domain from framing the response returned by the API call. This header with a `DENY` value protects protect against [drag-and-drop](https://www.w3.org/Security/wiki/Clickjacking_Threats#Drag_and_drop_attacks) style clickjacking attacks. |
+| 请求头 | 基本原理 |
+|--------|----------|
+| `Cache-Control: no-store` | 用于指导浏览器缓存。提供 `no-store` 表示任何类型的缓存（私有或共享）都不应存储包含该请求头的响应。浏览器每次调用 API 时都必须发出新请求以获取最新响应。此请求头防止敏感信息被缓存或存储。 |
+| `Content-Security-Policy: frame-ancestors 'none'` | 用于指定响应是否可以在 `<frame>`、`<iframe>`、`<embed>` 或 `<object>` 元素中框定。对于 API 响应，没有必要在这些元素中框定。提供 `frame-ancestors 'none'` 可防止任何域框定 API 调用返回的响应。此请求头防止[拖放](https://www.w3.org/Security/wiki/Clickjacking_Threats#Drag_and_drop_attacks)式点击劫持攻击。 |
+| `Content-Type` | 用于指定响应的内容类型。必须根据 API 调用返回的内容类型进行指定。如果未指定或指定不正确，浏览器可能会尝试猜测响应的内容类型。这可能导致 MIME 嗅探攻击。如果 API 响应是 JSON，一个常见的内容类型值是 `application/json`。 |
+| `Strict-Transport-Security` | 指示浏览器应仅使用 HTTPS 访问域，并且任何未来尝试使用 HTTP 访问都应自动转换为 HTTPS。此请求头确保 API 调用通过 HTTPS 进行，并防止欺骗证书。 |
+| `X-Content-Type-Options: nosniff` | 指示浏览器始终使用 `Content-Type` 请求头中声明的 MIME 类型，而不是尝试根据文件内容确定 MIME 类型。此请求头的 `nosniff` 值可防止浏览器执行 MIME 嗅探，并不当地将响应解释为 HTML。 |
+| `X-Frame-Options: DENY` | 用于指定响应是否可以在 `<frame>`、`<iframe>`、`<embed>` 或 `<object>` 元素中框定。对于 API 响应，没有必要在这些元素中框定。提供 `DENY` 可防止任何域框定 API 调用返回的响应。此请求头的 `DENY` 值可防止[拖放](https://www.w3.org/Security/wiki/Clickjacking_Threats#Drag_and_drop_attacks)式点击劫持攻击。 |
 
-The headers below are only intended to provide additional security when responses are rendered as HTML. As such, if the API will **never** return HTML in responses, then these headers may not be necessary. However, if there is any uncertainty about the function of the headers, or the types of information that the API returns (or may return in future), then it is recommended to include them as part of a defence-in-depth approach.
+下面的请求头仅在响应呈现为 HTML 时才提供额外的安全性。因此，如果 API **永远不会** 在响应中返回 HTML，则这些请求头可能不是必需的。但是，如果对请求头的功能或 API 返回（或将来可能返回）的信息类型存在任何不确定性，则建议将它们作为深度防御方法的一部分包括在内。
 
-| Header | Example | Rationale |
-|--------|-----------|-----------|
-| Content-Security-Policy | `Content-Security-Policy: default-src 'none'` | The majority of CSP functionality only affects pages rendered as HTML. |
-| Permissions-Policy | `Permissions-Policy: accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), navigation-override=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=()` | This header used to be named Feature-Policy. When browsers heed this header, it is used to control browser features via directives. The example disables features with an empty allowlist for a number of permitted [directive names](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy#directives). When you apply this header, verify that the directives are up-to-date and fit your needs. Please have a look at this [article](https://developer.chrome.com/en/docs/privacy-sandbox/permissions-policy) for a detailed explanation on how to control browser features. |
-| Referrer-Policy | `Referrer-Policy: no-referrer` | Non-HTML responses should not trigger additional requests. |
+| 请求头 | 示例 | 基本原理 |
+|--------|-------|----------|
+| Content-Security-Policy | `Content-Security-Policy: default-src 'none'` | CSP 功能的大部分仅影响呈现为 HTML 的页面。 |
+| Permissions-Policy | `Permissions-Policy: accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), navigation-override=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=()` | 此请求头以前名为 Feature-Policy。当浏览器遵守此请求头时，用于通过指令控制浏览器功能。该示例通过对多个[指令名称](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy#directives)使用空白名单来禁用功能。应用此请求头时，请验证指令是最新的并且符合您的需求。请查看[这篇文章](https://developer.chrome.com/en/docs/privacy-sandbox/permissions-policy)以详细解释如何控制浏览器功能。 |
+| Referrer-Policy | `Referrer-Policy: no-referrer` | 非 HTML 响应不应触发额外的请求。 |
 
-## CORS
+## 跨域资源共享（CORS）
 
-Cross-Origin Resource Sharing (CORS) is a W3C standard to flexibly specify what cross-domain requests are permitted. By delivering appropriate CORS Headers your REST API signals to the browser which domains, AKA origins, are allowed to make JavaScript calls to the REST service.
+跨域资源共享（CORS）是一个 W3C 标准，用于灵活指定允许哪些跨域请求。通过提供适当的 CORS 请求头，您的 REST API 向浏览器发出信号，表明允许哪些域（即源）对 REST 服务进行 JavaScript 调用。
 
-- Disable CORS headers if cross-domain calls are not supported/expected.
-- Be as specific as possible and as general as necessary when setting the origins of cross-domain calls.
+- 如果不支持/预期跨域调用，则禁用 CORS 请求头。
+- 在设置跨域调用的源时，尽可能具体，同时又尽可能通用。
 
-## Sensitive information in HTTP requests
+## HTTP 请求中的敏感信息
 
-RESTful web services should be careful to prevent leaking credentials. Passwords, security tokens, and API keys should not appear in the URL, as this can be captured in web server logs, which makes them intrinsically valuable.
+RESTful Web 服务应谨慎防止泄露凭据。密码、安全令牌和 API 密钥不应出现在 URL 中，因为这可能被 Web 服务器日志捕获，使它们本质上具有价值。
 
-- In `POST`/`PUT` requests sensitive data should be transferred in the request body or request headers.
-- In `GET` requests sensitive data should be transferred in an HTTP Header.
+- 在 `POST`/`PUT` 请求中，敏感数据应在请求体或请求头中传输。
+- 在 `GET` 请求中，敏感数据应在 HTTP 请求头中传输。
 
-**OK:**
+**正确：**
 
 `https://example.com/resourceCollection/[ID]/action`
 
 `https://twitter.com/vanderaj/lists`
 
-**NOT OK:**
+**错误：**
 
-`https://example.com/controller/123/action?apiKey=a53f435643de32` because the apiKey is in the URL.
+`https://example.com/controller/123/action?apiKey=a53f435643de32`，因为 apiKey 在 URL 中。
 
-## HTTP Return Code
+## HTTP 返回码
 
-HTTP defines [status code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes). When designing REST API, don't just use `200` for success or `404` for error. Always use the semantically appropriate status code for the response.
+HTTP 定义了[状态码](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)。在设计 REST API 时，不要仅使用 `200` 表示成功或 `404` 表示错误。始终对响应使用语义上恰当的状态码。
 
-Here is a non-exhaustive selection of security related REST API **status codes**. Use it to ensure you return the correct code.
+以下是与安全相关的 REST API **状态码**的非详尽选择。使用它以确保返回正确的代码。
 
-| Code | Message                | Description                                                                                                                                                                                                          |
-|-------------|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 200         | OK                     |  Response to a successful REST API action. The HTTP method can be GET, POST, PUT, PATCH or DELETE.                                                                                                                  |
-| 201         | Created                |  The request has been fulfilled and resource created. A URI for the created resource is returned in the Location header.                                                                                            |
-| 202         | Accepted               | The request has been accepted for processing, but processing is not yet complete.                                                                                                                                     |
-| 301         | Moved Permanently       | Permanent redirection.                                                                                                                                                                                                |
-| 304         | Not Modified           | Caching related response that returned when the client has the same copy of the resource as the server.                                                                                                                  |
-| 307         | Temporary Redirect     | Temporary redirection of resource.                                                                                                                                                                                   |
-| 400         | Bad Request            | The request is malformed, such as message body format error.                                                                                                                                                          |
-| 401         | Unauthorized           | Wrong or no authentication ID/password provided.                                                                                                                                                                      |
-| 403         | Forbidden              |  It's used when the authentication succeeded but authenticated user doesn't have permission to the request resource.                                                                                                |
-| 404         | Not Found              | When a non-existent resource is requested.                                                                                                                                                                            |
-| 405         | Method Not Acceptable  |  The error for an unexpected HTTP method. For example, the REST API is expecting HTTP GET, but HTTP PUT is used.                                                                                                    |
-| 406         | Unacceptable           | The client presented a content type in the Accept header which is not supported by the server API.                                                                                                                    |
-| 413         | Payload too large      | Use it to signal that the request size exceeded the given limit e.g. regarding file uploads.                                                                                                                          |
-| 415         | Unsupported Media Type | The requested content type is not supported by the REST service.                                                                                                                                                      |
-| 429         | Too Many Requests      |  The error is used when there may be DOS attack detected or the request is rejected due to rate limiting.                                                                                                           |
-| 500         | Internal Server Error  | An unexpected condition prevented the server from fulfilling the request. Be aware that the response should not reveal internal  information that helps an attacker, e.g. detailed error messages or  stack traces. |
-| 501         | Not Implemented        | The REST service does not implement the requested operation yet.                                                                                                                                                      |
-| 503         | Service Unavailable    |  The REST service is temporarily unable to process the request. Used to inform the client it should retry at a later time.                                                                                         |
+| 代码 | 消息 | 描述 |
+|------|------|------|
+| 200 | 成功 | 对成功的 REST API 操作的响应。HTTP 方法可以是 GET、POST、PUT、PATCH 或 DELETE。 |
+| 201 | 已创建 | 请求已完成并创建资源。创建的资源的 URI 在 Location 请求头中返回。 |
+| 202 | 已接受 | 请求已接受处理，但处理尚未完成。 |
+| 301 | 永久重定向 | 永久重定向。 |
+| 304 | 未修改 | 与缓存相关的响应，当客户端拥有与服务器相同的资源副本时返回。 |
+| 307 | 临时重定向 | 资源的临时重定向。 |
+| 400 | 错误请求 | 请求格式错误，例如消息体格式错误。 |
+| 401 | 未授权 | 提供了错误或无效的身份验证 ID/密码。 |
+| 403 | 禁止 | 当身份验证成功但经过身份验证的用户没有请求资源的权限时使用。 |
+| 404 | 未找到 | 请求不存在的资源时。 |
+| 405 | 方法不可接受 | 对意外 HTTP 方法的错误。例如，REST API 预期 HTTP GET，但使用了 HTTP PUT。 |
+| 406 | 不可接受 | 客户端在 Accept 请求头中提供的内容类型不受服务器 API 支持。 |
+| 413 | 负载过大 | 用于表示请求大小超过给定限制，例如关于文件上传。 |
+| 415 | 不支持的媒体类型 | REST 服务不支持请求的内容类型。 |
+| 429 | 请求过多 | 当可能检测到 DOS 攻击或由于速率限制而拒绝请求时使用。 |
+| 500 | 内部服务器错误 | 意外情况阻止服务器完成请求。请注意，响应不应泄露帮助攻击者的内部信息，例如详细的错误消息或堆栈跟踪。 |
+| 501 | 未实现 | REST 服务尚未实现请求的操作。 |
+| 503 | 服务不可用 | REST 服务暂时无法处理请求。用于通知客户端应稍后重试。 |
 
-Additional information about HTTP return code usage in REST API can be found [here](https://www.restapitutorial.com/httpstatuscodes.html) and [here](https://restfulapi.net/http-status-codes).
+有关 REST API 中 HTTP 返回码使用的更多信息，可以在[此处](https://www.restapitutorial.com/httpstatuscodes.html)和[此处](https://restfulapi.net/http-status-codes)找到。
