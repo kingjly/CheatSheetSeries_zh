@@ -2,7 +2,7 @@
 
 [![OWASP Flagship](https://img.shields.io/badge/owasp-flagship%20project-48A646.svg)](https://www.owasp.org/index.php/OWASP_Project_Inventory#tab=Flagship_Projects)
 [![Creative Commons License](https://img.shields.io/github/license/OWASP/CheatSheetSeries)](https://creativecommons.org/licenses/by-sa/4.0/ "CC BY-SA 4.0")
-![Translation Status](https://img.shields.io/badge/翻译进度-进行中-yellow)
+![Translation Status](https://img.shields.io/badge/翻译进度-已完成-green)
 
 ## 📢 翻译项目说明
 
@@ -20,8 +20,8 @@
 
 ### 翻译进度
 
-- 目前翻译工作正在进行中
-- 已翻译文件位于 `cheatsheets` 目录
+- 翻译工作已全部完成
+- 所有文件已翻译并位于 `cheatsheets` 目录
 
 # Welcome to the OWASP Cheat Sheet Series
 
