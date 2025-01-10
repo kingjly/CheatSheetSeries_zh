@@ -1,165 +1,171 @@
-# Network segmentation Cheat Sheet
+# 网络分段备忘录
 
-## Introduction
+## 引言
 
-Network segmentation is the core of multi-layer defense in depth for modern services. Segmentation slow down an attacker if he cannot implement attacks such as:
+网络分段是现代服务多层深度防御的核心。分段可以减缓攻击者实施以下攻击的速度：
 
-- SQL-injections, see [SQL Injection Prevention Cheat Sheet](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.md);
-- compromise of workstations of employees with elevated privileges;
-- compromise of another server in the perimeter of the organization;
-- compromise of the target service through the compromise of the LDAP directory, DNS server, and other corporate services and sites published on the Internet.
+- SQL 注入，参见 [SQL 注入预防备忘录](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.md)；
+- 攻陷具有高级权限的员工工作站；
+- 攻陷组织外围的另一台服务器；
+- 通过攻陷 LDAP 目录、DNS 服务器和其他在互联网上发布的企业服务和站点来攻陷目标服务。
 
-The main goal of this cheat sheet is to show the basics of network segmentation to effectively counter attacks by building a secure and maximally isolated service network architecture.
+本备忘录的主要目标是展示网络分段的基础知识，通过构建安全且最大程度隔离的服务网络架构，有效地对抗攻击。
 
-Segmentation will avoid the following situations:
+分段将避免以下情况：
 
-- executing arbitrary commands on a public web server (NginX, Apache, Internet Information Service) prevents an attacker from gaining direct access to the database;
-- having unauthorized access to the database server, an attacker cannot access CnC on the Internet.
+- 在公共 Web 服务器（NginX、Apache、Internet Information Service）上执行任意命令，防止攻击者直接访问数据库；
+- 即使攻击者未经授权访问数据库服务器，也无法访问互联网上的 CnC（命令与控制）。
 
-## Content
+## 内容
 
-- Schematic symbols;
-- Three-layer network architecture;
-- Interservice interaction;
-- Network security policy;
-- Useful links.
+- 示意图符号；
+- 三层网络架构；
+- 服务间交互；
+- 网络安全策略；
+- 有用的链接。
 
-## Schematic symbols
+## 示意图符号
 
-Elements used in network diagrams:
+网络图中使用的元素：
 
-![Schematic symbols](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_Schematic_symbols.drawio.png)
+![示意图符号](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_Schematic_symbols.drawio.png)
 
-Crossing the border of the rectangle means crossing the firewall:
-![Traffic passes through two firewalls](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_firewall_1.drawio.png)
+跨越矩形边界意味着穿过防火墙：
+![流量通过两个防火墙](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_firewall_1.drawio.png)
 
-In the image above, traffic passes through two firewalls with the names FW1 and FW2
+在上图中，流量通过名为 FW1 和 FW2 的两个防火墙
 
-![Traffic passes through one firewall](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_firewall_2.drawio.png)
+![流量通过一个防火墙](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_firewall_2.drawio.png)
 
-In the image above, traffic passes through one firewall, behind which there are two VLANs
+在上图中，流量通过一个防火墙，防火墙后有两个 VLAN
 
-Further, the schemes do not contain firewall icons so as not to overload the schemes
+后续图表中不再包含防火墙图标，以避免过度复杂
 
-## Three-layer network architecture
+## 三层网络架构
 
-By default, developed information systems should consist of at least three components (**security zones**):
+默认情况下，开发的信息系统应至少由三个组件（**安全区域**）组成：
 
-1. [FRONTEND](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Network_Segmentation_Cheat_Sheet.md#FRONTEND);
-2. [MIDDLEWARE](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Network_Segmentation_Cheat_Sheet.md#MIDDLEWARE);
-3. [BACKEND](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Network_Segmentation_Cheat_Sheet.md#BACKEND).
+1. [前端（FRONTEND）](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Network_Segmentation_Cheat_Sheet.md#FRONTEND)；
+2. [中间层（MIDDLEWARE）](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Network_Segmentation_Cheat_Sheet.md#MIDDLEWARE)；
+3. [后端（BACKEND）](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Network_Segmentation_Cheat_Sheet.md#BACKEND)。
 
-### FRONTEND
+### 前端（FRONTEND）
 
-FRONTEND - A frontend is a set of segments with the following network elements:
+前端是包含以下网络元素的一组网段：
 
-- balancer;
-- application layer firewall;
-- web server;
-- web cache.
+- 负载均衡器；
+- 应用层防火墙；
+- Web 服务器；
+- Web 缓存。
 
-![FRONTEND](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_FRONTEND.drawio.png)
+![前端](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_FRONTEND.drawio.png)
 
-### MIDDLEWARE
+### 中间层（MIDDLEWARE）
 
-MIDDLEWARE - a set of segments to accommodate the following network elements:
+中间层是用于容纳以下网络元素的一组网段：
 
-- web applications that implement the logic of the information system (processing requests from clients, other services of the company and external services; execution of requests);
-- authorization services;
-- analytics services;
-- message queues;
-- stream processing platform.
+- 实现信息系统逻辑的 Web 应用程序（处理来自客户端、公司其他服务和外部服务的请求；执行请求）；
+- 授权服务；
+- 分析服务；
+- 消息队列；
+- 流处理平台。
 
-![MIDDLEWARE](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_MIDDLEWARE.drawio.png)
+![中间层](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_MIDDLEWARE.drawio.png)
 
-### BACKEND
+### 后端（BACKEND）
 
-BACKEND - a set of network segments to accommodate the following network elements:
+后端是用于容纳以下网络元素的一组网段：
 
-- SQL database;
-- LDAP directory (Domain controller);
-- storage of cryptographic keys;
-- file server.
+- SQL 数据库；
+- LDAP 目录（域控制器）；
+- 加密密钥存储；
+- 文件服务器。
 
-![BACKEND](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_BACKEND.drawio.png)
+![后端](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_BACKEND.drawio.png)
 
-### Example of Three-layer network architecture
+### 三层网络架构示例
 
-![BACKEND](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_TIER_Example.drawio.png)
-The following example shows an organization's local network. The organization is called "Сontoso".
+![后端](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_TIER_Example.drawio.png)
 
-The edge firewall contains 2 VLANs of **FRONTEND** security zone:
+下面的示例展示了一个组织的本地网络。该组织名为"Contoso"。
 
-- _DMZ Inbound_ - a segment for hosting services and applications accessible from the Internet, they must be protected by WAF;
-- _DMZ Outgoing_ - a segment for hosting services that are inaccessible from the Internet, but have access to external networks (the firewall does not contain any rules for allowing traffic from external networks).
+边缘防火墙包含 **前端（FRONTEND）** 安全区域的 2 个 VLAN：
 
-The internal firewall contains 4 VLANs:
+- _DMZ 入站_ - 用于托管可从互联网访问的服务和应用程序，必须受 WAF 保护；
+- _DMZ 出站_ - 用于托管无法从互联网访问但可访问外部网络的服务（防火墙不包含允许来自外部网络的流量的任何规则）。
 
-- **MIDDLEWARE** security zone contains only one VLAN with name _APPLICATIONS_ - a segment designed to host information system applications that interact with each other (interservice communication) and interact with other services;
-- **BACKEND** security zone contains:
-    - _DATABASES_ - a segment designed to delimit various databases of an automated system;
-    - _AD SERVICES_ - segment designed to host various Active Directory services, in the example only one server with a domain controller Contoso.com is shown;
-    - _LOGS_ - segment, designed to host servers with logs, servers centrally store application logs of an automated system.
+内部防火墙包含 4 个 VLAN：
 
-## Interservice interaction
+- **中间层（MIDDLEWARE）** 安全区域仅包含一个名为 _应用程序_ 的 VLAN - 用于托管相互交互（服务间通信）并与其他服务交互的信息系统应用程序的网段；
+- **后端（BACKEND）** 安全区域包含：
+    - _数据库_ - 用于划分自动化系统各种数据库的网段；
+    - _AD 服务_ - 用于托管各种 Active Directory 服务的网段，在示例中仅显示一台域控制器 Contoso.com 服务器；
+    - _日志_ - 用于托管日志服务器的网段，服务器集中存储自动化系统的应用程序日志。
 
-Usually some information systems of the company interact with each other. It is important to define a firewall policy for such interactions.
-The base allowed interactions are indicated by the green arrows in the image below:
-![Interservice interaction](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_interservice.drawio.png)
-The image above also shows the allowed access from the FRONTEND and MIDDLEWARE segments to external networks (the Internet, for example).
+## 服务间交互
 
-From this image follows:
+通常，公司的一些信息系统会相互交互。为此类交互定义防火墙策略非常重要。
 
-1. Access between FRONTEND and MIDDLEWARE segments of different information systems is prohibited;
-2. Access from the MIDDLEWARE segment to the BACKEND segment of another service is prohibited (access to a foreign database bypassing the application server is prohibited).
+基本允许的交互由下图中的绿色箭头指示：
+![服务间交互](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_interservice.drawio.png)
+上图还显示了从前端（FRONTEND）和中间层（MIDDLEWARE）网段到外部网络（例如互联网）的允许访问。
 
-Forbidden accesses are indicated by red arrows in the image below:
-![Prohibited Interservice Communication](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_interservice_deny.drawio.png)
+从此图可以得出：
 
-### Many applications on the same network
+1. 不同信息系统的前端（FRONTEND）和中间层（MIDDLEWARE）网段之间的访问是被禁止的；
+2. 禁止从中间层（MIDDLEWARE）网段访问另一个服务的后端（BACKEND）网段（禁止绕过应用服务器直接访问外部数据库）。
 
-If you prefer to have fewer networks in your organization and host more applications on each network, it is acceptable to host the load balancer on those networks. This balancer will balance traffic to applications on the network.
-In this case, it will be necessary to open one port to such a network, and balancing will be performed, for example, based on the HTTP request parameters.
-An example of such segmentation:
-![Interservice Communication with balancing](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_interservice_balancer.drawio.png)
+禁止的访问在下图中以红色箭头表示：
+![禁止的服务间通信](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_interservice_deny.drawio.png)
 
-As you can see, there is only one incoming access to each network, access is opened up to the balancer in the network. However, in this case, segmentation no longer works, access control between applications from different network segments is performed at the 7th level of the OSI model using a balancer.
+### 同一网络上的多个应用
 
-## Network security policy
+如果您希望在组织中减少网络数量并在每个网络上托管更多应用，可以接受在这些网络上托管负载均衡器。此均衡器将在网络上对流量进行负载均衡。
 
-The organization must define a "paper" policy that describes firewall rules and basic allowed network access.
-This policy is at least useful:
+在这种情况下，需要为此类网络开放一个端口，并且可以基于 HTTP 请求参数等进行负载均衡。
 
-- network administrators;
-- security representatives;
-- IT auditors;
-- architects of information systems and software;
-- developers;
-- IT administrators.
+这种分段的示例：
+![带负载均衡的服务间通信](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_interservice_balancer.drawio.png)
 
-It is convenient when the policy is described by similar images. The information is presented as concisely and simply as possible.
+可以看到，每个网络只有一个入站访问，访问在网络中的负载均衡器上开放。但在这种情况下，分段不再起作用，不同网络段应用程序之间的访问控制是通过负载均衡器在 OSI 模型的第 7 层进行的。
 
-### Examples of individual policy provisions
+## 网络安全策略
 
-Examples in the network policy will help colleagues quickly understand what access is potentially allowed and can be requested.
+组织必须定义一个描述防火墙规则和基本允许网络访问的"文件"策略。
 
-#### Permissions for CI/CD
+此策略对以下人员至少是有用的：
 
-The network security policy may define, for example, the basic permissions allowed for the software development system. Let's look at an example of what such a policy might look like:
+- 网络管理员；
+- 安全代表；
+- IT 审计员；
+- 信息系统和软件架构师；
+- 开发人员；
+- IT 管理员。
+
+当策略通过类似图像描述时，会更加便利。信息应尽可能简洁和直观地呈现。
+
+### 个别策略条款示例
+
+网络策略中的示例将帮助同事快速理解什么访问是潜在允许的，可以被请求。
+
+#### CI/CD 的权限
+
+网络安全策略可以定义软件开发系统允许的基本权限。让我们看一个这种策略可能的样子：
 ![CI-CD](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_repo.drawio.png)
 
-#### Secure logging
+#### 安全日志记录
 
-It is important that in the event of a compromise of any information system, its logs are not subsequently modified by an attacker. To do this, you can do the following: copy the logs to a separate server, for example, using the syslog protocol, which does not allow an attacker to modify the logs, syslog only allows you to add new events to the logs.
-The network security policy for this activity looks like this:
-![Logging](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_logs.drawio.png)
-In this example, we are also talking about application logs that may contain security events, as well as potentially important events that may indicate an attack.
+在任何信息系统被攻陷的情况下，重要的是其日志不会被攻击者后续修改。为此，可以执行以下操作：将日志复制到单独的服务器，例如使用 syslog 协议，该协议不允许攻击者修改日志，syslog 仅允许向日志中添加新事件。
 
-#### Permissions for monitoring systems
+针对此活动的网络安全策略如下：
+![日志记录](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_logs.drawio.png)
+在此示例中，我们还讨论了可能包含安全事件的应用程序日志，以及可能表明攻击的潜在重要事件。
 
-Suppose a company uses Zabbix as an IT monitoring system. In this case, the policy might look like this:
-![Zabbix-Example](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_Monitoring.drawio.png)
+#### 监控系统的权限
 
-## Useful links
+假设公司使用 Zabbix 作为 IT 监控系统。在这种情况下，策略可能如下所示：
+![Zabbix 示例](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/assets/Network_Segmentation_Cheat_Sheet_Monitoring.drawio.png)
 
-- Full network segmentation cheat sheet by [sergiomarotco](https://github.com/sergiomarotco): [link](https://github.com/sergiomarotco/Network-segmentation-cheat-sheet).
+## 有用的链接
+
+- [sergiomarotco](https://github.com/sergiomarotco) 的完整网络分段备忘录：[链接](https://github.com/sergiomarotco/Network-segmentation-cheat-sheet)。
