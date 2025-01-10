@@ -1,117 +1,124 @@
-# User Privacy Protection Cheat Sheet
+# 用户隐私保护备忘录
 
-## Introduction
+## 引言
 
-This OWASP Cheat Sheet introduces mitigation methods that web developers may utilize in order to protect their users from a vast array of potential threats and aggressions that might try to undermine their privacy and anonymity. This cheat sheet focuses on privacy and anonymity threats that users might face by using online services, especially in contexts such as social networking and communication platforms.
+这份 OWASP 备忘录介绍了 Web 开发者可以利用的缓解方法，以保护用户免受可能破坏其隐私和匿名性的广泛潜在威胁和侵犯。这份备忘录重点关注用户在使用在线服务时可能面临的隐私和匿名性威胁，尤其是在社交网络和通信平台等环境中。
 
-## Guidelines
+## 指南
 
-### Strong Cryptography
+### 强密码学
 
-Any online platform that handles user identities, private information or communications must be secured with the use of strong cryptography. User communications must be encrypted in transit and storage. User secrets such as passwords must also be protected using strong, collision-resistant hashing algorithms with increasing work factors, in order to greatly mitigate the risks of exposed credentials as well as proper integrity control.
+任何处理用户身份、私人信息或通信的在线平台都必须使用强密码学进行保护。用户通信必须在传输和存储过程中加密。用户密码等秘密信息必须使用强大的、防碰撞的哈希算法和不断增加的工作因子进行保护，以大大降低凭据泄露的风险并确保适当的完整性控制。
 
-To protect data in transit, developers must use and adhere to TLS/SSL best practices such as verified certificates, adequately protected private keys, usage of strong ciphers only, informative and clear warnings to users, as well as sufficient key lengths. Private data must be encrypted in storage using keys with sufficient lengths and under strict access conditions, both technical and procedural. User credentials must be hashed regardless of whether or not they are encrypted in storage.
+为保护传输中的数据，开发者必须使用和遵循 TLS/SSL 最佳实践，如经过验证的证书、充分保护的私钥、仅使用强密码、对用户的信息性和清晰警告，以及足够的密钥长度。私人数据必须使用具有足够长度的密钥在严格的技术和程序访问条件下进行加密。无论是否在存储中加密，用户凭据都必须进行哈希处理。
 
-For detailed guides about strong cryptography and best practices, read the following OWASP references:
+有关强密码学和最佳实践的详细指南，请阅读以下 OWASP 参考资料：
 
-1. [Cryptographic Storage Cheat Sheet](Cryptographic_Storage_Cheat_Sheet.md).
-2. [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md).
-3. [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md).
-4. [Guide to Cryptography](https://wiki.owasp.org/index.php/Guide_to_Cryptography).
-5. [Testing for TLS/SSL](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_SSL_TLS_Ciphers_Insufficient_Transport_Layer_Protection.html).
+1. [密码存储备忘录](Cryptographic_Storage_Cheat_Sheet.md)。
+2. [身份验证备忘录](Authentication_Cheat_Sheet.md)。
+3. [传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)。
+4. [密码学指南](https://wiki.owasp.org/index.php/Guide_to_Cryptography)。
+5. [测试 TLS/SSL](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_SSL_TLS_Ciphers_Insufficient_Transport_Layer_Protection.html)。
 
-### Support HTTP Strict Transport Security
+### 支持 HTTP 严格传输安全
 
-HTTP Strict Transport Security (HSTS) is an HTTP header set by the server indicating to the user agent that only secure (HTTPS) connections are accepted, prompting the user agent to change all insecure HTTP links to HTTPS, and forcing the compliant user agent to fail-safe by refusing any TLS/SSL connection that is not trusted by the user.
+HTTP 严格传输安全（HSTS）是服务器设置的 HTTP 标头，向用户代理指示仅接受安全（HTTPS）连接，提示用户代理将所有不安全的 HTTP 链接更改为 HTTPS，并强制兼容的用户代理通过拒绝任何未被用户信任的 TLS/SSL 连接来进行故障安全。
 
-HSTS has average support on popular user agents, such as Mozilla Firefox and Google Chrome. Nevertheless, it remains very useful for users who are in consistent fear of spying and Man in the Middle Attacks.
+HSTS 在 Mozilla Firefox 和 Google Chrome 等流行用户代理中有平均支持率。尽管如此，对于那些持续担心间谍活动和中间人攻击的用户来说，它仍然非常有用。
 
-If it is impractical to force HSTS on all users, web developers should at least give users the choice to enable it if they wish to make use of it.
+如果对所有用户强制执行 HSTS 不切实际，Web 开发者应该至少给用户选择启用它的选项。
 
-For more details regarding HSTS, please visit:
+有关 HSTS 的更多详细信息，请访问：
 
-1. [HTTP Strict Transport Security in Wikipedia](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security).
-2. [IETF for HSTS RFC](https://tools.ietf.org/html/rfc6797).
-3. [OWASP Appsec Tutorial Series - Episode 4: Strict Transport Security](http://www.youtube.com/watch?v=zEV3HOuM_Vw).
+1. [维基百科中的 HTTP 严格传输安全](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security)。
+2. [HSTS RFC](https://tools.ietf.org/html/rfc6797)。
+3. [OWASP Appsec 教程系列 - 第 4 集：严格传输安全](http://www.youtube.com/watch?v=zEV3HOuM_Vw)。
 
-### Digital Certificate Pinning
+### 数字证书固定
 
-Certificate Pinning is the practice of hardcoding or storing a predefined set of information (usually hashes) for digital certificates/public keys in the user agent (be it web browser, mobile app or browser plugin) such that only the predefined certificates/public keys are used for secure communication, and all others will fail, even if the user trusted (implicitly or explicitly) the other certificates/public keys.
+证书固定是在用户代理（无论是 Web 浏览器、移动应用还是浏览器插件）中硬编码或存储预定义的数字证书/公钥信息集（通常是哈希值）的做法，使得仅使用预定义的证书/公钥进行安全通信，而所有其他证书/公钥都将失败，即使用户（隐式或显式）信任其他证书/公钥。
 
-Some advantages for pinning are:
+固定的一些优势包括：
 
-- In the event of a CA compromise, in which a compromised CA trusted by a user can issue certificates for any domain, allowing evil perpetrators to eavesdrop on users.
-- In environments where users are forced to accept a potentially-malicious root CA, such as corporate environments or national PKI schemes.
-- In applications where the target demographic may not understand certificate warnings, and is likely to just allow any invalid certificate.
+- 在证书颁发机构（CA）被入侵的情况下，被入侵的 CA 可以为任何域颁发证书，从而允许邪恶的肇事者窃听用户通信。
+- 在用户被迫接受潜在恶意根 CA 的环境中，如企业环境或国家公钥基础设施（PKI）方案。
+- 在目标用户群可能不理解证书警告并可能允许任何无效证书的应用程序中。
 
-For details regarding certificate pinning, please refer to the following:
+有关证书固定的详细信息，请参考以下资料：
 
-1. [OWASP Certificate Pinning Cheat Sheet](Pinning_Cheat_Sheet.md).
-2. [Public Key Pinning Extension for HTTP RFC](https://tools.ietf.org/html/rfc7469).
-3. [Securing the SSL channel against man-in-the-middle attacks: Future technologies - HTTP Strict Transport Security and Pinning of Certs, by Tobias Gondrom](https://owasp.org/www-pdf-archive/OWASP_defending-MITMA_APAC2012.pdf).
+1. [OWASP 证书固定备忘录](Pinning_Cheat_Sheet.md)。
+2. [HTTP 公钥固定扩展 RFC](https://tools.ietf.org/html/rfc7469)。
+3. [通过 Tobias Gondrom 防御中间人攻击保护 SSL 通道：未来技术 - HTTP 严格传输安全和证书固定](https://owasp.org/www-pdf-archive/OWASP_defending-MITMA_APAC2012.pdf)。
 
-### Panic Modes
+### 紧急模式
 
-A panic mode is a mode that threatened users can refer to when they fall under direct threat to disclose account credentials.
+紧急模式是受威胁用户在面临直接威胁要求披露账户凭据时可以使用的模式。
 
-Giving users the ability to create a panic mode can help them survive these threats, especially in tumultuous regions around the world. Unfortunately many users around the world are subject to types of threats that most web developers do not know of or take into account.
+让用户能够创建紧急模式可以帮助他们在这些威胁中生存，尤其是在世界上动荡的地区。不幸的是，世界上许多用户面临着大多数 Web 开发者不了解或未考虑到的威胁类型。
 
-Examples of panic modes are modes where distressed users can delete their data upon threat, log into fake inboxes/accounts/systems, or invoke triggers to backup/upload/hide sensitive data.
+紧急模式的示例包括受到威胁时删除数据的模式、登录虚假收件箱/账户/系统，或触发备份/上传/隐藏敏感数据。
 
-The appropriate panic mode to implement differs depending on the application type. A disk encryption software such as VeraCrypt might implement a panic mode that starts up a fake system partition if the user entered their distressed password.
+要实施的适当紧急模式取决于应用程序类型。像 VeraCrypt 这样的磁盘加密软件可能实施一个紧急模式，在用户输入受胁密码时启动一个虚假系统分区。
 
-Email providers might implement a panic mode that hides predefined sensitive emails or contacts, allowing reading innocent email messages only, usually as defined by the user, while preventing the panic mode from overtaking the actual account.
+电子邮件提供商可能实施一个隐藏预定义敏感电子邮件或联系人的紧急模式，仅允许阅读无害的电子邮件消息，通常由用户定义，同时防止紧急模式接管实际账户。
 
-An important note about panic modes is that they must not be easily discoverable, if at all. An adversary inside a victim's panic mode must not have any way, or as few possibilities as possible, of finding out the truth. This means that once inside a panic mode, most non-sensitive normal operations must be allowed to continue (such as sending or receiving email), and that further panic modes must be possible to create from inside the original panic mode (If the adversary tried to create a panic mode on a victim's panic mode and failed, the adversary would know they were already inside a panic mode, and might attempt to hurt the victim).
+关于紧急模式的重要注意事项是它们不应易于被发现。对手进入受害者的紧急模式后，必须尽可能少地发现真相。这意味着进入紧急模式后，必须允许继续大多数非敏感的正常操作，并且可以从原始紧急模式内部创建进一步的紧急模式（如果对手试图在受害者的紧急模式上创建紧急模式并失败，对手将知道他们已经在紧急模式中，并可能试图伤害受害者）。
 
-Another solution would be to prevent panic modes from being generated from the user account, and instead making it a bit harder to spoof by adversaries. For example it could be only created Out Of Band, and adversaries must have no way to know a panic mode already exists for that particular account.
+另一种解决方案是防止从用户账户生成紧急模式，而是使其对对手更难伪造。例如，它可能只能带外创建，并且对手必须无法知道特定账户是否已存在紧急模式。
 
-The implementation of a panic mode must always aim to confuse adversaries and prevent them from reaching the actual accounts/sensitive data of the victim, as well as prevent the discovery of any existing panic modes for a particular account.
+紧急模式的实施必须始终旨在混淆对手，防止他们访问受害者的实际账户/敏感数据，并防止发现特定账户的任何现有紧急模式。
 
-For more details regarding VeraCrypt's hidden operating system mode, please refer to:
+有关 VeraCrypt 隐藏操作系统模式的更多详细信息，请参考：
 
-- [VeraCrypt Hidden Operating System](https://www.veracrypt.fr/en/Hidden%20Operating%20System.html).
+- [VeraCrypt 隐藏操作系统](https://www.veracrypt.fr/en/Hidden%20Operating%20System.html)。
 
-### Remote Session Invalidation
+### 远程会话失效
 
-In case user equipment is lost, stolen or confiscated, or under suspicion of cookie theft; it might be very beneficial for users to able to see view their current online sessions and disconnect/invalidate any suspicious lingering sessions, especially ones that belong to stolen or confiscated devices. Remote session invalidation can also helps if a user suspects that their session details were stolen in a Man-in-the-Middle attack.
+在用户设备丢失、被盗或被没收，或者怀疑 Cookie 被盗的情况下，让用户能够查看当前在线会话并断开/使任何可疑的残留会话失效可能非常有益，尤其是那些属于被盗或被没收设备的会话。如果用户怀疑其会话详细信息在中间人攻击中被窃取，远程会话失效也会有所帮助。
 
-For details regarding session management, please refer to:
+有关会话管理的详细信息，请参考：
 
-- [OWASP Session Management Cheat Sheet](Session_Management_Cheat_Sheet.md).
+- [OWASP 会话管理备忘录](Session_Management_Cheat_Sheet.md)。
 
-### Allow Connections from Anonymity Networks
+### 允许来自匿名网络的连接
 
-Anonymity networks, such as the Tor Project, give users in tumultuous regions around the world a golden chance to escape surveillance, access information or break censorship barriers. More often than not, activists in troubled regions use such networks to report injustice or send uncensored information to the rest of the world, especially mediums such as social networks, media streaming websites and email providers.
+匿名网络（如 Tor 项目）为世界各地动荡地区的用户提供了逃避监视、获取信息或突破审查障碍的绝佳机会。通常，动荡地区的活动人士使用这些网络报告不公正或向世界其他地方发送未经审查的信息，尤其是社交网络、媒体流媒体网站和电子邮件提供商。
 
-Web developers and network administrators must pursue every avenue to enable users to access services from behind such networks, and any policy made against such anonymity networks need to be carefully re-evaluated with respect to impact on people around the world.
+Web 开发者和网络管理员必须追求每一个途径，使用户能够从这些网络后面访问服务，并且针对此类匿名网络的任何政策都需要仔细重新评估其对世界各地人们的影响。
 
-If possible, application developers should try to integrate or enable easy coupling of their applications with these anonymity networks, such as supporting SOCKS proxies or integration libraries (e.g. OnionKit for Android).
+如果可能，应用程序开发者应尝试集成或实现与这些匿名网络的轻松耦合，例如支持 SOCKS 代理或集成库（如 Android 的 OnionKit）。
 
-For more information about anonymity networks, and the user protections they provide, please refer to:
+有关匿名网络及其提供的用户保护的更多信息，请参考：
 
-1. [The Tor Project](https://www.torproject.org).
-2. [I2P Network](http://www.i2p2.de).
-3. [OnionKit: Boost Network Security and Encryption in your Android Apps](https://github.com/guardianproject/OnionKit).
+1. [Tor 项目](https://www.torproject.org)。
+2. [I2P 网络](http://www.i2p2.de)。
+3. [OnionKit：增强 Android 应用的网络安全和加密](https://github.com/guardianproject/OnionKit)。
 
-### Prevent IP Address Leakage
+### 防止 IP 地址泄露
 
-Preventing leakage of user IP addresses is of great significance when user protection is in scope. Any application that hosts external third-party content, such as avatars, signatures or photo attachments; must take into account the benefits of allowing users to block third-party content from being loaded in the application page.
+防止用户 IP 地址泄露对于用户保护至关重要。任何托管外部第三方内容（如头像、签名或照片附件）的应用程序都必须考虑允许用户阻止第三方内容加载到应用程序页面的好处。
 
-If it was possible to embed 3rd-party, external domain images, for example, in a user's feed or timeline; an adversary might use it to discover a victim's real IP address by hosting it on his domain and watch for HTTP requests for that image.
+如果可以嵌入第三方、外部域图像，例如在用户的信息流或时间线中，攻击者可能通过在其域上托管图像并监视该图像的 HTTP 请求来发现受害者的真实 IP 地址。
 
-Many web applications need user content to operate, and this is completely acceptable as a business process; however web developers are advised to consider giving users the option of blocking external content as a precaution. This applies mainly to social networks and forums, but can also apply to web-based e-mail, where images can be embedded in HTML-formatted emails.
+许多 Web 应用程序需要用户内容才能运行，这作为业务流程是完全可以接受的；但是，Web 开发者建议考虑给用户阻止外部内容的选项作为预防措施。这主要适用于社交网络和论坛，但也可适用于基于 Web 的电子邮件，其中图像可以嵌入在 HTML 格式的电子邮件中。
 
-A similar issue exists in HTML-formatted emails that contain third-party images, however most email clients and providers block loading of third-party content by default; giving users better privacy and anonymity protection.
+HTML 格式的电子邮件中包含第三方图像存在类似问题，但大多数电子邮件客户端和提供商默认阻止加载第三方内容；这为用户提供了更好的隐私和匿名性保护。
 
-### Honesty & Transparency
+### 诚实与透明
 
-If the web application cannot provide enough legal or political protections to the user, or if the web application cannot prevent misuse or disclosure of sensitive information such as logs, the truth must be told to the users in a clear understandable form, so that users can make an educated choice about whether or not they should use that particular service.
+如果 Web 应用程序无法为用户提供足够的法律或政治保护，或者无法防止敏感信息（如日志）被滥用或披露，则必须以清晰、易懂的形式告诉用户真相，以便用户可以就是否应使用该特定服务做出明智的选择。
 
-If it doesn't violate the law, inform users if their information is being requested for removal or investigation by external entities.
+如果不违反法律，请告知用户外部实体是否正在请求删除或调查他们的信息。
 
-Honesty goes a long way towards cultivating a culture of trust between a web application and its users, and it allows many users around the world to weigh their options carefully, preventing harm to users in various contrasting regions around the world.
+诚实有助于在 Web 应用程序和其用户之间培养信任文化，并允许世界各地的许多用户仔细权衡他们的选择，从而防止在不同地区的用户遭受伤害。
 
-More insight regarding secure logging can be found at:
+有关安全日志记录的更多见解，请参见：
 
-- [OWASP Logging Cheat Sheet](Logging_Cheat_Sheet.md)
+- [OWASP 日志记录备忘录](Logging_Cheat_Sheet.md)
+
+## 参考资料
+
+- [CWE 条目 601：开放重定向](http://cwe.mitre.org/data/definitions/601.html)。
+- [WASC 文章：URL 重定向器滥用](http://projects.webappsec.org/w/page/13246981/URL%20Redirector%20Abuse)。
+- [Google 博客文章：开放重定向的危险](http://googlewebmastercentral.blogspot.com/2009/01/open-redirect-urls-is-your-site-being.html)。
+- [防止开放重定向攻击（C\#）](http://www.asp.net/mvc/tutorials/security/preventing-open-redirection-attacks)。
