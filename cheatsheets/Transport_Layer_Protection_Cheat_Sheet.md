@@ -1,5 +1,5 @@
-# DEPRECATED: Transport Layer Protection Cheat Sheet
+# 已弃用：传输层保护备忘录
 
-The Transport Layer Protection Cheat Sheet has been deprecated.
+本传输层保护备忘录已被弃用。
 
-Please visit the [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md) instead.
+请访问 [传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)。
