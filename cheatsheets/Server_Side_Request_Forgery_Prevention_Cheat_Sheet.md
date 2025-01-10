@@ -1,193 +1,193 @@
-# Server-Side Request Forgery Prevention Cheat Sheet
+# 服务端请求伪造（SSRF）预防备忘录
 
-## Introduction
+## 引言
 
-The objective of the cheat sheet is to provide advices regarding the protection against [Server Side Request Forgery](https://www.acunetix.com/blog/articles/server-side-request-forgery-vulnerability/) (SSRF) attack.
+本备忘录旨在提供关于防范[服务端请求伪造](https://www.acunetix.com/blog/articles/server-side-request-forgery-vulnerability/)（SSRF）攻击的建议。
 
-This cheat sheet will focus on the defensive point of view and will not explain how to perform this attack. This [talk](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf) from the security researcher [Orange Tsai](https://twitter.com/orange_8361) as well as this [document](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf) provide techniques on how to perform this kind of attack.
+本备忘录将从防御的角度出发，不会解释如何执行此类攻击。安全研究员 [Orange Tsai](https://twitter.com/orange_8361) 的这个[演讲](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf)以及这份[文档](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf)提供了执行此类攻击的技术。
 
-## Context
+## 背景
 
-SSRF is an attack vector that abuses an application to interact with the internal/external network or the machine itself. One of the enablers for this vector is the mishandling of URLs, as showcased in the following examples:
+SSRF 是一种滥用应用程序与内部/外部网络或机器本身交互的攻击向量。这一向量的主要诱因是对 URL 的错误处理，如下面的示例所示：
 
-- Image on an external server (*e.g.* user enters image URL of their avatar for the application to download and use).
-- Custom [WebHook](https://en.wikipedia.org/wiki/Webhook) (users have to specify Webhook handlers or Callback URLs).
-- Internal requests to interact with another service to serve a specific functionality. Most of the times, user data is sent along to be processed, and if poorly handled, can perform specific injection attacks.
+- 外部服务器上的图像（*例如*用户输入头像图像的 URL，供应用程序下载和使用）。
+- 自定义 [WebHook](https://en.wikipedia.org/wiki/Webhook)（用户必须指定 Webhook 处理程序或回调 URL）。
+- 内部请求与另一个服务交互以提供特定功能。大多数情况下，用户数据会被发送以进行处理，如果处理不当，可能执行特定的注入攻击。
 
-## Overview of a SSRF common flow
+## SSRF 常见流程概述
 
-![SSRF Common Flow](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Common_Flow.png)
+![SSRF 常见流程](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Common_Flow.png)
 
-*Notes:*
+*注意：*
 
-- SSRF is not limited to the HTTP protocol. Generally, the first request is HTTP, but in cases where the application itself performs the second request, it could use different protocols (*e.g.* FTP, SMB, SMTP, etc.) and schemes (*e.g.* `file://`, `phar://`, `gopher://`, `data://`, `dict://`, etc.).
-- If the application is vulnerable to [XML eXternal Entity (XXE) injection](https://portswigger.net/web-security/xxe) then it can be exploited to perform a [SSRF attack](https://portswigger.net/web-security/xxe#exploiting-xxe-to-perform-ssrf-attacks), take a look at the [XXE cheat sheet](XML_External_Entity_Prevention_Cheat_Sheet.md) to learn how to prevent the exposure to XXE.
+- SSRF 不仅限于 HTTP 协议。通常第一个请求是 HTTP，但在应用程序本身执行第二个请求的情况下，可能使用不同的协议（*例如* FTP、SMB、SMTP 等）和方案（*例如* `file://`、`phar://`、`gopher://`、`data://`、`dict://` 等）。
+- 如果应用程序容易受到 [XML 外部实体（XXE）注入](https://portswigger.net/web-security/xxe)的攻击，则可以利用它执行 [SSRF 攻击](https://portswigger.net/web-security/xxe#exploiting-xxe-to-perform-ssrf-attacks)，请查看 [XXE 备忘录](XML_External_Entity_Prevention_Cheat_Sheet.md)以了解如何防止 XXE 暴露。
 
-## Cases
+## 场景
 
-Depending on the application's functionality and requirements, there are two basic cases in which SSRF can happen:
+根据应用程序的功能和需求，SSRF 可能发生在两种基本场景中：
 
-- Application can send request only to **identified and trusted applications**: Case when [allowlist](https://en.wikipedia.org/wiki/Whitelisting) approach is available.
-- Application can send requests to **ANY external IP address or domain name**: Case when [allowlist](https://en.wikipedia.org/wiki/Whitelisting) approach is unavailable.
+- 应用程序只能发送请求到**已识别和可信的应用程序**：可以使用[白名单](https://en.wikipedia.org/wiki/Whitelisting)方法的情况。
+- 应用程序可以发送请求到**任何外部 IP 地址或域名**：无法使用[白名单](https://en.wikipedia.org/wiki/Whitelisting)方法的情况。
 
-Because these two cases are very different, this cheat sheet will describe defences against them separately.
+由于这两种情况非常不同，本备忘录将分别描述针对它们的防御措施。
 
-### Case 1 - Application can send request only to identified and trusted applications
+### 场景 1 - 应用程序只能发送请求到已识别和可信的应用程序
 
-Sometimes, an application needs to perform a request to another application, often located on another network, to perform a specific task. Depending on the business case, user input is required for the functionality to work.
+有时，应用程序需要向另一个应用程序（通常位于另一个网络）发送请求以执行特定任务。根据业务需求，需要用户输入才能使功能正常工作。
 
-#### Example
+#### 示例
 
- > Take the example of a web application that receives and uses personal information from a user, such as their first name, last name, birth date etc. to create a profile in an internal HR system. By design, that web application will have to communicate using a protocol that the HR system understands to process that data.
- > Basically, the user cannot reach the HR system directly, but, if the web application in charge of receiving user information is vulnerable to SSRF, the user can leverage it to access the HR system.
- > The user leverages the web application as a proxy to the HR system.
+> 以一个接收和使用用户个人信息（如名字、姓氏、出生日期等）并在内部人力资源系统中创建配置文件的 Web 应用程序为例。根据设计，该 Web 应用程序必须使用人力资源系统能理解的协议来通信以处理这些数据。
+> 基本上，用户无法直接访问人力资源系统，但是，如果负责接收用户信息的 Web 应用程序容易受到 SSRF 攻击，用户可以利用它访问人力资源系统。
+> 用户利用 Web 应用程序作为人力资源系统的代理。
 
-The allowlist approach is a viable option since the internal application called by the *VulnerableApplication* is clearly identified in the technical/business flow. It can be stated that the required calls will only be targeted between those identified and trusted applications.
+由于*易受攻击的应用程序*调用的内部应用程序在技术/业务流程中是明确标识的，因此白名单方法是一个可行的选择。可以明确指出，所需的调用将仅针对这些已识别和可信的应用程序。
 
-#### Available protections
+#### 可用的防护措施
 
-Several protective measures are possible at the **Application** and **Network** layers. To apply the **defense in depth** principle, both layers will be hardened against such attacks.
+在**应用程序**和**网络**层面可以采取多种防护措施。为了应用**深度防御**原则，这两个层面都将得到加固。
 
-##### Application layer
+##### 应用程序层
 
-The first level of protection that comes to mind is [Input validation](Input_Validation_Cheat_Sheet.md).
+首先想到的保护是[输入验证](Input_Validation_Cheat_Sheet.md)。
 
-Based on that point, the following question comes to mind: *How to perform this input validation?*
+基于这一点，会产生这样一个问题：*如何执行这种输入验证？*
 
-As [Orange Tsai](https://twitter.com/orange_8361) shows in his [talk](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf), depending on the programming language used, parsers can be abused. One possible countermeasure is to apply the [allowlist approach](Input_Validation_Cheat_Sheet.md#allow-list-vs-block-list) when input validation is used because, most of the time, the format of the information expected from the user is globally known.
+正如 [Orange Tsai](https://twitter.com/orange_8361) 在他的[演讲](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf)中展示的，根据使用的编程语言，解析器可能会被滥用。一种可能的对策是在使用输入验证时应用[白名单方法](Input_Validation_Cheat_Sheet.md#allow-list-vs-block-list)，因为大多数情况下，从用户那里获取的信息格式是全局已知的。
 
-The request sent to the internal application will be based on the following information:
+发送到内部应用程序的请求将基于以下信息：
 
-- String containing business data.
-- IP address (V4 or V6).
-- Domain name.
-- URL.
+- 包含业务数据的字符串。
+- IP 地址（V4 或 V6）。
+- 域名。
+- URL。
 
-**Note:** Disable the support for the following of the [redirection](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) in your web client in order to prevent the bypass of the input validation described in the section `Exploitation tricks > Bypassing restrictions > Input validation > Unsafe redirect` of this [document](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf).
+**注意：** 为了防止绕过本文档 `利用技巧 > 绕过限制 > 输入验证 > 不安全的重定向` 部分描述的输入验证，请在 Web 客户端中禁用[重定向](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)支持。
 
-###### String
+###### 字符串
 
-In the context of SSRF, validations can be added to ensure that the input string respects the business/technical format expected.
+在 SSRF 上下文中，可以添加验证以确保输入字符串符合预期的业务/技术格式。
 
-A [regex](https://www.regular-expressions.info/) can be used to ensure that data received is valid from a security point of view if the input data have a simple format (*e.g.* token, zip code, etc.). Otherwise, validation should be conducted using the libraries available from the `string` object because regex for complex formats are difficult to maintain and are highly error-prone.
+如果输入数据具有简单格式（*例如*令牌、邮政编码等），可以使用[正则表达式](https://www.regular-expressions.info/)来确保从安全角度看数据是有效的。否则，应使用 `string` 对象可用的库进行验证，因为复杂格式的正则表达式难以维护且极易出错。
 
-User input is assumed to be non-network related and consists of the user's personal information.
+假设用户输入是非网络相关的，由用户的个人信息组成。
 
-Example:
+示例：
 
 ```java
-//Regex validation for a data having a simple format
+//对具有简单格式的数据进行正则表达式验证
 if(Pattern.matches("[a-zA-Z0-9\\s\\-]{1,50}", userInput)){
-    //Continue the processing because the input data is valid
+    //继续处理，因为输入数据有效
 }else{
-    //Stop the processing and reject the request
+    //停止处理并拒绝请求
 }
 ```
 
-###### IP address
+###### IP 地址
 
-In the context of SSRF, there are 2 possible validations to perform:
+在 SSRF 上下文中，有两种可能的验证：
 
-1. Ensure that the data provided is a valid IP V4 or V6 address.
-2. Ensure that the IP address provided belongs to one of the IP addresses of the identified and trusted applications.
+1. 确保提供的数据是有效的 IP V4 或 V6 地址。
+2. 确保提供的 IP 地址属于已识别和可信应用程序的 IP 地址之一。
 
-The first layer of validation can be applied using libraries that ensure the security of the IP address format, based on the technology used (library option is proposed here to delegate the managing of the IP address format and leverage battle-tested validation function):
+第一层验证可以使用库来确保 IP 地址格式的安全，基于所使用的技术（这里建议使用库选项，以委托 IP 地址格式的管理并利用经过充分测试的验证功能）：
 
-> Verification of the proposed libraries has been performed regarding the exposure to bypasses (Hex, Octal, Dword, URL and Mixed encoding) described in this [article](https://medium.com/@vickieli/bypassing-ssrf-protection-e111ae70727b).
+> 已对所提议的库进行了验证，以防止这篇[文章](https://medium.com/@vickieli/bypassing-ssrf-protection-e111ae70727b)中描述的绕过（十六进制、八进制、双字、URL 和混合编码）。
 
-- **JAVA:** Method [InetAddressValidator.isValid](http://commons.apache.org/proper/commons-validator/apidocs/org/apache/commons/validator/routines/InetAddressValidator.html#isValid(java.lang.String)) from the [Apache Commons Validator](http://commons.apache.org/proper/commons-validator/) library.
-    - **It is NOT exposed** to bypass using Hex, Octal, Dword, URL and Mixed encoding.
-- **.NET**: Method [IPAddress.TryParse](https://docs.microsoft.com/en-us/dotnet/api/system.net.ipaddress.tryparse?view=netframework-4.8) from the SDK.
-    - **It is exposed** to bypass using Hex, Octal, Dword and Mixed encoding but **NOT** the URL encoding.
-    - As allowlisting is used here, any bypass tentative will be blocked during the comparison against the allowed list of IP addresses.
-- **JavaScript**: Library [ip-address](https://www.npmjs.com/package/ip-address).
-    - **It is NOT exposed** to bypass using Hex, Octal, Dword, URL and Mixed encoding.
-- **Ruby**: Class [IPAddr](https://ruby-doc.org/stdlib-2.0.0/libdoc/ipaddr/rdoc/IPAddr.html) from the SDK.
-    - **It is NOT exposed** to bypass using Hex, Octal, Dword, URL and Mixed encoding.
+- **JAVA：** [Apache Commons Validator](http://commons.apache.org/proper/commons-validator/) 库中的 [InetAddressValidator.isValid](http://commons.apache.org/proper/commons-validator/apidocs/org/apache/commons/validator/routines/InetAddressValidator.html#isValid(java.lang.String)) 方法。
+    - **不会**暴露于使用十六进制、八进制、双字、URL 和混合编码的绕过。
+- **.NET**：SDK 中的 [IPAddress.TryParse](https://docs.microsoft.com/en-us/dotnet/api/system.net.ipaddress.tryparse?view=netframework-4.8) 方法。
+    - 会**暴露**于使用十六进制、八进制、双字和混合编码的绕过，但**不会**暴露 URL 编码。
+    - 由于这里使用白名单，任何绕过尝试都将在与允许的 IP 地址列表比较时被阻止。
+- **JavaScript**：[ip-address](https://www.npmjs.com/package/ip-address) 库。
+    - **不会**暴露于使用十六进制、八进制、双字、URL 和混合编码的绕过。
+- **Ruby**：SDK 中的 [IPAddr](https://ruby-doc.org/stdlib-2.0.0/libdoc/ipaddr/rdoc/IPAddr.html) 类。
+    - **不会**暴露于使用十六进制、八进制、双字、URL 和混合编码的绕过。
 
-> **Use the output value of the method/library as the IP address to compare against the allowlist.**
+> **使用方法/库的输出值作为与白名单比较的 IP 地址。**
 
-After ensuring the validity of the incoming IP address, the second layer of validation is applied. An allowlist is created after determining all the IP addresses (v4 and v6 to avoid bypasses) of the identified and trusted applications. The valid IP is cross-checked with that list to ensure its communication with the internal application (string strict comparison with case sensitive).
+确保传入 IP 地址的有效性后，第二层验证将被应用。在确定已识别和可信应用程序的所有 IP 地址（v4 和 v6，以避免绕过）后，创建一个白名单。将有效的 IP 与该列表进行交叉检查，以确保与内部应用程序的通信（区分大小写的严格字符串比较）。
 
-###### Domain name
+###### 域名
 
-In the attempt of validate domain names, it is apparent to do a DNS resolution to verify the existence of the domain. In general, it is not a bad idea, yet it opens up the application to attacks depending on the configuration used regarding the DNS servers used for the domain name resolution:
+在尝试验证域名时，通过 DNS 解析来验证域名的存在似乎是一个不错的想法。但总体而言，这可能会带来安全风险，具体取决于用于域名解析的 DNS 服务器配置：
 
-- It can disclose information to external DNS resolvers.
-- It can be used by an attacker to bind a legit domain name to an internal IP address. See the section `Exploitation tricks > Bypassing restrictions > Input validation > DNS pinning` of this [document](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf).
-- An attacker can use it to deliver a malicious payload to the internal DNS resolvers and the API (SDK or third-party) used by the application to handle the DNS communication and then, potentially, trigger a vulnerability in one of these components.
+- 可能会向外部 DNS 解析器泄露信息。
+- 攻击者可以将合法域名绑定到内部 IP 地址。参见此[文档](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf)中的 `利用技巧 > 绕过限制 > 输入验证 > DNS 固定` 部分。
+- 攻击者可以通过这种方式向内部 DNS 解析器和应用程序使用的 API（SDK 或第三方）投递恶意载荷，进而可能触发这些组件中的漏洞。
 
-In the context of SSRF, there are two validations to perform:
+在服务器端请求伪造（SSRF）的背景下，需要执行两层验证：
 
-1. Ensure that the data provided is a valid domain name.
-2. Ensure that the domain name provided belongs to one of the domain names of the identified and trusted applications (the allowlisting comes to action here).
+1. 确保提供的数据是有效的域名。
+2. 确保提供的域名属于已识别和信任的应用程序的域名之一（这里需要使用白名单）。
 
-Similar to the IP address validation, the first layer of validation can be applied using libraries that ensure the security of the domain name format, based on the technology used (library option is proposed here in order to delegate the managing of the domain name format and leverage battle tested validation function):
+与 IP 地址验证类似，第一层验证可以使用确保域名格式安全的库，基于所使用的技术（这里建议使用库以委托域名格式管理并利用经过充分测试的验证函数）：
 
-> Verification of the proposed libraries has been performed to ensure that the proposed functions do not perform any DNS resolution query.
+> 已验证所提议的库不执行 DNS 解析查询。
 
-- **JAVA:** Method [DomainValidator.isValid](https://commons.apache.org/proper/commons-validator/apidocs/org/apache/commons/validator/routines/DomainValidator.html#isValid(java.lang.String)) from the [Apache Commons Validator](http://commons.apache.org/proper/commons-validator/) library.
-- **.NET**: Method [Uri.CheckHostName](https://docs.microsoft.com/en-us/dotnet/api/system.uri.checkhostname?view=netframework-4.8) from the SDK.
-- **JavaScript**: Library [is-valid-domain](https://www.npmjs.com/package/is-valid-domain).
-- **Python**: Module [validators.domain](https://validators.readthedocs.io/en/latest/#module-validators.domain).
-- **Ruby**: No valid dedicated gem has been found.
-    - [domainator](https://github.com/mhuggins/domainator), [public_suffix](https://github.com/weppos/publicsuffix-ruby) and [addressable](https://github.com/sporkmonger/addressable) has been tested but unfortunately they all consider `<script>alert(1)</script>.owasp.org` as a valid domain name.
-    - This regex, taken from [here](https://stackoverflow.com/a/26987741), can be used: `^(((?!-))(xn--|_{1,1})?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$`
+- **JAVA：** [Apache Commons Validator](http://commons.apache.org/proper/commons-validator/) 库中的 [DomainValidator.isValid](https://commons.apache.org/proper/commons-validator/apidocs/org/apache/commons/validator/routines/DomainValidator.html#isValid(java.lang.String)) 方法。
+- **.NET**：SDK 中的 [Uri.CheckHostName](https://docs.microsoft.com/en-us/dotnet/api/system.uri.checkhostname?view=netframework-4.8) 方法。
+- **JavaScript**：[is-valid-domain](https://www.npmjs.com/package/is-valid-domain) 库。
+- **Python**：[validators.domain](https://validators.readthedocs.io/en/latest/#module-validators.domain) 模块。
+- **Ruby**：未找到有效的专用 gem。
+    - 已测试 [domainator](https://github.com/mhuggins/domainator)、[public_suffix](https://github.com/weppos/publicsuffix-ruby) 和 [addressable](https://github.com/sporkmonger/addressable)，但它们都会将 `<script>alert(1)</script>.owasp.org` 视为有效域名。
+    - 可以使用以下从[此处](https://stackoverflow.com/a/26987741)获取的正则表达式：`^(((?!-))(xn--|_{1,1})?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$`
 
-Example of execution of the proposed regex for Ruby:
+Ruby 正则表达式执行示例：
 
 ```ruby
 domain_names = ["owasp.org","owasp-test.org","doc-test.owasp.org","doc.owasp.org",
                 "<script>alert(1)</script>","<script>alert(1)</script>.owasp.org"]
 domain_names.each { |domain_name|
     if ( domain_name =~ /^(((?!-))(xn--|_{1,1})?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$/ )
-        puts "[i] #{domain_name} is VALID"
+        puts "[i] #{domain_name} 是有效的"
     else
-        puts "[!] #{domain_name} is INVALID"
+        puts "[!] #{domain_name} 是无效的"
     end
 }
 ```
 
 ```bash
 $ ruby test.rb
-[i] owasp.org is VALID
-[i] owasp-test.org is VALID
-[i] doc-test.owasp.org is VALID
-[i] doc.owasp.org is VALID
-[!] <script>alert(1)</script> is INVALID
-[!] <script>alert(1)</script>.owasp.org is INVALID
+[i] owasp.org 是有效的
+[i] owasp-test.org 是有效的
+[i] doc-test.owasp.org 是有效的
+[i] doc.owasp.org 是有效的
+[!] <script>alert(1)</script> 是无效的
+[!] <script>alert(1)</script>.owasp.org 是无效的
 ```
 
-After ensuring the validity of the incoming domain name, the second layer of validation is applied:
+确保传入域名有效后，应用第二层验证：
 
-1. Build an allowlist with all the domain names of every identified and trusted applications.
-2. Verify that the domain name received is part of this allowlist (string strict comparison with case sensitive).
+1. 构建一个包含所有已识别和信任应用程序域名的白名单。
+2. 验证接收到的域名是否属于此白名单（区分大小写的严格字符串比较）。
 
-Unfortunately here, the application is still vulnerable to the `DNS pinning` bypass mentioned in this [document](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf). Indeed, a DNS resolution will be made when the business code will be executed. To address that issue, the following action must be taken in addition of the validation on the domain name:
+遗憾的是，应用程序仍然容易受到此[文档](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf)中提到的 `DNS 固定` 绕过攻击。实际上，在执行业务代码时将进行 DNS 解析。为解决此问题，除了对域名进行验证外，还必须采取以下操作：
 
-1. Ensure that the domains that are part of your organization are resolved by your internal DNS server first in the chains of DNS resolvers.
-2. Monitor the domains allowlist in order to detect when any of them resolves to a/an:
-   - Local IP address (V4 + V6).
-   - Internal IP of your organization (expected to be in private IP ranges) for the domain that are not part of your organization.
+1. 确保组织内的域名首先由内部 DNS 服务器在 DNS 解析器链中进行解析。
+2. 监控域名白名单，以检测它们是否解析为：
+   - 本地 IP 地址（IPv4 + IPv6）。
+   - 对于非组织内域名，解析为组织内部 IP（预期在私有 IP 范围内）。
 
-The following Python3 script can be used, as a starting point, for the monitoring mentioned above:
+以下 Python3 脚本可用作上述监控的起点：
 
 ```python
-# Dependencies: pip install ipaddress dnspython
+# 依赖项：pip install ipaddress dnspython
 import ipaddress
 import dns.resolver
 
-# Configure the allowlist to check
+# 配置要检查的白名单
 DOMAINS_ALLOWLIST = ["owasp.org", "labslinux"]
 
-# Configure the DNS resolver to use for all DNS queries
+# 配置用于所有 DNS 查询的 DNS 解析器
 DNS_RESOLVER = dns.resolver.Resolver()
 DNS_RESOLVER.nameservers = ["1.1.1.1"]
 
 def verify_dns_records(domain, records, type):
     """
-    Verify if one of the DNS records resolve to a non public IP address.
-    Return a boolean indicating if any error has been detected.
+    验证 DNS 记录是否解析到非公共 IP 地址。
+    返回是否检测到错误的布尔值。
     """
     error_detected = False
     if records is not None:
@@ -195,40 +195,38 @@ def verify_dns_records(domain, records, type):
             value = record.to_text().strip()
             try:
                 ip = ipaddress.ip_address(value)
-                # See https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Address.is_global
+                # 参见 https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Address.is_global
                 if not ip.is_global:
-                    print("[!] DNS record type '%s' for domain name '%s' resolve to
-                    a non public IP address '%s'!" % (type, domain, value))
+                    print(f"[!] DNS 记录类型 '{type}' 的域名 '{domain}' 解析到非公共 IP 地址 '{value}'！")
                     error_detected = True
             except ValueError:
                 error_detected = True
-                print("[!] '%s' is not valid IP address!" % value)
+                print(f"[!] '{value}' 不是有效的 IP 地址！")
     return error_detected
 
 def check():
     """
-    Perform the check of the allowlist of domains.
-    Return a boolean indicating if any error has been detected.
+    执行域名白名单检查。
+    返回是否检测到错误的布尔值。
     """
     error_detected = False
     for domain in DOMAINS_ALLOWLIST:
-        # Get the IPs of the current domain
-        # See https://en.wikipedia.org/wiki/List_of_DNS_record_types
+        # 获取当前域名的 IP
+        # 参见 https://en.wikipedia.org/wiki/List_of_DNS_record_types
         try:
-            # A = IPv4 address record
+            # A = IPv4 地址记录
             ip_v4_records = DNS_RESOLVER.query(domain, "A")
         except Exception as e:
             ip_v4_records = None
-            print("[i] Cannot get A record for domain '%s': %s\n" % (domain,e))
+            print(f"[i] 无法获取域名 '{domain}' 的 A 记录：{e}\n")
         try:
-            # AAAA = IPv6 address record
+            # AAAA = IPv6 地址记录
             ip_v6_records = DNS_RESOLVER.query(domain, "AAAA")
         except Exception as e:
             ip_v6_records = None
-            print("[i] Cannot get AAAA record for domain '%s': %s\n" % (domain,e))
-        # Verify the IPs obtained
-        if verify_dns_records(domain, ip_v4_records, "A")
-        or verify_dns_records(domain, ip_v6_records, "AAAA"):
+            print(f"[i] 无法获取域名 '{domain}' 的 AAAA 记录：{e}\n")
+        # 验证获得的 IP
+        if verify_dns_records(domain, ip_v4_records, "A") or verify_dns_records(domain, ip_v6_records, "AAAA"):
             error_detected = True
     return error_detected
 
@@ -241,115 +239,115 @@ if __name__== "__main__":
 
 ###### URL
 
-Do not accept complete URLs from the user because URL are difficult to validate and the parser can be abused depending on the technology used as showcased by the following [talk](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf) of [Orange Tsai](https://twitter.com/orange_8361).
+不要接受用户提供的完整 URL，因为 URL 很难验证，且解析器可能会被滥用，正如 [Orange Tsai](https://twitter.com/orange_8361) 的这个[演讲](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf)所展示的。
 
-If network related information is really needed then only accept a valid IP address or domain name.
+如果确实需要网络相关信息，则仅接受有效的 IP 地址或域名。
 
-##### Network layer
+##### 网络层
 
-The objective of the Network layer security is to prevent the *VulnerableApplication* from performing calls to arbitrary applications. Only allowed *routes* will be available for this application in order to limit its network access to only those that it should communicate with.
+网络层安全的目标是防止 *VulnerableApplication*（易受攻击的应用程序）向任意应用程序发起调用。只有被允许的 *路由* 将对该应用程序可用，以限制其网络访问仅限于应该通信的对象。
 
-The Firewall component, as a specific device or using the one provided within the operating system, will be used here to define the legitimate flows.
+防火墙组件，作为特定设备或使用操作系统提供的防火墙，将在此用于定义合法的流量。
 
-In the schema below, a Firewall component is leveraged to limit the application's access, and in turn, limit the impact of an application vulnerable to SSRF:
+在下面的架构图中，利用防火墙组件来限制应用程序的访问，从而限制对 SSRF 漏洞的应用程序的影响：
 
-![Case 1 for Network layer protection about flows that we want to prevent](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Case1_NetworkLayer_PreventFlow.png)
+![网络层保护案例1：我们要阻止的流量](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Case1_NetworkLayer_PreventFlow.png)
 
-[Network segregation](https://www.mwrinfosecurity.com/our-thinking/making-the-case-for-network-segregation) (see this set of [implementation advice](https://www.cyber.gov.au/acsc/view-all-content/publications/implementing-network-segmentation-and-segregation) can also be leveraged and **is highly recommended in order to block illegitimate calls directly at network level itself**.
+[网络隔离](https://www.mwrinfosecurity.com/our-thinking/making-the-case-for-network-segregation)（查看这组[实施建议](https://www.cyber.gov.au/acsc/view-all-content/publications/implementing-network-segmentation-and-segregation)）也可以被利用，并且**强烈建议直接在网络层阻止非法调用**。
 
-### Case 2 - Application can send requests to ANY external IP address or domain name
+### 案例2 - 应用程序可以向任何外部IP地址或域名发送请求
 
-This case happens when a user can control a URL to an **External** resource and the application makes a request to this URL (e.g. in case of [WebHooks](https://en.wikipedia.org/wiki/Webhook)). Allow lists cannot be used here because the list of IPs/domains is often unknown upfront and is dynamically changing.
+当用户可以控制指向**外部**资源的URL，且应用程序向该URL发起请求时（例如在[WebHooks](https://en.wikipedia.org/wiki/Webhook)的情况下），就会发生这种情况。这里无法使用白名单，因为IP/域名列表通常事先未知且动态变化。
 
-In this scenario, *External* refers to any IP that doesn't belong to the internal network, and should be reached by going over the public internet.
+在这种场景中，*外部* 指的是不属于内部网络的任何IP，并且应通过公共互联网进行访问。
 
-Thus, the call from the *Vulnerable Application*:
+因此，来自 *易受攻击应用程序* 的调用：
 
-- **Is NOT** targeting one of the IP/domain *located inside* the company's global network.
-- Uses a convention defined between the *VulnerableApplication* and the expected IP/domain in order to *prove* that the call has been legitimately initiated.
+- **不是**针对公司全球网络内部的IP/域名
+- 使用 *VulnerableApplication* 和预期的IP/域名之间定义的约定，以 *证明* 调用已合法发起
 
-#### Challenges in blocking URLs at application layer
+#### 在应用层阻止URL的挑战
 
-Based on the business requirements of the above mentioned applications, the allowlist approach is not a valid solution. Despite knowing that the block-list approach is not an impenetrable wall, it is the best solution in this scenario. It is informing the application what it should **not** do.
+基于上述应用程序的业务需求，白名单方法并不是一个有效的解决方案。尽管知道黑名单方法并非铜墙铁壁，但在这种场景下它是最佳解决方案。它告诉应用程序它**不应该**做什么。
 
-Here is why filtering URLs is hard at the Application layer:
+以下是为什么在应用层过滤URL很困难：
 
-- It implies that the application must be able to detect, at the code level, that the provided IP (V4 + V6) is not part of the official [private networks ranges](https://en.wikipedia.org/wiki/Private_network) including also *localhost* and *IPv4/v6 Link-Local* addresses. Not every SDK provides a built-in feature for this kind of verification, and leaves the handling up to the developer to understand all of its pitfalls and possible values, which makes it a demanding task.
-- Same remark for domain name: The company must maintain a list of all internal domain names and provide a centralized service to allow an application to verify if a provided domain name is an internal one. For this verification, an internal DNS resolver can be queried by the application but this internal DNS resolver must not resolve external domain names.
+- 这意味着应用程序必须能够在代码级别检测提供的IP（V4 + V6）不属于官方[私有网络范围](https://en.wikipedia.org/wiki/Private_network)，包括 *localhost* 和 *IPv4/v6 链路本地* 地址。并非每个SDK都提供这种验证的内置功能，并且将处理留给开发者理解其所有陷阱和可能的值，这使得这是一项艰巨的任务。
+- 对于域名也是如此：公司必须维护所有内部域名的列表，并提供一个集中的服务，使应用程序能够验证提供的域名是否为内部域名。为了进行此验证，应用程序可以查询内部DNS解析器，但此内部DNS解析器不得解析外部域名。
 
-#### Available protections
+#### 可用的防护措施
 
-Taking into consideration the same assumption in the following [example](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#example) for the following sections.
+考虑以下[示例](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#example)中的相同假设。
 
-##### Application layer
+##### 应用层
 
-Like for the case [n°1](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#case-1-application-can-send-request-only-to-identified-and-trusted-applications), it is assumed that the `IP Address` or `domain name` is required to create the request that will be sent to the *TargetApplication*.
+与[案例1](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#case-1-application-can-send-request-only-to-identified-and-trusted-applications)类似，假设需要 `IP地址` 或 `域名` 来创建将发送到 *目标应用程序* 的请求。
 
-The first validation on the input data presented in the case [n°1](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#application-layer) on the 3 types of data will be the same for this case **BUT the second validation will differ**. Indeed, here we must use the block-list approach.
+案例1中针对3种数据类型的第一次输入数据验证将保持不变，**但第二次验证将有所不同**。在这里，我们必须使用黑名单方法。
 
-> **Regarding the proof of legitimacy of the request**: The *TargetedApplication* that will receive the request must generate a random token (ex: alphanumeric of 20 characters) that is expected to be passed by the caller (in body via a parameter for which the name is also defined by the application itself and only allow characters set `[a-z]{1,10}`) to perform a valid request. The receiving endpoint must only accept HTTP POST requests.
+> **关于请求合法性的证明**：接收请求的 *目标应用程序* 必须生成一个随机令牌（例如：20个字符的字母数字），调用者需要传递这个令牌（在正文中通过应用程序本身定义的参数名称，并且只允许字符集 `[a-z]{1,10}`）以执行有效的请求。接收端点必须仅接受 HTTP POST 请求。
 
-**Validation flow (if one the validation steps fail then the request is rejected):**
+**验证流程（如果验证步骤中的任何一步失败，则拒绝请求）：**
 
-1. The application will receive the IP address or domain name of the *TargetedApplication* and it will apply the first validation on the input data using the libraries/regex mentioned in this [section](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#application-layer).
-2. The second validation will be applied against the IP address or domain name of the *TargetedApplication* using the following block-list approach:
-   - For IP address:
-     - The application will verify that it is a public one (see the hint provided in the next paragraph with the python code sample).
-   - For domain name:
-        1. The application will verify that it is a public one by trying to resolve the domain name against the DNS resolver that will only resolve internal domain name. Here, it must return a response indicating that it do not know the provided domain because the expected value received must be a public domain.
-        2. To prevent the `DNS pinning` attack described in this [document](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf), the application will retrieve all the IP addresses behind the domain name provided (taking records *A* + *AAAA* for IPv4 + IPv6) and it will apply the same verification described in the previous point about IP addresses.
-3. The application will receive the protocol to use for the request via a dedicated input parameter for which it will verify the value against an allowed list of protocols (`HTTP` or `HTTPS`).
-4. The application will receive the parameter name for the token to pass to the *TargetedApplication* via a dedicated input parameter for which it will only allow the characters set `[a-z]{1,10}`.
-5. The application will receive the token itself via a dedicated input parameter for which it will only allow the characters set `[a-zA-Z0-9]{20}`.
-6. The application will receive and validate (from a security point of view) any business data needed to perform a valid call.
-7. The application will build the HTTP POST request **using only validated information** and will send it (*don't forget to disable the support for [redirection](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections) in the web client used*).
+1. 应用程序将接收 *目标应用程序* 的IP地址或域名，并使用本[节](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#application-layer)中提到的库/正则表达式对输入数据应用第一次验证。
+2. 第二次验证将针对 *目标应用程序* 的IP地址或域名使用以下黑名单方法：
+   - 对于IP地址：
+     - 应用程序将验证它是公共的（请参见下一段落中的Python代码示例）。
+   - 对于域名：
+        1. 应用程序将尝试针对仅解析内部域名的DNS解析器解析域名，以验证它是公共的。这里，它必须返回一个响应，表明它不知道提供的域名，因为预期收到的值必须是公共域。
+        2. 为防止[文档](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_SSRF_Bible.pdf)中描述的 `DNS固定` 攻击，应用程序将检索提供的域名后面的所有IP地址（获取IPv4和IPv6的 *A* 和 *AAAA* 记录），并应用与IP地址相同的验证。
+3. 应用程序将通过专用输入参数接收用于请求的协议，并针对允许的协议列表（`HTTP` 或 `HTTPS`）验证其值。
+4. 应用程序将通过专用输入参数接收传递给 *目标应用程序* 的令牌参数名称，并且只允许字符集 `[a-z]{1,10}`。
+5. 应用程序将通过专用输入参数接收令牌本身，并且只允许字符集 `[a-zA-Z0-9]{20}`。
+6. 应用程序将接收并验证（从安全角度）执行有效调用所需的任何业务数据。
+7. 应用程序将仅使用经过验证的信息构建 HTTP POST 请求并发送它（*不要忘记在使用的 Web 客户端中禁用[重定向](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)支持*）。
 
-##### Network layer
+##### 网络层
 
-Similar to the following [section](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#network-layer).
+类似于以下[节](Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md#network-layer)。
 
-## IMDSv2 in AWS
+## AWS 中的 IMDSv2
 
-In cloud environments SSRF is often used to access and steal credentials and access tokens from metadata services (e.g. AWS Instance Metadata Service, Azure Instance Metadata Service, GCP metadata server).
+在云环境中，SSRF 常用于访问和窃取来自元数据服务的凭据和访问令牌（例如 AWS 实例元数据服务、Azure 实例元数据服务、GCP 元数据服务器）。
 
-[IMDSv2](https://aws.amazon.com/blogs/security/defense-in-depth-open-firewalls-reverse-proxies-ssrf-vulnerabilities-ec2-instance-metadata-service/) is an additional defence-in-depth mechanism for AWS that mitigates some of the instances of SSRF.
+[IMDSv2](https://aws.amazon.com/blogs/security/defense-in-depth-open-firewalls-reverse-proxies-ssrf-vulnerabilities-ec2-instance-metadata-service/) 是 AWS 的一种深度防御机制，可缓解部分 SSRF 实例。
 
-To leverage this protection migrate to IMDSv2 and disable old IMDSv1. Check out [AWS documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html) for more details.
+要利用这种保护，请迁移到 IMDSv2 并禁用旧的 IMDSv1。查看 [AWS 文档](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html)了解更多详情。
 
-## Semgrep Rules
+## Semgrep 规则
 
-[Semgrep](https://semgrep.dev/) is a command-line tool for offline static analysis. Use pre-built or custom rules to enforce code and security standards in your codebase.
-Checkout the Semgrep rule for SSRF to identify/investigate for SSRF vulnerabilities in Java
+[Semgrep](https://semgrep.dev/) 是一个用于离线静态分析的命令行工具。使用预构建或自定义规则在代码库中强制执行代码和安全标准。
+查看用于识别/调查 Java 中 SSRF 漏洞的 Semgrep 规则
 [https://semgrep.dev/salecharohit:owasp_java_ssrf](https://semgrep.dev/salecharohit:owasp_java_ssrf)
 
-## References
+## 参考文献
 
-Online version of the [SSRF bible](https://docs.google.com/document/d/1v1TkWZtrhzRLy0bYXBcdLUedXGb9njTNIJXa3u9akHM) (PDF version is used in this cheat sheet).
+[SSRF 圣经](https://docs.google.com/document/d/1v1TkWZtrhzRLy0bYXBcdLUedXGb9njTNIJXa3u9akHM)的在线版本（本指南中使用的是 PDF 版本）。
 
-Article about [Bypassing SSRF Protection](https://medium.com/@vickieli/bypassing-ssrf-protection-e111ae70727b).
+关于[绕过 SSRF 保护](https://medium.com/@vickieli/bypassing-ssrf-protection-e111ae70727b)的文章。
 
-Articles about SSRF attacks: [Part 1](https://medium.com/poka-techblog/server-side-request-forgery-ssrf-attacks-part-1-the-basics-a42ba5cc244a), [part 2](https://medium.com/poka-techblog/server-side-request-forgery-ssrf-attacks-part-2-fun-with-ipv4-addresses-eb51971e476d) and  [part 3](https://medium.com/poka-techblog/server-side-request-forgery-ssrf-part-3-other-advanced-techniques-3f48cbcad27e).
+关于 SSRF 攻击的文章：[第1部分](https://medium.com/poka-techblog/server-side-request-forgery-ssrf-attacks-part-1-the-basics-a42ba5cc244a)、[第2部分](https://medium.com/poka-techblog/server-side-request-forgery-ssrf-attacks-part-2-fun-with-ipv4-addresses-eb51971e476d)和[第3部分](https://medium.com/poka-techblog/server-side-request-forgery-ssrf-part-3-other-advanced-techniques-3f48cbcad27e)。
 
-Article about [IMDSv2](https://aws.amazon.com/blogs/security/defense-in-depth-open-firewalls-reverse-proxies-ssrf-vulnerabilities-ec2-instance-metadata-service/)
+关于 [IMDSv2](https://aws.amazon.com/blogs/security/defense-in-depth-open-firewalls-reverse-proxies-ssrf-vulnerabilities-ec2-instance-metadata-service/) 的文章。
 
-## Tools and code used for schemas
+## 用于架构图的工具和代码
 
-- [Mermaid Online Editor](https://mermaidjs.github.io/mermaid-live-editor) and [Mermaid documentation](https://mermaidjs.github.io/).
-- [Draw.io Online Editor](https://www.draw.io/).
+- [Mermaid 在线编辑器](https://mermaidjs.github.io/mermaid-live-editor)和 [Mermaid 文档](https://mermaidjs.github.io/)。
+- [Draw.io 在线编辑器](https://www.draw.io/)。
 
-Mermaid code for SSRF common flow (printscreen are used to capture PNG image inserted into this cheat sheet):
+SSRF 常见流程的 Mermaid 代码（截图用于捕获插入到此指南中的 PNG 图像）：
 
 ```text
 sequenceDiagram
     participant Attacker
     participant VulnerableApplication
     participant TargetedApplication
-    Attacker->>VulnerableApplication: Crafted HTTP request
-    VulnerableApplication->>TargetedApplication: Request (HTTP, FTP...)
-    Note left of TargetedApplication: Use payload included<br>into the request to<br>VulnerableApplication
-    TargetedApplication->>VulnerableApplication: Response
-    VulnerableApplication->>Attacker: Response
-    Note left of VulnerableApplication: Include response<br>from the<br>TargetedApplication
+    Attacker->>VulnerableApplication: 精心制作的 HTTP 请求
+    VulnerableApplication->>TargetedApplication: 请求（HTTP、FTP...）
+    Note left of TargetedApplication: 使用包含在发送到<br>VulnerableApplication<br>的请求中的有效负载
+    TargetedApplication->>VulnerableApplication: 响应
+    VulnerableApplication->>Attacker: 响应
+    Note left of VulnerableApplication: 包含来自<br>TargetedApplication<br>的响应
 ```
 
-Draw.io schema XML code for the "[case 1 for network layer protection about flows that we want to prevent](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Case1_NetworkLayer_PreventFlow.xml)" schema (printscreen are used to capture PNG image inserted into this cheat sheet).
+用于"[网络层保护案例1：我们要阻止的流量](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Case1_NetworkLayer_PreventFlow.xml)"架构的 Draw.io 架构 XML 代码（截图用于捕获插入到此指南中的 PNG 图像）。
