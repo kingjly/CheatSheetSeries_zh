@@ -1,632 +1,530 @@
-# Secrets Management Cheat Sheet
+# 密钥管理备忘录
 
-## 1 Introduction
+## 1 简介
 
-Secrets are being used everywhere nowadays, especially with the popularity of the DevOps movement. Application Programming Interface (API) keys, database credentials, Identity and Access Management (IAM) permissions, Secure Shell (SSH) keys, certificates, etc. Many organizations have them hardcoded within the source code in plaintext, littered throughout configuration files and configuration management tools.
+在当今时代，特别是随着 DevOps 运动的普及，密钥的使用变得无处不在。应用程序接口（API）密钥、数据库凭证、身份和访问管理（IAM）权限、安全外壳（SSH）密钥、证书等。许多组织将这些密钥以明文形式硬编码在源代码中，分散在配置文件和配置管理工具中。
 
-There is a growing need for organizations to centralize the storage, provisioning, auditing, rotation and management of secrets to control access to secrets and prevent them from leaking and compromising the organization. Often, services share the same secrets, which makes identifying the source of compromise or leak challenging.
+组织越来越需要集中化存储、配置、审计、轮换和管理密钥，以控制对密钥的访问并防止它们泄露和危及组织安全。通常，多个服务会共享相同的密钥，这使得识别泄露或泄漏源变得困难。
 
-This cheat sheet offers best practices and guidelines to help properly implement secrets management.
+本备忘录提供了正确实施密钥管理的最佳实践和指南。
 
-## 2 General Secrets Management
+## 2 通用密钥管理
 
-The following sections address the main concepts relating to secrets management.
+以下部分介绍了与密钥管理相关的主要概念。
 
-### 2.1 High Availability
+### 2.1 高可用性
 
-It is vital to select a technology that is robust enough to service traffic reliably:
+选择一个足够健壮的技术来可靠地服务流量是至关重要的：
 
-- Users (e.g. SSH keys, root account passwords). In an incident response scenario, users expect to be provisioned with credentials rapidly, so they can recover services that have gone offline. Having to wait for credentials could impact the responsiveness of the operations team.
-- Applications (e.g. database credentials and API keys). If the service is not performant, it could degrade the availability of dependent applications or increase application startup times.
+- 用户（如 SSH 密钥、root 账户密码）。在事件响应场景中，用户期望能够快速获得凭证，以便恢复已经离线的服务。等待凭证可能会影响运维团队的响应速度。
+- 应用程序（如数据库凭证和 API 密钥）。如果服务性能不佳，可能会降低依赖应用程序的可用性或增加应用程序启动时间。
 
-Such a service could receive a considerable volume of requests within a large organization.
+在大型组织中，这样的服务可能会收到大量请求。
 
-### 2.2 Centralize and Standardize
+### 2.2 集中化和标准化
 
-Secrets used by your DevOps teams for your applications might be consumed differently than secrets stored by your marketeers or your SRE team. You often find poorly maintained secrets where the needs of secret consumers or producers mismatch. Therefore, you must standardize and centralize the secrets management solution with care. Standardizing and centralizing can mean that you use multiple secret management solutions. For instance: your cloud-native development teams choose to use the solution provided by the cloud provider, while your private cloud uses a third-party solution, and everybody has an account for a selected password manager.
-By making sure that the teams standardize the interaction with these different solutions, they remain maintainable and usable in the event of an incident.
-Even when a company centralizes its secrets management to just one solution, you will often have to secure the primary secret of that secrets management solution in a secondary secrets management solution. For instance, you can use a cloud provider's facilities to store secrets, but that cloud provider's root/management credentials need to be stored somewhere else.
+你的 DevOps 团队用于应用程序的密钥可能与市场营销团队或 SRE 团队存储的密钥使用方式不同。当密钥使用者或生产者的需求不匹配时，你经常会发现维护不当的密钥。因此，你必须谨慎地标准化和集中化密钥管理解决方案。标准化和集中化可能意味着你需要使用多个密钥管理解决方案。例如：你的云原生开发团队选择使用云提供商提供的解决方案，而你的私有云使用第三方解决方案，并且每个人都有一个选定的密码管理器账户。
+通过确保团队标准化与这些不同解决方案的交互，它们在发生事件时仍然可维护和可用。
+即使公司将其密钥管理集中到一个解决方案，你通常也必须在次要密钥管理解决方案中保护主要密钥管理解决方案的主密钥。例如，你可以使用云提供商的设施来存储密钥，但该云提供商的根/管理凭证需要存储在其他地方。
 
-Standardization should include Secrets life cycle management, Authentication, Authorization, and Accounting of the secrets management solution, and life cycle management. Note that it should be immediately apparent to an organization what a secret is used for and where to find it. The more Secrets management solutions you use, the more documentation you need.
+标准化应包括密钥生命周期管理、身份验证、授权和密钥管理解决方案的记账，以及生命周期管理。请注意，组织应该能够立即了解密钥的用途和位置。使用的密钥管理解决方案越多，需要的文档就越多。
 
-### 2.3 Access Control
+### 2.3 访问控制
 
-When users can read the secret in a secret management system and/or update it, it means that the secret can now leak through that user and the system he used to touch the secret.
-Therefore, engineers should not have access to all secrets in the secrets management system, and the Least Privilege principle should be applied. The secret management system needs to provide the ability to configure fine granular access controls on each object and component to accomplish the Least Privilege principle.
+当用户可以在密钥管理系统中读取密钥和/或更新它时，意味着密钥现在可能通过该用户和他用来接触密钥的系统泄露。
+因此，工程师不应该访问密钥管理系统中的所有密钥，应该应用最小权限原则。密钥管理系统需要提供在每个对象和组件上配置细粒度访问控制的能力，以实现最小权限原则。
 
-### 2.4 Automate Secrets Management
+### 2.4 自动化密钥管理
 
-Manual maintenance does not only increase the risk of leakage; it introduces the risk of human errors while maintaining the secret. Furthermore, it can become wasteful.
-Therefore, it is better to limit or remove the human interaction with the actual secrets. You can restrict human interaction in multiple ways:
+手动维护不仅会增加泄露风险，还会引入人为错误的风险。此外，它可能会造成浪费。
+因此，最好限制或消除人工与实际密钥的交互。你可以通过多种方式限制人工交互：
 
-- **Secrets pipeline:** Having a secrets pipeline which does large parts of the secret management (E.g. creation, rotation, etc.)
-- **Using dynamic secrets:** When an application starts it could request it's database credentials, which when dynamically generated will be provided with new credentials for that session. Dynamic secrets should be used where possible to reduce the surface area of credential re-use. Should the application's database credentials be stolen, upon reboot they would be expired.
-- **Automated rotation of static secrets:** Key rotation is a challenging process when implemented manually, and can lead to mistakes. It is therefore better to automate the rotation of keys or at least ensure that the process is sufficiently supported by IT.
+- **密钥流水线：** 拥有一个执行大部分密钥管理（如创建、轮换等）的密钥流水线
+- **使用动态密钥：** 当应用程序启动时，它可以请求数据库凭证，动态生成的凭证将为该会话提供新的凭证。应该尽可能使用动态密钥来减少凭证重用的表面积。如果应用程序的数据库凭证被盗，重启后它们就会过期。
+- **静态密钥的自动轮换：** 密钥轮换在手动实施时是一个具有挑战性的过程，可能会导致错误。因此，最好自动化密钥轮换，或至少确保该过程得到 IT 的充分支持。
 
-Rotating certain keys, such as encryption keys, might trigger full or partial data re-encryption. Different strategies for rotating keys exist:
+轮换某些密钥，如加密密钥，可能会触发全部或部分数据重新加密。存在不同的密钥轮换策略：
 
-- Gradual rotation
-- Introducing new keys for Write operations
-- Leaving old keys for Read operations
-- Rapid rotation
-- Scheduled rotation
-- and more...
+- 渐进式轮换
+- 为写操作引入新密钥
+- 保留旧密钥用于读操作
+- 快速轮换
+- 计划轮换
+- 等等...
 
-### 2.5 Handling Secrets in Memory
+### 2.5 内存中的密钥处理
 
-An additional level of security can be achieved by minimizing the time window
-where a secret is in memory and limiting the access to its memory space.
+通过最小化密钥在内存中的时间窗口并限制对其内存空间的访问，可以实现额外的安全级别。
 
-Depending on your application's particular circumstances, this can be difficult
-to implement in a manner that ensures memory security. Because of this potential
-implementation complexity, you are first encouraged to develop a threat model in order to clearly
-surface your implicit assumptions about both your application's deployment environment as well
-as understanding the capabilities of your adversaries.
+根据你的应用程序的特定情况，以确保内存安全的方式实现这一点可能很困难。由于这种潜在的实现复杂性，我们首先建议你开发一个威胁模型，以清楚地展示你对应用程序部署环境的隐含假设，并了解你的对手的能力。
 
-Often attempting to protect secrets in memory will be considered overkill
-because as you evaluate a threat model, the potential threat
-actors that you consider either do not have the capabilities to carry out such attacks
-or the cost of defense far exceeds the likely impact of a compromise arising from
-exposing secrets in memory. Also, it should be kept in mind while developing an
-appropriate threat model, that if an attacker already has access to the memory of
-the process handling the secret, by that time a security breach may have already
-occurred. Furthermore, it should be recognized that with the advent of attacks like
-[Rowhammer](https://arxiv.org/pdf/2211.07613.pdf), or
-[Meltdown and Spectre](https://meltdownattack.com/), it is important
-to understand that the operating system alone is not sufficient to protect your process
-memory from these types of attacks. This becomes especially important when your
-application is deployed to the cloud. The only foolproof approach to protecting memory
-against these and similar attacks to fully physically isolate your process memory from all other
-untrusted processes.
+通常，尝试保护内存中的密钥会被认为是过度防护，因为当你评估威胁模型时，你考虑的潜在威胁行为者要么没有能力执行此类攻击，要么防御成本远超过暴露内存中密钥可能造成的影响。此外，在开发适当的威胁模型时，应该记住，如果攻击者已经可以访问处理密钥的进程的内存，那么此时安全漏洞可能已经发生。此外，应该认识到，随着像 [Rowhammer](https://arxiv.org/pdf/2211.07613.pdf) 或 [Meltdown 和 Spectre](https://meltdownattack.com/) 这样的攻击的出现，重要的是要理解操作系统本身不足以保护你的进程内存免受这些类型的攻击。这在将应用程序部署到云端时变得尤为重要。防止这些和类似攻击的唯一万无一失的方法是完全物理隔离你的进程内存与所有其他不受信任的进程。
 
-Despite the implementation difficulties, in highly sensitive
-environments, protecting secrets in memory can
-be a valuable additional layer of security. For example, in scenarios where an
-advanced attacker can cause a system to crash and gain access to a memory dump,
-they may be able to extract secrets from it. Therefore, carefully safeguarding
-secrets in memory is recommended for untrusted environments or situations where
-tight security is of utmost importance.
+尽管实现困难，但在高度敏感的环境中，保护内存中的密钥可以成为一个有价值的额外安全层。例如，在高级攻击者可能导致系统崩溃并获取内存转储的场景中，他们可能能够从中提取密钥。因此，对于不受信任的环境或需要严格安全性的情况，建议谨慎保护内存中的密钥。
 
-Furthermore, in lower level languages like C/C++, it is relatively easy to protect
-secrets in memory. Thus, it may be worthwhile to implement this practice even if
-the risk of an attacker gaining access to the memory is low. On the other hand, for
-programming languages that rely on garbage collection, securing secrets in memory
-generally is much more difficult.
+此外，在像 C/C++ 这样的低级语言中，保护内存中的密钥相对容易。因此，即使攻击者获取内存访问权限的风险较低，实施这种做法也可能是值得的。另一方面，对于依赖垃圾收集的编程语言，保护内存中的密钥通常要困难得多。
 
-- **Structures and Classes:** In .NET and Java, do not use immutable structures
-    such as Strings to store secrets, since it is impossible to force them to
-    be garbage collected. Instead use primitive types such as byte arrays or
-    char arrays, where the memory can be directly overwritten. You can also
-    use Java's
-    [GuardedString](https://docs.oracle.com/html/E28160_01/org/identityconnectors/common/security/GuardedString.html)
-    or .NET's
-    [SecureString](https://learn.microsoft.com/en-us/dotnet/api/system.security.securestring#string-versus-securestring)
-    which are designed to solve precisely this problem.
+- **结构和类：** 在 .NET 和 Java 中，不要使用不可变结构（如字符串）来存储密钥，因为无法强制它们被垃圾收集。相反，使用可以直接覆写内存的原始类型，如字节数组或字符数组。你也可以使用 Java 的 [GuardedString](https://docs.oracle.com/html/E28160_01/org/identityconnectors/common/security/GuardedString.html) 或 .NET 的 [SecureString](https://learn.microsoft.com/en-us/dotnet/api/system.security.securestring#string-versus-securestring)，它们正是为解决这个问题而设计的。
 
-- **Zeroing Memory:** After a secret has been used, the memory it occupied
-  should be zeroed out to prevent it from lingering in memory where it could
-  potentially be accessed.
-    - If using Java's GuardedString, call the `dispose()` method.
-    - If using .NET's SecureString, call the `Dispose()` method.
+- **清零内存：** 在使用密钥后，应该将其占用的内存清零，以防止它在内存中停留，可能被访问。
+    - 如果使用 Java 的 GuardedString，调用 `dispose()` 方法。
+    - 如果使用 .NET 的 SecureString，调用 `Dispose()` 方法。
 
-- **Memory Encryption:** In some cases, it may be possible to use hardware or
-  operating system features to encrypt the entire memory space of the process
-  handling the secret. This can provide an additional layer of security. For
-  example, GuardedString in Java encrypts the values in memory, and SecureString
-  in .NET does so on Windows.
+- **内存加密：** 在某些情况下，可能可以使用硬件或操作系统功能来加密处理密钥的进程的整个内存空间。这可以提供额外的安全层。例如，Java 中的 GuardedString 在内存中加密值，而 .NET 中的 SecureString 在 Windows 上也是如此。
 
-Remember, the goal is to minimize the time window where the secret is in
-plaintext in memory as much as possible.
+记住，目标是尽可能最小化密钥在内存中以明文形式存在的时间窗口。
 
-For more detailed information, see
-[Testing Memory for Sensitive Data](https://mas.owasp.org/MASTG/tests/android/MASVS-STORAGE/MASTG-TEST-0011)
-from the OWASP MAS project.
+更详细的信息，请参见 OWASP MAS 项目的[测试内存中的敏感数据](https://mas.owasp.org/MASTG/tests/android/MASVS-STORAGE/MASTG-TEST-0011)。
 
-### 2.6 Auditing
+### 2.6 审计
 
-Auditing is an essential part of secrets management due to the nature of the application. You must implement auditing securely to be resilient against attempts to tamper with or delete the audit logs. At a minimum, you should audit the following:
+由于应用程序的性质，审计是密钥管理中不可或缺的部分。你必须安全地实施审计，以防止篡改或删除审计日志的企图。至少应审计以下内容：
 
-- Who requested a secret and for what system and role.
-- Whether the secret request was approved or rejected.
-- When the secret was used and by whom/what.
-- When the secret has expired.
-- Whether there were any attempts to re-use expired secrets.
-- If there have been any authentication or authorization errors.
-- When the secret was updated and by whom/what.
-- Any administrative actions and possible user activity on the underlying supporting infrastructure stack.
+- 谁请求了密钥，用于哪个系统和角色。
+- 密钥请求是被批准还是被拒绝。
+- 密钥何时被使用，由谁/什么使用。
+- 密钥何时过期。
+- 是否有尝试重用已过期的密钥。
+- 是否发生过任何身份验证或授权错误。
+- 密钥何时被更新，由谁/什么更新。
+- 底层支持基础架构堆栈上的任何管理操作和可能的用户活动。
 
-It is essential that all auditing has correct timestamps. Therefore, the secret management solution should have proper time sync protocols set up at its supporting infrastructure. You should monitor the stack on which the solution runs for possible clock-skew and manual time adjustments.
+确保所有审计都有正确的时间戳至关重要。因此，密钥管理解决方案应在其支持的基础架构中设置适当的时间同步协议。你应监控运行该解决方案的堆栈，以检测可能的时钟偏差和手动时间调整。
 
-### 2.7 Secret Lifecycle
+### 2.7 密钥生命周期
 
-Secrets follow a lifecycle. The stages of the lifecycle are as follows:
+密钥遵循一个生命周期。生命周期的阶段如下：
 
-- Creation
-- Rotation
-- Revocation
-- Expiration
+- 创建
+- 轮换
+- 吊销
+- 过期
 
-#### 2.7.1 Creation
+#### 2.7.1 创建
 
-New secrets must be securely generated and cryptographically robust enough for their purpose. Secrets must have the minimum privileges assigned to them to enable their required use/role.
+新密钥必须安全生成，并在密码学上对其用途足够强健。密钥必须分配最小的权限以启用其所需的使用/角色。
 
-You should transmit credentials securely, such that ideally, you don't send the password along with the username when requesting user accounts. Instead, you should send the password via a secure channel (e.g. mutually authenticated connection) or a side-channel such as push notification, SMS, email. Refer to the [Multi-Factor Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet) to learn about the pros and cons of each channel.
+你应该安全地传输凭证，理想情况下，在请求用户账户时不要与用户名一起发送密码。相反，应通过安全信道（例如双向认证连接）或侧信道（如推送通知、短信、电子邮件）发送密码。请参考[多因素认证备忘录](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet)了解每个信道的优缺点。
 
-Applications may not benefit from having multiple communication channels, so you must provision credentials securely.
+应用程序可能不会从多个通信信道中受益，因此你必须安全地配置凭证。
 
-See [the Open CRE project on secrets lookup](https://www.opencre.org/cre/223-780) for more technical recommendations on secret creation.
+有关密钥创建的更多技术建议，请参见 [Open CRE 项目关于密钥查找](https://www.opencre.org/cre/223-780)。
 
-#### 2.7.2 Rotation
+#### 2.7.2 轮换
 
-You should regularly rotate secrets so that any stolen credentials will only work for a short time. Regular rotation will also reduce the tendency for users to fall back to bad habits such as re-using credentials.
+你应定期轮换密钥，使任何被盗的凭证只能在短时间内使用。定期轮换还将减少用户重新使用凭证等不良习惯的倾向。
 
-Depending on a secret's function and what it protects, the lifetime could be from minutes (think end-to-end encrypted chats with perfect forward secrecy) to years (consider hardware secrets).
+根据密钥的功能和其保护的对象，生命周期可能从几分钟（想想具有完美前向保密性的端到端加密聊天）到几年（考虑硬件密钥）不等。
 
-User credentials are excluded from regular rotating. These should only be rotated if there is suspicion or evidence that they have been compromised, according to [NIST recommendations](https://pages.nist.gov/800-63-FAQ/#q-b05).
+用户凭证不在常规轮换范围内。根据 [NIST 建议](https://pages.nist.gov/800-63-FAQ/#q-b05)，这些凭证仅在有可疑或有证据表明其已被泄露时才应轮换。
 
-#### 2.7.3 Revocation
+#### 2.7.3 吊销
 
-When secrets are no longer required or potentially compromised, you must securely revoke them to restrict access. With (TLS) certificates, this also involves certificate revocation.
+当密钥不再需要或可能已泄露时，你必须安全地吊销它们以限制访问。对于（TLS）证书，这还涉及证书吊销。
 
-#### 2.7.4 Expiration
+#### 2.7.4 过期
 
-You should create secrets to expire after a defined time where possible. This expiration can either be active expiration by the secret consuming system, or an expiration date set at the secrets management system forcing supporting processes to be triggered, resulting in a secret rotation.
-You should apply policies through the secrets management solution to ensure credentials are only made available for a limited time appropriate for the type of credentials. Applications should verify that the secret is still active before trusting it.
+在可能的情况下，你应创建在定义的时间后过期的密钥。这种过期可以是由密钥消费系统主动过期，或在密钥管理系统中设置过期日期，触发支持流程进行密钥轮换。
+你应通过密钥管理解决方案应用策略，确保凭证仅在适合该类型凭证的有限时间内可用。应用程序应在信任密钥之前验证密钥是否仍然有效。
 
-### 2.8 Transport Layer Security (TLS) Everywhere
+### 2.8 传输层安全（TLS）无处不在
 
-Never transmit secrets via plaintext. In this day and age, there is no excuse given the ubiquitous adoption of TLS.
+永远不要以明文传输密钥。在当今这个 TLS 被普遍采用的时代，这是没有借口的。
 
-Furthermore, you can effectively use secrets management solutions to provision TLS certificates.
+此外，你可以有效地使用密钥管理解决方案来配置 TLS 证书。
 
-### 2.9 Downtime, Break-glass, Backup and Restore
+### 2.9 停机、紧急访问、备份和恢复
 
-Consider the possibility that a secrets management service becomes unavailable for various reasons, such as scheduled downtime for maintenance. It could be impossible to retrieve the credentials required to restore the service if you did not previously acquire them. Thus, choose maintenance windows carefully based on earlier metrics and audit logs.
+考虑密钥管理服务可能因各种原因（如计划的维护停机）而不可用的可能性。如果你之前没有获取凭证，可能无法检索恢复服务所需的凭证。因此，根据早期的指标和审计日志仔细选择维护窗口。
 
-Next, the backup and restore procedures of the system should be regularly tested and audited for their security. A few requirements regarding backup & restore. Ensure that:
+接下来，系统的备份和恢复程序应定期测试和审计其安全性。关于备份和恢复，确保：
 
-- An automated backup procedure is in place and executed periodically; base the frequency of the backups and snapshots on the number of secrets and their lifecycle.
-- Frequently test restore procedures to guarantee that the backups are intact.
-- Encrypt backups and put them on secure storage with reduced access rights. Monitor the backup location for (unauthorized) access and administrative actions.
+- 建立并定期执行自动备份程序；根据密钥数量和其生命周期确定备份和快照的频率。
+- 频繁测试恢复程序，以保证备份完整。
+- 加密备份并将其放在访问权限受限的安全存储上。监控备份位置的（未授权）访问和管理操作。
 
-Lastly, you should implement emergency ("break-glass") processes to restore the service if the system becomes unavailable for reasons other than regular maintenance. Therefore, emergency break-glass credentials should be regularly backed up securely in a secondary secrets management system and tested routinely to verify they work.
+最后，你应实施紧急（"破玻璃"）流程，以在系统因常规维护以外的原因不可用时恢复服务。因此，紧急破玻璃凭证应定期在次要密钥管理系统中安全备份，并定期测试以验证其有效性。
 
-### 2.10 Policies
+### 2.10 策略
 
-Consistently enforce policies defining the minimum complexity requirements of passwords and approved encryption algorithms at an organization-wide level. Using a centralized secrets management solution can help companies implement these policies.
+在组织范围内一致地执行定义密码最低复杂性要求和批准的加密算法的策略。使用集中式密钥管理解决方案可以帮助公司实施这些策略。
 
-Next, having an organization-wide secrets management policy can help enforce applying the best practices defined in this cheat sheet.
+此外，制定组织范围的密钥管理策略可以帮助强制执行本备忘录中定义的最佳实践。
 
-### 2.11 Metadata: prepare to move the secret
+### 2.11 元数据：准备移动密钥
 
-A secret management solution should provide the capability to store at least the following metadata about a secret:
+密钥管理解决方案应提供存储关于密钥的至少以下元数据的能力：
 
-- When it was created/consumed/archived/rotated/deleted
-- Who created/consumed/archived/rotated/deleted it (e.g. both the actual producer, and the engineer using the production method)
-- What created/consumed/archived/rotated/deleted it
-- Who to contact when having trouble with the secret or having questions about it
-- For what the secret is used (E.g. designated intended consumers and purpose of the secret)
-- What type of secret it is (E.g. AES Key, HMAC key, RSA private key)
-- When you need to rotate it, if done manually
+- 创建/使用/归档/轮换/删除的时间
+- 谁创建/使用/归档/轮换/删除了它（例如，实际生产者和使用生产方法的工程师）
+- 什么创建/使用/归档/轮换/删除了它
+- 遇到密钥问题或有疑问时联系谁
+- 密钥的用途（例如，指定的预期使用者和密钥目的）
+- 密钥的类型（例如 AES 密钥、HMAC 密钥、RSA 私钥）
+- 需要轮换的时间，如果是手动完成
 
-Note: if you don't store metadata about the secret nor prepare to move, you will increase the probability of vendor lock-in.
+注意：如果不存储关于密钥的元数据也不准备移动，你将增加供应商锁定的可能性。
 
-## 3 Continuous Integration (CI) and Continuous Deployment (CD)
+## 3 持续集成（CI）和持续部署（CD）
 
-Building, testing and deploying changes generally requires access to many systems. Continuous Integration (CI) and Continuous Deployment (CD) tools typically store secrets to provide configuration to the application or during deployment. Alternatively, they interact heavily with the secrets management system. Various best practices can help smooth out secret management in CI/CD; we will deal with some of them in this section.
+构建、测试和部署变更通常需要访问多个系统。持续集成（CI）和持续部署（CD）工具通常存储密钥以提供应用程序配置或在部署期间。或者，它们与密钥管理系统进行大量交互。各种最佳实践可以帮助简化 CI/CD 中的密钥管理；我们将在本节中讨论其中的一些。
 
-### 3.1 Hardening your CI/CD pipeline
+### 3.1 加固你的 CI/CD 流水线
 
-CI/CD tooling consumes (high-privilege) credentials regularly. Ensure that the pipeline cannot be easily hacked or misused by employees. Here are a few guidelines which can help you:
+CI/CD 工具定期消耗（高权限）凭证。确保流水线不能被轻易黑客攻击或被员工滥用。以下是一些可以帮助你的指南：
 
-- Treat your CI/CD tooling as a production environment: harden it, patch it and harden the underlying infrastructure and services.
-- Have Security Event Monitoring in place.
-- Implement least-privilege access: developers do not need to be able to administer projects. Instead, they only need to be able to execute required functions, such as setting up pipelines, running them, and working with code. Administrative tasks can quickly be done using configuration-as-code in a separate repository used by the CI/CD system to update its configuration. There is no need for privileged roles that might have access to secrets.
-- Make sure that pipeline output does not leak secrets, and you can't listen in on production pipelines with debugging tools.
-- Make sure you cannot exec into any runners and workers for a CI/CD system.
-- Have proper authentication, authorization and accounting in place.
-- Ensure only an approved process can create pipelines, including MR/PR steps to ensure that a created pipeline is security-reviewed.
+- 将 CI/CD 工具视为生产环境：加固它，修补它，并加固底层基础架构和服务。
+- 建立安全事件监控。
+- 实施最小权限访问：开发人员不需要能够管理项目。相反，他们只需要能够执行必需的功能，如设置流水线、运行流水线和处理代码。管理任务可以快速地使用配置即代码（configuration-as-code）在 CI/CD 系统使用的单独存储库中更新其配置。不需要可能有权访问密钥的特权角色。
+- 确保流水线输出不会泄露密钥，并且无法使用调试工具监听生产流水线。
+- 确保无法对 CI/CD 系统的任何运行器和工作进程执行 exec 操作。
+- 建立适当的身份验证、授权和记账。
+- 确保只有经批准的流程可以创建流水线，包括合并请求/拉取请求步骤，以确保创建的流水线经过安全审查。
 
-### 3.2 Where should a secret be?
+### 3.2 密钥应该放在哪里？
 
-There are various places where you can store a secret to execute CI/CD actions:
+有多种地方可以存储执行 CI/CD 操作的密钥：
 
-- As part of your CI/CD tooling: you can store a secret in [GitLab](https://docs.gitlab.com/charts/installation/secrets.html)/[GitHub](https://docs.github.com/en/actions/security-guides/encrypted-secrets)/[jenkins](https://www.jenkins.io/doc/developer/security/secrets/). This is not the same as committing it to code.
-- As part of your secrets-management system: you can store a secret in a secrets management system, such as facilities provided by a cloud provider ([AWS Secret Manager](https://aws.amazon.com/secrets-manager/), [Azure Key Vault](https://azure.microsoft.com/nl-nl/services/key-vault/), [Google Secret Manager](https://cloud.google.com/secret-manager)), or other third-party facilities ([Hashicorp Vault](https://www.vaultproject.io/), [Conjur](https://www.conjur.org/), [Keeper](https://www.keepersecurity.com/)). In this case, the CI/CD pipeline tooling requires credentials to connect to these secret management systems to have secrets in place. See [Cloud Providers](#4-cloud-providers) for more details on using a cloud provider's secret management system.
+- 作为 CI/CD 工具的一部分：你可以在 [GitLab](https://docs.gitlab.com/charts/installation/secrets.html)/[GitHub](https://docs.github.com/en/actions/security-guides/encrypted-secrets)/[Jenkins](https://www.jenkins.io/doc/developer/security/secrets/) 中存储密钥。这与将其提交到代码中是不同的。
+- 作为密钥管理系统的一部分：你可以在密钥管理系统中存储密钥，如云提供商提供的设施（[AWS 密钥管理器](https://aws.amazon.com/secrets-manager/)、[Azure 密钥保管库](https://azure.microsoft.com/nl-nl/services/key-vault/)、[Google 密钥管理器](https://cloud.google.com/secret-manager)），或其他第三方设施（[Hashicorp Vault](https://www.vaultproject.io/)、[Conjur](https://www.conjur.org/)、[Keeper](https://www.keepersecurity.com/)）。在这种情况下，CI/CD 流水线工具需要凭证以连接这些密钥管理系统以获取密钥。有关使用云提供商的密钥管理系统的更多详细信息，请参见[云提供商](#4-云提供商)部分。
 
-Another alternative here is using the CI/CD pipeline to leverage the Encryption as a Service from the secrets management systems to do the encryption of a secret. The CI/CD tooling can then commit the encrypted secret to git, which can be fetched by the consuming service on deployment and decrypted again. See section 3.6 for more details.
+另一种选择是使用 CI/CD 流水线利用密钥管理系统的"即服务加密"来加密密钥。然后 CI/CD 工具可以将加密的密钥提交到 git，消费服务可以在部署时获取并再次解密。有关更多详细信息，请参见第 3.6 节。
 
-Note: not all secrets must be at the CI/CD pipeline to get to the actual deployment. Instead, make sure that the deployed services take care of part of their secrets management at their own lifecycle (E.g. deployment, runtime and destruction).
+注意：并非所有密钥都必须在 CI/CD 流水线中才能到达实际部署。相反，确保部署的服务在其自身生命周期（如部署、运行时和销毁）中处理部分密钥管理。
 
-#### 3.2.1 As part of your CI/CD tooling
+#### 3.2.1 作为 CI/CD 工具的一部分
 
-When secrets are part of your CI/CD tooling, it means that these secrets are exposed to your CI/CD jobs. CI/CD tooling can comprise, e.g. GitHub secrets, GitLab repository secrets, ENV Vars/Var Groups in Microsoft Azure DevOps, Kubernetes Secrets, etc.
-These secrets are often configurable/viewable by people who have the authorization to do so (e.g. a maintainer in GitHub, a project owner in GitLab, an admin in Jenkins, etc.), which together lines up for the following best practices:
+当密钥是 CI/CD 工具的一部分时，意味着这些密钥暴露给你的 CI/CD 作业。CI/CD 工具可以包括 GitHub 密钥、GitLab 存储库密钥、Microsoft Azure DevOps 中的环境变量/变量组、Kubernetes 密钥等。
+这些密钥通常可由具有授权的人配置/查看（例如 GitHub 中的维护者、GitLab 中的项目所有者、Jenkins 中的管理员等），这与以下最佳实践相符：
 
-- No "big secret": ensure that secrets in your CI/CD tooling that are not long-term, don't have a wide blast radius, and don't have a high value. Also, limit shared secrets (e.g. never have one password for all administrative users).
-- As is / To be: have a clear overview of which users can view or alter the secrets. Often, maintainers of a GitLab/GitHub project can see or otherwise extract its secrets.
-- Reduce the number of people that can perform administrative tasks on the project to limit exposure.
-- Log & Alert: Assemble all the logs from the CI/CD tooling and have rules in place to detect secret extraction, or misuse, whether through accessing them through a web interface or dumping them while double base64 encoding or encrypting them with OpenSSL.
-- Rotation: Regularly rotate secrets.
-- Forking should not leak: Validate that a fork of the repository or copy of the job definition does not copy the secret.
-- Document: Make sure you document which secrets you store as part of your CI/CD tooling and why so that you can migrate these easily when required.
+- 无"大密钥"：确保 CI/CD 工具中的密钥不是长期的、没有广泛的影响范围且没有高价值。还要限制共享密钥（例如，绝不为所有管理用户使用一个密码）。
+- 现状/目标：清楚地了解哪些用户可以查看或更改密钥。通常，GitLab/GitHub 项目的维护者可以查看或以其他方式提取其密钥。
+- 减少可以对项目执行管理任务的人数，以限制暴露。
+- 日志和警报：收集 CI/CD 工具的所有日志，并制定规则以检测密钥提取或滥用，无论是通过 Web 界面访问还是在双重 base64 编码或使用 OpenSSL 加密时转储。
+- 轮换：定期轮换密钥。
+- 分支不应泄露：验证存储库的分支或作业定义的副本不会复制密钥。
+- 文档：确保记录你在 CI/CD 工具中存储的密钥及其原因，以便在需要时可以轻松迁移。
 
-#### 3.2.2 Storing it in a secrets management system
+#### 3.2.2 在密钥管理系统中存储
 
-Naturally, you can store secrets in a designated secrets management solution. For example, you can use a solution offered by your (cloud) infrastructure provider, such as [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/), [Google Secrets Manager](https://cloud.google.com/secret-manager), or [Azure KeyVault](https://azure.microsoft.com/nl-nl/services/key-vault/). You can find more information about these in [section 4](#4-cloud-providers) of this cheat sheet. Another option is a dedicated secrets management system, such as [Hashicorp Vault](https://www.vaultproject.io/), [Keeper](https://www.keepersecurity.com/), [Conjur](https://www.conjur.org/).
-Here are a few do's and don'ts for the CI/CD interaction with these systems. Make sure that the following is taken care of:
+自然地，你可以在指定的密钥管理解决方案中存储密钥。例如，你可以使用（云）基础架构提供商提供的解决方案，如 [AWS 密钥管理器](https://aws.amazon.com/secrets-manager/)、[Google 密钥管理器](https://cloud.google.com/secret-manager)或 [Azure 密钥保管库](https://azure.microsoft.com/nl-nl/services/key-vault/)。你可以在本备忘录的[第 4 节](#4-云提供商)中找到有关这些的更多信息。另一个选择是专用密钥管理系统，如 [Hashicorp Vault](https://www.vaultproject.io/)、[Keeper](https://www.keepersecurity.com/)、[Conjur](https://www.conjur.org/)。
 
-- Rotation/Temporality: credentials used by the CI/CD tooling to authenticate against the secret management system are rotated frequently and expire after a job completes.
-- Scope of authorization: scope credentials used by the CI/CD tooling (e.g. roles, users, etc.), only authorize those secrets and services of the secret management system required for the CI/CD tooling to execute its job.
-- Attribution of the caller: credentials used by the CI/CD tooling still hold attribution of the one calling the secrets management solution. Ensure you can attribute any calls made by the CI/CD tooling to a person or service that requested the actions of the CI/CD tooling. If this is not possible through the default configuration of the secrets manager, make sure that you have a correlation setup in terms of request parameters.
-- All of the above: Still follow those do's and don'ts listed in section 3.2.1: log & alert, take care of forking, etc.
-- Backup: back up secrets to product-critical operations in separate storage (e.g. cold storage), especially encryption keys.
+以下是 CI/CD 与这些系统交互的一些注意事项。确保处理好以下内容：
 
-#### 3.2.3 Not touched by CI/CD at all
+- 轮换/临时性：用于向密钥管理系统进行身份验证的 CI/CD 工具凭证经常轮换，并在作业完成后过期。
+- 授权范围：限制 CI/CD 工具使用的凭证（如角色、用户等）的范围，仅授权 CI/CD 工具执行作业所需的密钥和服务。
+- 调用者归属：CI/CD 工具使用的凭证仍然保留调用密钥管理解决方案者的归属。确保可以将 CI/CD 工具发出的任何调用归因于请求 CI/CD 工具操作的人员或服务。如果无法通过密钥管理器的默认配置实现，请确保在请求参数方面建立关联。
+- 上述所有内容：仍然遵循第 3.2.1 节中列出的注意事项：日志和警报、注意分支等。
+- 备份：对产品关键操作的密钥进行备份到单独的存储（例如冷存储），尤其是加密密钥。
 
-Secrets do not necessarily need to be brought to a consumer of the secret by a CI/CD pipeline. It is even better when the consumer of the secret retrieves the secret. In that case, the CI/CD pipeline still needs to instruct the orchestrating system (e.g. [Kubernetes](https://kubernetes.io/)) that it needs to schedule a specific service with a given service account with which the consumer can then retrieve the required secret. The CI/CD tooling then still has credentials for the orchestrating platform but no longer has access to the secrets themselves. The do's and don'ts regarding these credentials types are similar to those described in section 3.2.2.
+#### 3.2.3 完全不由 CI/CD 触及
 
-### 3.3 Authentication and Authorization of CI/CD tooling
+密钥不一定需要通过 CI/CD 流水线传递给密钥的消费者。当密钥的消费者自行检索密钥时，情况甚至更好。在这种情况下，CI/CD 流水线仍然需要指示编排系统（例如 [Kubernetes](https://kubernetes.io/)）使用特定服务账户调度特定服务，消费者可以通过该服务账户检索所需的密钥。这样，CI/CD 工具仍然拥有编排平台的凭证，但不再直接访问密钥本身。关于这些凭证类型的注意事项与第 3.2.2 节中描述的类似。
 
-CI/CD tooling should have designated service accounts, which can only operate in the scope of the required secrets or orchestration of the consumers of a secret. Additionally, a CI/CD pipeline run should be easily attributable to the one who has defined the job or triggered it to detect who has tried to exfiltrate secrets or manipulate them. When you use certificate-based auth, the caller of the pipeline identity should be part of the certificate. If you use a token to authenticate towards the mentioned systems, make sure you set the principal requesting these actions (e.g. the user or the job creator).
+### 3.3 CI/CD 工具的身份验证和授权
 
-Verify on a periodical basis whether this is (still) the case for your system so that you can do logging, attribution, and security alerting on suspicious actions effectively.
+CI/CD 工具应具有专用服务账户，该账户只能在所需密钥或密钥消费者的编排范围内操作。此外，CI/CD 流水线运行应易于归因于定义作业或触发作业的人员，以便检测谁试图窃取或操纵密钥。使用基于证书的身份验证时，流水线调用者的身份应成为证书的一部分。如果使用令牌向提到的系统进行身份验证，请确保设置请求这些操作的主体（例如用户或作业创建者）。
 
-### 3.4 Logging and Accounting
+定期验证系统是否仍然符合这一要求，以便可以有效地对可疑操作进行日志记录、归因和安全警报。
 
-Attackers can use CI/CD tooling to extract secrets. They could, for example, use administrative interfaces or job creation which exfiltrates the secret using encryption or double base64 encoding. Therefore, you should log every action in a CI/CD tool. You should define security alerting rules at every non-standard manipulation of the pipeline tool and its administrative interface to monitor secret usage.
-Logs should be queryable for at least 90 days and stored for a more extended period in cold storage. It might take security teams time to understand how attackers can exfiltrate or manipulate a secret using CI/CD tooling.
+### 3.4 日志记录和记账
 
-### 3.5 Rotation vs Dynamic Creation
+攻击者可以使用 CI/CD 工具提取密钥。例如，他们可能使用管理界面或作业创建来通过加密或双重 base64 编码窃取密钥。因此，你应该记录 CI/CD 工具中的每个操作。你应该在流水线工具及其管理界面的每个非标准操作上定义安全警报规则，以监控密钥使用情况。
+日志应可查询至少 90 天，并长期存储在冷存储中。安全团队可能需要时间了解攻击者如何使用 CI/CD 工具窃取或操纵密钥。
 
-You can leverage CI/CD tooling to rotate secrets or instruct other components to do the rotation of the secret. For instance, the CI/CD tool can request a secrets management system or another application to rotate the secret. Alternatively, the CI/CD tool or another component could set up a dynamic secret: a secret required for a consumer to use for as long as it lives. The secret is invalidated when the consumer no longer lives. This procedure reduces possible leakage of a secret and allows for easy detection of misuse. If an attacker uses secret from anywhere other than the consumer's IP, you can easily detect it.
+### 3.5 轮换与动态创建
 
-### 3.6 Pipeline Created Secrets
+你可以利用 CI/CD 工具轮换密钥或指示其他组件进行密钥轮换。例如，CI/CD 工具可以请求密钥管理系统或另一个应用程序轮换密钥。或者，CI/CD 工具或另一个组件可以设置动态密钥：消费者在其生命周期内使用的所需密钥。当消费者不再存在时，密钥将失效。这个过程减少了密钥泄露的可能性，并允许轻松检测滥用情况。如果攻击者从消费者 IP 以外的任何地方使用密钥，你可以轻松检测到。
 
-You can use pipeline tooling to generate secrets and either offer them directly to the service deployed by the tooling or provide the secret to a secrets management solution. Alternatively, the secret can be stored encrypted in git so that the secret and its metadata is as close to the developer's daily place of work as possible. A git-stored secret does require that developers cannot decrypt the secrets themselves and that every consumer of a secret has its encrypted variant of the secret. For instance: the secret should then be different per DTAP environment and be encrypted with another key. For each environment, only the designated consumer in that environment should be able to decrypt the specific secret. A secret does not leak cross-environment and can still be easily stored next to the code.
-Consumers of a secret could now decrypt the secret using a sidecar, as described in section 5.2. Instead of retrieving the secrets, the consumer would leverage the sidecar to decrypt the secret.
+### 3.6 流水线创建的密钥
 
-When a pipeline creates a secret by itself, ensure that the scripts or binaries involved adhere to best practices for secret generation. Best practices include secure-randomness, proper length of secret creation, etc. and that the secret is created based on well-defined metadata stored somewhere in git or somewhere else.
+你可以使用流水线工具生成密钥，并直接将其提供给由工具部署的服务，或将密钥提供给密钥管理解决方案。另外，密钥可以加密存储在 git 中，使密钥及其元数据尽可能接近开发人员的日常工作场所。存储在 git 中的密钥确实要求开发人员不能自行解密密钥，并且每个密钥的消费者都有其密钥的加密变体。例如：密钥应针对每个 DTAP 环境不同，并使用不同的密钥加密。对于每个环境，只有该环境中指定的消费者才能解密特定的密钥。密钥不会跨环境泄露，并且仍然可以轻松地存储在代码旁边。
 
-## 4 Cloud Providers
+密钥的消费者现在可以使用第 5.2 节中描述的边车（sidecar）来解密密钥。消费者不是检索密钥，而是利用边车解密密钥。
 
-For cloud providers, there are at least four essential topics to touch upon:
+当流水线自行创建密钥时，确保涉及的脚本或二进制文件遵守密钥生成的最佳实践。最佳实践包括安全随机性、适当的密钥创建长度等，并且密钥是基于存储在 git 或其他地方的明确定义的元数据创建的。
 
-- Designated secret storage/management solutions. Which service(s) do you use?
-- Envelope & client-side encryption
-- Identity and access management: decreasing the blast radius
-- API quotas or service limits
+## 4 云提供商
 
-### 4.1 Services to Use
+对于云提供商，至少有四个essential主题需要探讨：
 
-It is best to use a designated secret management solution in any environment. Most cloud providers have at least one service that offers secret management. Of course, it's also possible to run a different secret management solution (e.g. HashiCorp Vault or Conjur) on compute resources within the cloud. We'll consider cloud provider service offerings in this section.
+- 指定的密钥存储/管理解决方案。你使用哪种服务？
+- 信封加密和客户端加密
+- 身份和访问管理：减小影响范围
+- API 配额或服务限制
 
-Sometimes it's possible to automatically rotate your secret, either via a service provided by your cloud provider or a (custom-built) function. Generally, you should prefer the cloud provider's solution since the barrier of entry and risk of misconfiguration are lower. If you use a custom solution, ensure the function's role to do its rotation can only be assumed by said function.
+### 4.1 要使用的服务
 
-#### 4.1.1 AWS
+在任何环境中，最好使用指定的密钥管理解决方案。大多数云提供商至少提供一种密钥管理服务。当然，也可以在云计算资源中运行不同的密钥管理解决方案（例如 HashiCorp Vault 或 Conjur）。本节将考虑云提供商的服务产品。
 
-For AWS, the recommended solution is [AWS secret manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html).
+有时可以通过云提供商提供的服务或（自定义构建的）函数自动轮换密钥。通常，你应该优先选择云提供商的解决方案，因为入门门槛较低，配置错误的风险较小。如果使用自定义解决方案，请确保执行轮换的函数的角色只能由该函数承担。
 
-Permissions are granted at the secret level. Check out the [Secrets Manager best practices](https://docs.aws.amazon.com/secretsmanager/latest/userguide/best-practices.html).
+### 4.2 信封加密和客户端加密
 
-It is also possible to use the [Systems Manager Parameter store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html), which is cheaper, but that has a few downsides:
+本节将描述密钥的加密方式以及如何在云中管理这些加密的密钥。
 
-- you'll need to make sure you've specified encryption yourself (secrets manager does that by default)
-- it offers fewer auto-rotation capabilities (you will likely need to build a custom function)
-- it doesn't support cross-account access
-- it doesn't support cross-region replication
-- there are fewer [security hub controls](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html) available
+#### 4.2.1 客户端加密与服务器端加密
 
-##### 4.1.1.1 AWS Nitro Enclaves
+服务器端密钥加密确保云提供商负责在存储中加密密钥。这样密钥在静态时就得到保护。静态加密通常不需要额外工作，只需选择用于加密的密钥（参见第 4.2.2 节）。然而，当你将密钥提交给另一个服务时，它将不再加密。在与目标服务或人工用户共享之前，它会被解密。
 
-With [AWS Nitro Enclaves](https://aws.amazon.com/ec2/nitro/nitro-enclaves/), you can create trusted execution environments. Thus, no human-based access is possible once the application is running. Additionally, enclaves do not have any permanent storage attached to them. Therefore, secrets and other sensitive data stored on the nitro enclaves have an additional layer of security.
+客户端密钥加密确保密钥保持加密状态，直到你主动解密。这意味着它仅在到达消费者时才被解密。你需要有一个适当的加密系统来满足这一需求。考虑使用安全配置的 PGP 等机制，以及其他更可扩展且相对易用的系统。客户端加密可以提供端到端的密钥加密：从生产者到消费者。
 
-##### 4.1.1.2 AWS CloudHSM
+#### 4.2.2 自带密钥（BYOK）与云提供商密钥
 
-For secrets being used in highly confidential applications, it may be needed to have more control over the encryption and storage of these keys. AWS offers [CloudHSM](https://aws.amazon.com/cloudhsm/), which lets you bring your own key (BYOK) for AWS services. Thus, you will have more control over keys' creation, lifecycle, and durability. CloudHSM allows automatic scaling and backup of your data. The cloud service provider, Amazon, will not have any access to the key material stored in Azure Dedicated HSM.
+当你对静态密钥进行加密时，问题是：你想使用哪个密钥？你对云提供商的信任越少，你就越想自行管理。
 
-#### 4.1.2 GCP
+通常，你可以使用密钥管理服务中管理的密钥加密密钥，或使用云提供商的密钥管理解决方案加密密钥。云提供商密钥管理解决方案提供的密钥可以由云提供商管理，也可以由你自己管理。行业标准将后者称为"自带密钥"（BYOK）。你可以直接在密钥管理解决方案中导入或生成此密钥，或使用云提供商支持的云 HSM。
 
-For GCP, the recommended service is [Secret Manager](https://cloud.google.com/secret-manager/docs).
+然后，你可以使用自己的密钥或提供商的客户主密钥（CMK）加密密钥管理解决方案的数据密钥。数据密钥反过来加密密钥。通过管理 CMK，你可以控制密钥管理解决方案中的数据密钥。
 
-Permissions are granted at the secret level.
+虽然通常可以在所有提供商（[AWS](https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html)、[Azure](https://docs.microsoft.com/en-us/azure/key-vault/keys/byok-specification)、[GCP](https://cloud.google.com/kms/docs/key-import)）中导入自己的密钥材料，但除非你知道自己在做什么，并且你的威胁模型和策略要求这样做，否则由于其复杂性和使用难度，这不是推荐的解决方案。
 
-Check out the [Secret Manager best practices](https://cloud.google.com/secret-manager/docs/best-practices).
+### 4.3 身份和访问管理（IAM）
 
-##### 4.1.2.1 Google Cloud Confidential Computing
+IAM 适用于本地和云设置：要有效管理密钥，你需要设置合适的访问策略和角色。设置这一点不仅仅是关于密钥的策略；它应包括全面的 IAM 强化，否则可能允许特权提升攻击。确保永远不要允许开放的"传递角色"权限或不受限制的 IAM 创建权限，因为这些可能使用或创建可访问密钥的凭证。接下来，确保严格控制可以模拟服务账户的对象：攻击者利用服务器漏洞是否可以访问你的机器角色？数据管道工具的服务角色是否可以轻松访问密钥？确保在威胁模型中包含每个云组件的 IAM（例如，问问自己：如何使用此组件提升权限？）。请参阅[此博客文章](https://xebia.com/ten-pitfalls-you-should-look-out-for-in-aws-iam/)，其中有多个包含示例的注意事项。
 
-[GCP Confidential Computing](https://cloud.google.com/confidential-computing) allows encryption of data during runtime. Thus, application code and data are kept secret, encrypted, and cannot be accessed by humans or tools.
+有效利用 IAM 主体的临时性：例如，确保只有需要的特定角色和服务账户可以访问密钥。监控这些账户，以便你可以追踪谁或什么使用它们访问密钥。
 
-#### 4.1.3 Azure
+接下来，确保限定对密钥的访问范围：不应该简单地允许访问所有密钥。在 GCP 和 AWS 中，你可以创建细粒度的访问策略，确保主体不能一次性访问所有密钥。在 Azure 中，访问密钥保管库意味着访问该密钥保管库中的所有密钥。因此，在 Azure 中工作时，拥有单独的密钥保管库以隔离访问至关重要。
 
-For Azure, the recommended service is [Key Vault](https://docs.microsoft.com/en-us/azure/key-vault/).
+### 4.4 API 限制
 
-Contrary to other clouds, permissions are granted at the _**Key Vault**_ level. This means secrets for separate workloads and separate sensitivity levels should be in separated Key Vaults accordingly.
+云服务通常在给定期间内提供有限数量的 API 调用。当你遇到这些限制时，可能会（拒绝服务）攻击自己。这些限制大多适用于每个账户、项目或订阅，因此分散工作负载以相应地限制影响范围。此外，一些服务可能支持数据密钥缓存，防止对密钥管理服务 API 的负载（例如参见 [AWS 数据密钥缓存](https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/data-key-caching.html)）。某些服务可以利用内置的数据密钥缓存。[S3 就是这样的一个例子](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html)。
 
-Check out the [Key Vault best practices](https://docs.microsoft.com/en-us/azure/key-vault/general/best-practices).
+## 5 容器与编排器
 
-##### 4.1.3.1 Azure Confidential Computing
+你可以通过多种方式为容器添加密钥：构建时（不推荐）和编排/部署期间。
 
-With [Azure Confidential Computing](https://azure.microsoft.com/en-us/solutions/confidential-compute/#overview), you can create trusted execution environments. Thus, every application will be executed in an encrypted enclave that protects the data and code consumed by the application is protected end-to-end. Furthermore, any application running inside enclaves is not accessible by any tool or human.
+### 5.1 密钥注入（文件、内存）
 
-##### 4.1.3.2 Azure Dedicated HSM
+在 Docker 容器内向应用程序提供密钥有三种方式。
 
-For secrets being used in Azure environments and requiring special security considerations, Azure offers [Azure Dedicated HSM](https://azure.microsoft.com/en-us/services/azure-dedicated-hsm/). This allows you more control over the secrets stored on it, including enhanced administrative and cryptographic control. The cloud service provider, Microsoft, will not have any access to the key material stored in Azure Dedicated HSM.
+- 挂载卷（文件）：使用这种方法，我们将密钥保存在特定的配置/密钥文件中，并将该文件作为挂载卷挂载到我们的实例上。确保这些挂载由编排器挂载，而不是内置的，因为这会导致密钥随容器定义泄露。相反，确保编排器在需要时挂载卷。
+- 从密钥存储中获取（内存）：边车应用/容器直接从密钥管理服务获取其所需的密钥，而无需处理 Docker 配置。这种解决方案允许你使用动态构建的密钥，而无需担心密钥在文件系统中可见或从检查 Docker 容器的环境变量中泄露。
+- 环境变量：我们可以直接将密钥作为 Docker 容器配置的一部分提供。注意：密钥本身不应使用 Docker ENV 或 Docker ARG 命令硬编码，因为这些可能会随容器定义轻易泄露。另请参阅 [WrongSecrets](https://github.com/OWASP/wrongsecrets) 上的 Docker 挑战。相反，让编排器用实际密钥覆盖环境变量，并确保这不是硬编码的。此外，环境变量通常可被所有进程访问，并可能包含在日志或系统转储中。因此，除非其他方法不可行，否则不建议使用环境变量。
 
-#### 4.1.4 Other clouds, Multi-cloud, and Cloud agnostic
+### 5.2 短生命周期边车容器
 
-If you're using multiple cloud providers, you should consider using a cloud agnostic secret management solution. This will allow you to use the same secret management solution across all your cloud providers (and possibly also on-premises). Another advantage is that this avoids vendor lock-in with a specific cloud provider, as the solution can be used on any cloud provider.
+要注入密钥，你可以创建短生命周期的边车容器，从某个远程端点获取密钥，然后将它们存储在挂载到原始容器的共享卷上。原始容器现在可以使用挂载卷中的密钥。使用这种方法的好处是，我们不需要集成任何第三方工具或代码来获取密钥。一旦边车获取了密钥，它就会终止。这方面的示例包括 [Vault Agent 边车注入器](https://developer.hashicorp.com/vault/docs/platform/k8s/injector)和 [Conjur 密钥提供程序](https://github.com/cyberark/secrets-provider-for-k8s)。通过将密钥挂载到与 Pod 共享的卷上，Pod 中的容器可以在不知道密钥管理器的情况下使用密钥。
 
-There are open source and commercial solutions available. Some examples are:
+### 5.3 内部与外部访问
 
-- [CyberArk Conjur](https://www.conjur.org/)
-- [HashiCorp Vault](https://www.vaultproject.io/)
-- [Pulumi ESC](https://www.pulumi.com/esc/)
+你应该仅将密钥暴露给容器和部署表示之间的通信机制（例如 Kubernetes Pod）。切勿通过部署或编排器之间共享的外部访问机制（例如共享卷）暴露密钥。
 
-### 4.2 Envelope & client-side encryption
+当编排器存储密钥（例如 Kubernetes Secrets）时，确保编排器的存储后端已加密，并且你能很好地管理密钥。有关更多信息，请参阅 [Kubernetes 安全备忘录](Kubernetes_Security_Cheat_Sheet.md)。
 
-This section will describe how a secret is encrypted and how you can manage the keys for that encryption in the cloud.
+## 6 实施指导
 
-#### 4.2.1 Client-side encryption versus server-side encryption
+在本节中，我们将讨论实施细节。请注意，始终最好参考所选密钥管理系统的官方文档进行实际实施，因为它比本备忘录等任何二手文档都更加最新。
 
-Server-side encryption of secrets ensures that the cloud provider takes care of the encryption of the secret in storage. The secret is then safeguarded against compromise while at rest. Encryption at rest often does not require additional work other than selecting the key to encrypt it with (See section 4.2.2). However: when you submit the secret to another service, it will no longer be encrypted. It is decrypted before sharing with the intended service or human user.
+### 6.1 密钥材料管理策略
 
-Client-side encryption of secrets ensures that the secret remains encrypted until you actively decrypt it. This means it is only decrypted when it arrives at the consumer. You need to have a proper crypto system to cater for this. Think about mechanisms such as PGP using a safe configuration and other more scalable and relatively easy to use systems. Client-side encryption can provide an end-to-end encryption of the secret: from producer till consumer.
+密钥材料管理在[密钥管理备忘录](Key_Management_Cheat_Sheet.md)中有详细讨论。
 
-#### 4.2.2 Bring Your Own Key versus Cloud Provider Key
+### 6.2 动态与静态使用场景
 
-When you encrypt a secret at rest, the question is: which key do you want to use? The less trust you have in the cloud provider, the more you will want to manage yourself.
+我们看到动态密钥的以下使用场景，包括但不限于：
 
-Often, you can either encrypt a secret with a key managed at the secrets management service or use a key management solution from the cloud provider to encrypt the secret. The key offered through the key management solution of the cloud provider can be either managed by the cloud provider or by yourself. Industry standards call the latter "bring your own key" (BYOK). You can either directly import or generate this key at the key management solution or using cloud HSM supported by the cloud provider.
-You can then either use your key or the customer main key from the provider to encrypt the data key of the secrets management solution. The data key, in turn, encrypts the secret. By managing the CMK, you have control over the data key at the secrets management solution.
+- 用于次要服务的短期密钥（如凭证或 API 密钥），表达将主服务（如消费者）连接到该服务的意图。
+- 用于保护和保障内存和运行时通信过程的短期完整性和加密控制。例如，只需在单个会话或单个部署生命周期内存在的加密密钥。
+- 在服务部署期间为与部署者和支持基础设施交互而创建的短期凭证。
 
-While importing your own key material can generally be done with all providers ([AWS](https://docs.aws.amazon.com/kms/latest/developerguide/importing-keys.html), [Azure](https://docs.microsoft.com/en-us/azure/key-vault/keys/byok-specification), [GCP](https://cloud.google.com/kms/docs/key-import)), unless you know what you are doing and your threat model and policy require this, this is not a recommended solution due to its complexity and difficulty of use.
+请注意，这些动态密钥通常需要与我们要连接的服务一起创建。要创建这些类型的动态密钥，我们通常需要长期静态密钥来创建动态密钥本身。其他静态使用场景包括：
 
-### 4.3 Identity and Access Management (IAM)
+- 由于与同一服务的其他实例交互的使用性质，需要比单个部署生命周期更长的密钥材料（例如存储加密密钥、TLS PKI 密钥）
+- 连接到不支持创建临时角色或凭证的服务的密钥材料或凭证。
 
-IAM applies to both on-premise and cloud setups: to effectively manage secrets, you need to set up suitable access policies and roles. Setting this up goes beyond policies regarding secrets; it should include hardening the full IAM setup, as it could otherwise allow for privilege escalation attacks. Ensure you never allow open "pass role" privileges or unrestricted IAM creation privileges, as these can use or create credentials that have access to the secrets. Next, make sure you tightly control what can impersonate a service account: are your machines' roles accessible by an attacker exploiting your server? Can service roles from the data-pipeline tooling access the secrets easily? Ensure you include IAM for every cloud component in your threat model (e.g. ask yourself: how can you do elevation of privileges with this component?). See [this blog entry](https://xebia.com/ten-pitfalls-you-should-look-out-for-in-aws-iam/) for multiple do's and don'ts with examples.
+### 6.3 确保限制措施到位
 
-Leverage the temporality of the IAM principals effectively: e.g. ensure that only specific roles and service accounts that require it can access the secrets. Monitor these accounts so that you can tell who or what used them to access the secrets.
+密钥不应被每个人和每个事物都能检索。始终确保设置防护措施：
 
-Next, make sure that you scope access to your secrets: one should not be simply allowed to access all secrets. In GCP and AWS, you can create fine-grained access policies to ensure that a principal cannot access all secrets at once. In Azure, having access to the key vault means having access to all secrets in that key vault. It is, thus, essential to have separate key vaults when working on Azure to segregate access.
+- 是否有机会创建访问策略？确保制定策略以限制可以读取或写入密钥的实体数量。同时，编写策略时要便于扩展，且不过于复杂。
+- 在密钥管理解决方案中是否无法减少对某些密钥的访问？考虑通过使用单独的密钥管理解决方案来分隔生产和开发密钥。然后，减少对生产密钥管理解决方案的访问。
 
-### 4.4 API limits
+### 6.4 安全事件监控至关重要
 
-Cloud services can generally provide a limited amount of API calls over a given period. You could potentially (D)DoS yourself when you run into these limits. Most of these limits apply per account, project, or subscription, so spread workloads to limit your blast radius accordingly. Additionally, some services may support data key caching, preventing load on the key management service API (see for example [AWS data key caching](https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/data-key-caching.html)). Some services can leverage built-in data key caching. [S3 is one such example](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html).
+持续监控谁/什么、来自哪个 IP、使用何种方法访问密钥。需要关注各种模式，包括但不限于：
 
-## 5 Containers & Orchestrators
+- 监控谁在密钥管理系统中访问密钥：这是否是正常行为？如果 CI/CD 凭证从与 CI/CD 系统运行位置不同的 IP 访问密钥管理解决方案，则提供安全警报并假定密钥已泄露。
+- 监控需要密钥的服务（如果可能），例如，密钥用户是否来自预期的 IP，使用预期的用户代理。如果不是，则发出警报并假定密钥已泄露。
 
-You can enrich containers with secrets in multiple ways: build time (not recommended) and during orchestration/deployment.
+### 6.5 可用性
 
-### 5.1 Injection of Secrets (file, in-memory)
+确保你的密钥管理解决方案易于使用，因为你不希望人们因复杂性而绕过它或无效地使用它。这种可用性需要：
 
-There are three ways to get secrets to an app inside a docker container.
+- 轻松添加新密钥和移除无效密钥。
+- 易于与现有软件集成：应该很容易将应用程序作为密钥管理系统的消费者。例如，应提供 SDK 或简单的边车容器以与密钥管理系统通信，使现有软件解耦且无需大量修改。你可以在 AWS、Google 和 Azure SDK 中找到此类示例。这些 SDK 允许应用程序与各自的密钥管理解决方案交互。你还可以在 HashiCorp Vault 软件集成和 [Vault Agent 边车注入器](https://developer.hashicorp.com/vault/docs/platform/k8s/injector)以及 Conjur 集成和 [Conjur 密钥提供程序](https://github.com/cyberark/secrets-provider-for-k8s)中找到类似示例。
+- 对密钥管理组织及其流程有清晰的理解至关重要。
 
-- Mounted volumes (file): With this method, we keep our secrets within a particular config/secret file and mount that file to our instance as a mounted volume. Ensure that these mounts are mounted in by the orchestrator and never built-in, as this will leak the secret with the container definition. Instead, make sure that the orchestrator mounts in the volume when required.
-- Fetch from the secret store (in-memory): A sidecar app/container fetches the secrets it needs directly from a secret manager service without dealing with docker config. This solution allows you to use dynamically constructed secrets without worrying about the secrets being viewable from the file system or from checking the docker container's environment variables.
-- Environment variables: We can provide secrets directly as part of the docker container configuration. Note: secrets themselves should never be hardcoded using docker ENV or docker ARG commands, as these can easily leak with the container definitions. See the Docker challenges at [WrongSecrets](https://github.com/OWASP/wrongsecrets) as well. Instead, let an orchestrator overwrite the environment variable with the actual secret and ensure that this is not hardcoded. Additionally, environment variables are generally accessible to all processes and may be included in logs or system dumps. Using environment variables is therefore not recommended unless the other methods are not possible.
+## 7 加密
 
-### 5.2 Short Lived Side-car Containers
+密钥管理与加密密不可分。毕竟，密钥必须以加密形式存储在某处以保护其机密性和完整性。
 
-To inject secrets, you could create short-lived sidecar containers that fetch secrets from some remote endpoint and then store them on a shared volume mounted to the original container. The original container can now use the secrets from mounted volume. The benefit of using this approach is that we don't need to integrate any third-party tool or code to get secrets. Once the sidecar has fetched the secrets, it terminates. Examples of this inclue [Vault Agent Sidecar Injector](https://developer.hashicorp.com/vault/docs/platform/k8s/injector) and [Conjur Secrets Provider](https://github.com/cyberark/secrets-provider-for-k8s). By mounting secrets to a volume shared with the pod, containers within the pod can consume secrets without being aware of the secrets manager.
+### 7.1 要使用的加密类型
 
-### 5.3 Internal vs External Access
+只要提供足够的安全性，包括对量子计算攻击的充分抵抗，你可以使用各种加密类型来保护密钥。鉴于这是一个不断发展的领域，最好查看像 [keylength.com](https://www.keylength.com/en/4/) 这样的资源，它列举了现有标准的加密类型和密钥长度的最新建议，以及枚举量子抗性算法的 NSA 的[商业国家安全算法套件 2.0](https://media.defense.gov/2022/Sep/07/2003071834/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS_.PDF)。
 
-You should only expose secrets to communication mechanisms between the container and the deployment representation (e.g. a Kubernetes Pod). Never expose secrets through external access mechanisms shared among deployments or orchestrators (e.g. a shared volume).
+请注意，在所有情况下，我们最好选择能同时提供加密和机密性的算法，如使用 GCM（[伽罗瓦计数器模式](https://en.wikipedia.org/wiki/Galois/Counter_Mode)）的 AES-256，或根据该领域最佳实践混合使用 ChaCha20 和 Poly1305。
 
-When the orchestrator stores secrets (e.g. Kubernetes Secrets), make sure that the storage backend of the orchestrator is encrypted and you manage the keys well. See the [Kubernetes Security Cheat Sheet](Kubernetes_Security_Cheat_Sheet.md) for more information.
+### 7.2 收敛加密
 
-## 6 Implementation Guidance
+[收敛加密](https://en.wikipedia.org/wiki/Convergent_encryption)确保给定的明文和其密钥会产生相同的密文。这可以帮助检测密钥可能的重复使用，从而导致相同的密文。
 
-In this section, we will discuss implementation. Note that it is always best to refer to the official documentation of the secrets management system of choice for the actual implementation as it will be more up to date than any secondary document such as this cheat sheet.
+启用收敛加密的挑战在于，它允许攻击者使用系统生成一组加密字符串，这些字符串可能最终指向相同的密钥，使攻击者能够推导出明文密钥。给定算法和密钥，如果你使用的收敛加密系统在加密期间有足够的资源挑战，则可以缓解这种风险。另一个有助于降低风险的因素是确保密钥具有足够的长度，这将进一步阻碍可能需要的猜测迭代时间。
 
-### 6.1 Key Material Management Policies
+### 7.3 在哪里存储加密密钥？
 
-Key material management is discussed in the [Key Management Cheat Sheet](Key_Management_Cheat_Sheet.md)
+除非这些密钥本身已加密（参见信封加密），否则不应将密钥存储在它们加密的密钥旁边。首先请查阅[密钥管理备忘录](Key_Management_Cheat_Sheet.md)，了解在哪里以及如何存储加密和可能的 HMAC 密钥。
 
-### 6.2 Dynamic vs Static Use Cases
+### 7.4 作为服务的加密（EaaS）
 
-We see the following use cases for dynamic secrets, amongst others:
+EaaS 是一种用户订阅基于云的加密服务的模型，无需在自己的系统上安装加密。使用 EaaS，你可以获得以下好处：
 
-- short-lived secrets (e.g. credentials or API keys) for a secondary service that expresses the intent for connecting the primary service (e.g. consumer) to the service.
-- short-lived integrity and encryption controls for guarding and securing in-memory and runtime communication processes. Think of encryption keys that only need to live for a single session or a single deployment lifetime.
-- short-lived credentials for building a stack during the deployment of a service for interacting with the deployers and supporting infrastructure.
+- 静态加密
+- 传输中加密（TLS）
+- 密钥处理和加密实现由加密服务负责，而非开发人员
+- 提供商可以添加更多与敏感数据交互的服务
 
-Note that these dynamic secrets often need to be created with the service we need to connect to. To create these types of dynamic secrets, we usually require long term static secrets to create the dynamic secrets themselves. Other static use cases:
+## 8 检测
 
-- key material that needs to live longer than a single deployment due to the nature of their usage in the interaction with other instances of the same service (e.g. storage encryption keys, TLS PKI keys)
-- key material or credentials to connect to services that do not support creating temporal roles or credentials.
+在密钥检测方面有许多方法，并且有一些非常有用的开源项目可以提供帮助。[Yelp Detect Secrets](https://github.com/Yelp/detect-secrets) 项目已经成熟，能够匹配大约 20 种密钥。有关帮助你进行密钥检测的其他工具的更多信息，请查看 GitHub 上的[密钥检测](https://github.com/topics/secrets-detection)主题。
 
-### 6.3 Ensure limitations are in place
+### 8.1 常规检测方法
 
-Secrets should never be retrievable by everyone and everything. Always make sure that you put guardrails in place:
+左移和 DevSecOps 原则同样适用于密钥检测。以下常规方法旨在更早地考虑密钥并随时间演进实践：
 
-- Do you have the opportunity to create access policies? Ensure that there are policies in place to limit the number of entities that can read or write the secret. At the same time, write the policies so that you can easily extend them, and they are not too complicated to understand.
-- Is there no way to reduce access to certain secrets within a secrets management solution? Consider separating the production and development secrets by having separate secret management solutions. Then, reduce access to the production secrets management solution.
+- 创建标准测试密钥并在整个组织中通用。这允许通过仅需要跟踪每种密钥类型的单个测试密钥来减少误报。
+- 考虑在开发人员级别启用密钥检测，以避免在提交/PR 之前将密钥检入代码，可以在 IDE 中、作为测试驱动开发的一部分，或通过预提交钩子实现。
+- 使密钥检测成为威胁模型的一部分。在威胁建模练习中将密钥视为攻击面的一部分。
+- 经常评估检测实用程序和相关签名，以确保它们符合预期。
+- 考虑使用多个检测实用程序，并关联/去重结果以识别潜在的检测弱点区域。
+- 探索熵和检测易用性之间的平衡。具有一致格式的密钥更容易检测，误报率较低，但你也不希望仅因为密钥不匹配检测规则就遗漏人工创建的密码。
 
-### 6.4 Security Event Monitoring is Key
+### 8.2 要检测的密钥类型
 
-Continually monitor who/what, from which IP, and what methodology accesses the secret. There are various patterns where you need to look out for, such as, but not limited to:
+存在许多类型的密钥，你应该考虑每种类型的签名以确保所有密钥的准确检测。较常见的类型包括：
 
-- Monitor who accesses the secret at the secret management system: is this normal behavior? If the CI/CD credentials are used to access the secret management solution from a different IP than where the CI/CD system is running, provide a security alert and assume the secret compromised.
-- Monitor the service requiring the secret (if possible), e.g., whether the user of the secret is coming from an expected IP, with an expected user agent. If not, alert and assume the secret is compromised.
+- 高可用性密钥（难以轮换的令牌）
+- 应用程序配置文件
+- 连接字符串
+- API 密钥
+- 凭证
+- 密码
+- 双因素认证密钥
+- 私钥（例如 SSH 密钥）
+- 会话令牌
+- 特定平台的密钥类型（例如 Amazon Web Services、Google Cloud）
 
-### 6.5 Usability
+若要更有趣地了解密钥并练习发现它们，请查看 [Wrong Secrets](https://owasp.org/www-project-wrongsecrets/) 项目。
 
-Ensure that your secrets management solution is easy to use, as you do not want people to work around it or use it ineffectively due to complexity. This usability requires:
+### 8.3 检测生命周期
 
-- Easy onboarding of new secrets and removal of invalidated secrets.
-- Easy integration with the existing software: it should be easy to integrate applications as consumers of the secret management system. For instance, an SDK or simple sidecar container should be available to communicate with the secret management system so that existing software is decoupled and does not need extensive modification. You can find examples of this in the AWS, Google, and Azure SDKs. These SDKs allow an application to interact with the respective secrets management solutions. You can find similar examples in the HashiCorp Vault software integrations and the [Vault Agent Sidecar Injector](https://developer.hashicorp.com/vault/docs/platform/k8s/injector), as well as Conjur integrations and [Conjur Secrets Provider](https://github.com/cyberark/secrets-provider-for-k8s).
-- A clear understanding of the organization of secrets management and its processes is essential.
+密钥就像任何其他授权令牌。它们应该：
 
-## 7 Encryption
+- 仅在必要时存在（经常轮换）
+- 具有自动轮换的方法
+- 仅对需要它们的人可见（最小权限）
+- 可撤销（包括记录尝试使用已撤销密钥的行为）
+- 永远不要被记录（必须实施加密或屏蔽方法，以避免记录明文密钥）
 
-Secrets Management goes hand in hand with encryption. After all, secrets must be stored encrypted somewhere to protect their confidentiality and integrity.
+为密钥生命周期的每个阶段创建检测规则。
 
-### 7.1 Encryption Types to Use
+### 8.4 密钥检测文档
 
-You can use various encryption types to secure a secret as long as they provide sufficient security, including adequate resistance against quantum computing-based attacks. Given that this is a moving field, it is best to take a look at sources like [keylength.com](https://www.keylength.com/en/4/), which enumerate up to date recommendations on the usage of encryption types and key lengths for existing standards, as well as the NSA's [Commercial National Security Algorithm Suite 2.0](https://media.defense.gov/2022/Sep/07/2003071834/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS_.PDF) which enumerates quantum resistant algorithms.
+创建并定期更新文档，以告知开发者社区贵组织可用的程序和系统，以及你对密钥管理的期望、如何测试密钥，以及在检测到密钥时应该怎么做。
 
-Please note that in all cases, we need to preferably select an algorithm that provides encryption and confidentiality at the same time, such as AES-256 using GCM [(Gallois Counter Mode)](https://en.wikipedia.org/wiki/Galois/Counter_Mode), or a mixture of ChaCha20 and Poly1305 according to the best practices in the field.
+文档应该：
 
-### 7.2 Convergent Encryption
+- 存在并经常更新，尤其是对应事件的响应
+- 包括以下信息：
+    - 谁有权访问密钥
+    - 如何轮换
+    - 密钥轮换期间可能被破坏的上游或下游依赖项
+    - 事件期间的联系人
+    - 暴露的安全影响
 
-[Convergent Encryption](https://en.wikipedia.org/wiki/Convergent_encryption) ensures that a given plaintext and its key results in the same ciphertext. This can help detect possible re-use of secrets, resulting in the same ciphertext.
-The challenge with enabling convergent encryption is that it allows attackers to use the system to generate a set of cryptographic strings that might end up in the same secret, allowing the attacker to derive the plain text secret. Given the algorithm and key, you can mitigate this risk if the convergent crypto system you use has sufficient resource challenges during encryption. Another factor that can help reduce the risk is ensuring that a secret is of adequate length, further hampering the possible guess-iteration time required.
+- 根据威胁风险、数据分类等识别可能需要不同处理的密钥。
 
-### 7.3 Where to store the Encryption Keys?
+## 9 事件响应
 
-You should not store keys next to the secrets they encrypt, except if those keys are encrypted themselves (see envelope encryption). Start by consulting the [Key Management Cheat Sheet](Key_Management_Cheat_Sheet.md) on where and how to store the encryption and possible HMAC keys.
+在密钥暴露事件中快速响应可能是密钥管理中最关键的考虑因素之一。
 
-### 7.4 Encryption as a Service (EaaS)
+### 9.1 文档
 
-EaaS is a model in which users subscribe to a cloud-based encryption service without having to install encryption on their own systems. Using EaaS, you can get the following benefits:
+密钥暴露事件的事件响应应确保责任链中的每个人都知晓并理解如何响应。这包括应用程序创建者（开发团队的每个成员）、信息安全和技术领导层。
 
-- Encryption at rest
-- Encryption in transit (TLS)
-- Key handling and cryptographic implementations are taken care of by Encryption Service, not by developers
-- The provider could add more services to interact with the sensitive data
+文档必须包括：
 
-## 8 Detection
+- 如何测试密钥和密钥处理，尤其是在业务连续性审查期间。
+- 检测到密钥时通知谁。
+- 遏制的步骤
+- 事件期间要记录的信息
 
-There are many approaches to secrets detection and some very useful open source projects to help with this. The [Yelp Detect Secrets](https://github.com/Yelp/detect-secrets) project is mature and has signature matching for around 20 secrets. For more information on other tools to help you in the detection space, check out the [Secrets Detection](https://github.com/topics/secrets-detection) topic on GitHub.
+### 9.2 补救
 
-### 8.1 General detection approaches
+事件响应的主要目标是快速响应和遏制。
 
-Shift-left and DevSecOps principles apply to secrets detection as well. These general approaches below aim to consider secrets earlier and evolve the practice over time.
+遏制应遵循以下程序：
 
-- Create standard test secrets and use them universally across the organization. This allows for reducing false positives by only needing to track a single test secret for each secret type.
-- Consider enabling secrets detection at the developer level to avoid checking secrets into code before commit/PR either in the IDE, as part of test-driven development, or via pre-commit hook.
-- Make secrets detection part of the threat model. Consider secrets as part of the attack surface during threat modeling exercises.
-- Evaluate detection utilities and related signatures often to ensure they meet expectations.
-- Consider having more than one detection utility and correlating/de-duping results to identify potential areas of detection weakness.
-- Explore a balance between entropy and ease of detection. Secrets with consistent formats are easier to detect with lower false-positive rates, but you also don't want to miss a human-created password simply because it doesn't match your detection rules.
+1. 撤销：已暴露的密钥应立即撤销。必须能够快速取消授权密钥，并且系统必须能够识别撤销状态。
+2. 轮换：必须能够快速创建并实施新密钥，最好通过自动化流程以确保可重复性、低实施错误率和最小权限（不直接人工可读）。
+3. 删除：已撤销/轮换的密钥必须立即从暴露的系统中移除，包括在代码或日志中发现的密钥。代码中的密钥可以将提交历史压缩到引入密钥之前，但这可能会引入其他问题，因为它重写了 git 历史并会破坏对给定提交的任何其他链接。如果决定这样做，请注意后果并相应地规划。日志中的密钥必须有一个在保持日志完整性的同时移除密钥的流程。
+4. 日志记录：事件响应团队必须能够访问密钥生命周期的相关信息，以帮助遏制和补救，包括：
+    - 谁有访问权？
+    - 他们何时使用？
+    - 上次轮换是何时？
 
-### 8.2 Types of secrets to be detected
+### 9.3 日志记录
 
-Many types of secrets exist, and you should consider signatures for each to ensure accurate detection for all. Among the more common types are:
+密钥使用日志记录的其他注意事项应包括：
 
-- High availability secrets (Tokens that are difficult to rotate)
-- Application configuration files
-- Connection strings
-- API keys
-- Credentials
-- Passwords
-- 2FA keys
-- Private keys (e.g., SSH keys)
-- Session tokens
-- Platform-specific secret types (e.g., Amazon Web Services, Google Cloud)
+- 用于事件响应的日志记录应集中在事件响应（IR）团队可访问的单一位置
+- 在紫队演习期间确保日志记录信息的保真度，例如：
+    - 应该记录什么？
+    - 实际记录了什么？
+    - 我们是否有足够的警报来确保这一点？
 
-For more fun learning about secrets and practice rooting them out check out the [Wrong Secrets](https://owasp.org/www-project-wrongsecrets/) project.
+考虑使用标准化的日志格式和词汇，如[日志词汇备忘录](Logging_Vocabulary_Cheat_Sheet.md)，以确保记录所有必要的信息。
 
-### 8.3 Detection lifecycle
+## 10 多云环境中的密钥管理
 
-Secrets are like any other authorization token. They should:
+### 10.1 引言
 
-- Exist only for as long as necessary (rotate often)
-- Have a method for automatic rotation
-- Only be visible to those who need them (least privilege)
-- Be revokable (including the logging of attempt to use a revoked secret)
-- Never be logged (must implement either an encryption or masking approach in place to avoid logging plaintext secrets)
+在多云环境中管理密钥由于云提供商及其各自服务的多样性，带来了独特的挑战。本节讨论跨多个云提供商管理密钥的挑战和最佳实践。
 
-Create detection rules for each of the stages of the secret lifecycle.
+### 10.2 挑战
 
-### 8.4 Documentation for how to detect secrets
+1. **多样的 API 和接口**：每个云提供商都有自己的 API 和接口来管理密钥，这可能导致跨多个提供商集成和管理密钥的复杂性。
+2. **不一致的安全策略**：不同的云提供商可能有不同的安全策略和实践，这使得在所有环境中执行一致的安全标准变得具有挑战性。
+3. **密钥轮换**：确保跨多个云提供商一致且安全地轮换密钥可能很困难，尤其是当每个提供商的密钥轮换机制不同时。
+4. **访问控制**：跨多个云提供商管理密钥的访问控制可能很复杂，因为每个提供商可能有不同的访问控制机制和策略。
+5. **审计和监控**：由于日志记录和监控功能的差异，确保跨多个云提供商全面审计和监控密钥访问和使用可能具有挑战性。
 
-Create documentation and update it regularly to inform the developer community on procedures and systems available at your organization and what types of secrets management you expect, how to test for secrets, and what to do in event of detected secrets.
+### 10.3 最佳实践
 
-Documentation should:
+1. **使用集中式密钥管理解决方案**：实施可以与多个云提供商集成的集中式密钥管理解决方案。这可以帮助标准化密钥管理并在所有环境中执行一致的安全策略。例如 HashiCorp Vault 和 CyberArk Conjur。
+2. **标准化安全策略**：为跨所有云提供商管理密钥定义并执行标准化的安全策略。这包括密钥轮换、访问控制和审计的策略。
+3. **自动密钥轮换**：实施自动密钥轮换流程，确保跨所有云提供商一致且安全地轮换密钥。使用工具和脚本自动化轮换过程，降低人为错误风险。
+4. **实施细粒度访问控制**：使用细粒度访问控制机制，根据最小权限原则限制对密钥的访问。确保跨所有云提供商一致地执行访问控制策略。
+5. **启用全面的审计和监控**：在所有云提供商中实施对密钥访问和使用的全面审计和监控。使用集中式日志记录和监控解决方案来聚合和分析来自多个提供商的日志。
 
-- Exist and be updated often, especially in response to an incident
-- Include the following information:
-    - Who has access to the secret
-    - How it gets rotated
-    - Any upstream or downstream dependencies that could potentially be broken during secret rotation
-    - Who is the point of contact during an incident
-    - Security impact of exposure
-
-- Identify when secrets may be handled differently depending on the threat risk, data classification, etc.
-
-## 9 Incident Response
-
-Quick response in the event of a secret exposure is perhaps one of the most critical considerations for secrets management.
-
-### 9.1 Documentation
-
-Incident response in the event of secret exposure should ensure that everyone in the chain of custody is aware and understands how to respond. This includes application creators (every member of a development team), information security, and technology leadership.
-
-Documentation must include:
-
-- How to test for secrets and secrets handling, especially during business continuity reviews.
-- Whom to alert when a secret is detected.
-- Steps to take for containment
-- Information to log during the event
-
-### 9.2 Remediation
-
-The primary goal of incident response is rapid response and containment.
-
-Containment should follow these procedures:
-
-1. Revocation: Keys that were exposed should undergo immediate revocation. The secret must be able to be de-authorized quickly, and systems must be in place to identify the revocation status.
-2. Rotation: A new secret must be able to be quickly created and implemented, preferably via an automated process to ensure repeatability, low rate of implementation error, and least-privilege (not directly human-readable).
-3. Deletion: Secrets revoked/rotated must be removed from the exposed system immediately, including secrets discovered in code or logs. Secrets in code could have commit history for the exposure squashed to before the introduction of the secret, however, this may introduce other problems as it rewrites git history and will break any other links to a given commit. If you decide to do this be aware of the consequences and plan accordingly. Secrets in logs must have a process for removing the secret while maintaining log integrity.
-4. Logging: Incident response teams must have access to information about the lifecycle of a secret to aid in containment and remediation, including:
-    - Who had access?
-    - When did they use it?
-    - When was it previously rotated?
-
-### 9.3 Logging
-
-Additional considerations for logging of secrets usage should include:
-
-- Logging for incident response should be to a single location accessible by incident response (IR) teams
-- Ensure fidelity of logging information during purple team exercises such as:
-    - What should have been logged?
-    - What was actually logged?
-    - Do we have adequate alerts in place to ensure this?
-
-Consider using a standardized logging format and vocabulary such as the [Logging Vocabulary Cheat Sheet](Logging_Vocabulary_Cheat_Sheet.md) to ensure that all necessary information is logged.
-
-## 10 Secrets Management in a Multi-Cloud Environment
-
-### 10.1 Introduction
-
-Managing secrets in a multi-cloud environment presents unique challenges due to the diversity of cloud providers and their respective services. This section discusses the challenges and best practices for managing secrets across multiple cloud providers.
-
-### 10.2 Challenges
-
-1. **Diverse APIs and Interfaces**: Each cloud provider has its own API and interface for managing secrets, which can lead to complexity in integrating and managing secrets across multiple providers.
-2. **Inconsistent Security Policies**: Different cloud providers may have varying security policies and practices, making it challenging to enforce consistent security standards across all environments.
-3. **Key Rotation**: Ensuring that keys are rotated consistently and securely across multiple cloud providers can be difficult, especially if each provider has different mechanisms for key rotation.
-4. **Access Control**: Managing access control for secrets across multiple cloud providers can be complex, as each provider may have different access control mechanisms and policies.
-5. **Auditing and Monitoring**: Ensuring comprehensive auditing and monitoring of secret access and usage across multiple cloud providers can be challenging due to the differences in logging and monitoring capabilities.
-
-### 10.3 Best Practices
-
-1. **Use a Centralized Secrets Management Solution**: Implement a centralized secrets management solution that can integrate with multiple cloud providers. This can help standardize the management of secrets and enforce consistent security policies across all environments. Examples include HashiCorp Vault and CyberArk Conjur.
-2. **Standardize Security Policies**: Define and enforce standardized security policies for managing secrets across all cloud providers. This includes policies for key rotation, access control, and auditing.
-3. **Automate Key Rotation**: Implement automated key rotation processes to ensure that keys are rotated consistently and securely across all cloud providers. Use tools and scripts to automate the rotation process and reduce the risk of human error.
-4. **Implement Fine-Grained Access Control**: Use fine-grained access control mechanisms to restrict access to secrets based on the principle of least privilege. Ensure that access control policies are consistently enforced across all cloud providers.
-5. **Enable Comprehensive Auditing and Monitoring**: Implement comprehensive auditing and monitoring of secret access and usage across all cloud providers. Use centralized logging and monitoring solutions to aggregate and analyze logs from multiple providers.
-
-### 10.4 References
+### 10.4 参考资料
 
 - [HashiCorp Vault](https://www.vaultproject.io/)
 - [CyberArk Conjur](https://www.conjur.org/)
-- [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/)
-- [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/)
-- [Google Cloud Secret Manager](https://cloud.google.com/secret-manager)
+- [AWS 密钥管理器](https://aws.amazon.com/secrets-manager/)
+- [Azure 密钥保管库](https://azure.microsoft.com/en-us/services/key-vault/)
+- [Google Cloud 密钥管理器](https://cloud.google.com/secret-manager)
 
-## 11 Related Cheat Sheets & further reading
+## 11 相关备忘录和延伸阅读
 
-- [Key Management Cheat Sheet](Key_Management_Cheat_Sheet.md)
-- [Logging Cheat Sheet](Logging_Cheat_Sheet.md)
-- [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md)
-- [Cryptographic Storage Cheat Sheet](Cryptographic_Storage_Cheat_Sheet.md)
-- [OWASP WrongSecrets project](https://github.com/OWASP/wrongsecrets/)
-- [Blog: 10 Pointers on Secrets Management](https://xebia.com/blog/secure-deployment-10-pointers-on-secrets-management/)
-- [Blog: From build to run: pointers on secure deployment](https://xebia.com/from-build-to-run-pointers-on-secure-deployment/)
-- [Github listing on secrets detection tools](https://github.com/topics/secrets-detection)
-- [NIST SP 800-57 Recommendation for Key Management](https://csrc.nist.gov/publications/detail/sp/800-57-part-1/rev-5/final)
-- [OpenCRE References to secrets](https://opencre.org/cre/223-780)
+- [密钥管理备忘录](Key_Management_Cheat_Sheet.md)
+- [日志备忘录](Logging_Cheat_Sheet.md)
+- [密码存储备忘录](Password_Storage_Cheat_Sheet.md)
+- [加密存储备忘录](Cryptographic_Storage_Cheat_Sheet.md)
+- [OWASP WrongSecrets 项目](https://github.com/OWASP/wrongsecrets/)
+- [博客：密钥管理的 10 个指针](https://xebia.com/blog/secure-deployment-10-pointers-on-secrets-management/)
+- [博客：从构建到运行：安全部署的指针](https://xebia.com/from-build-to-run-pointers-on-secure-deployment/)
+- [GitHub 上的密钥检测工具列表](https://github.com/topics/secrets-detection)
+- [NIST SP 800-57 密钥管理建议](https://csrc.nist.gov/publications/detail/sp/800-57-part-1/rev-5/final)
+- [OpenCRE 密钥相关引用](https://opencre.org/cre/223-780)
