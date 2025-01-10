@@ -1,256 +1,256 @@
-# Vulnerable Dependency Management Cheat Sheet
+# 易受攻击依赖管理备忘录
 
-## Introduction
+## 引言
 
-The objective of the cheat sheet is to provide a proposal of approach regarding the handling of vulnerable third-party dependencies when they are detected, and this, depending on different situation.
+本备忘录的目标是提供一种方法，用于处理检测到的第三方依赖漏洞，并根据不同情况采取相应措施。
 
-The cheat sheet is not tools oriented but it contains a [tools](#Tools) section informing the reader about free and commercial solutions that can be used to detect vulnerable dependencies, depending on the level of support on the technologies at hand
+本备忘录不是面向工具的，但包含一个[工具](#工具)部分，为读者提供可用于检测易受攻击依赖的免费和商业解决方案，具体取决于所涉及技术的支持水平。
 
-**Note:**
+**注意：**
 
-Proposals mentioned in this cheat sheet are not silver-bullet (recipes that work in all situations) yet can be used as a foundation and adapted to your context.
+本备忘录中提到的建议并非万能解决方案（在所有情况下都适用的配方），但可以作为基础，并根据具体情况进行调整。
 
-## Context
+## 背景
 
-Most of the projects use third-party dependencies to delegate handling of different kind of operations, _e.g._ generation of document in a specific format, HTTP communications, data parsing of a specific format, etc.
+大多数项目使用第三方依赖来委托处理各种操作，例如生成特定格式的文档、HTTP 通信、特定格式的数据解析等。
 
-It's a good approach because it allows the development team to focus on the real application code supporting the expected business feature. The dependency brings forth an expected downside where the security posture of the real application is now resting on it.
+这是一个好方法，因为它允许开发团队专注于支持预期业务功能的实际应用程序代码。但依赖带来的不利之处在于，应用程序的安全状况现在取决于该依赖。
 
-This aspect is referenced in the following projects:
+这一方面在以下项目中有所提及：
 
-- [OWASP TOP 10 2017](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/) under the point *[A9 - Using Components with Known Vulnerabilities](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A9-Using_Components_with_Known_Vulnerabilities.html)*.
-- [OWASP Application Security Verification Standard Project](https://owasp.org/www-project-application-security-verification-standard/) under the section *V14.2 Dependency*.
+- [OWASP TOP 10 2017](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/) 中的 *[A9 - 使用已知存在漏洞的组件](https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A9-Using_Components_with_Known_Vulnerabilities.html)*。
+- [OWASP 应用程序安全验证标准项目](https://owasp.org/www-project-application-security-verification-standard/) 中的 *V14.2 依赖* 部分。
 
-Based on this context, it's important for a project to ensure that all the third-party dependencies implemented are clean of any security issue, and if they happen to contain any security issues, the development team needs to be aware of it and apply the required mitigation measures to secure the affected application.
+基于这一背景，对于一个项目来说，确保所有实施的第三方依赖都没有安全问题至关重要。如果它们确实包含任何安全问题，开发团队需要意识到这一点，并采取必要的缓解措施来保护受影响的应用程序。
 
-It's highly recommended to perform automated analysis of the dependencies from the birth of the project. Indeed, if this task is added at the middle or end of the project, it can imply a huge amount of work to handle all the issues identified and that will in turn impose a huge burden on the development team and might to blocking the advancement of the project at hand.
+强烈建议从项目诞生之初就进行依赖的自动化分析。事实上，如果在项目中期或后期添加此任务，可能意味着需要大量工作来处理已识别的所有问题，这将给开发团队带来巨大负担，并可能阻碍项目的推进。
 
-**Note:**
+**注意：**
 
-In the rest of the cheat sheet, when we refer to *development team* then we assume that the team contains a member with the required application security skills or can refer to someone in the company having these kind of skills to analyse the vulnerability impacting the dependency.
+在备忘录的其余部分，当我们提到*开发团队*时，我们假设团队中有具备所需应用程序安全技能的成员，或者可以咨询公司中具有这类技能的人员来分析影响依赖的漏洞。
 
-## Remark about the detection
+## 关于检测的备注
 
-It's important to keep in mind the different ways in which a security issue is handled after its discovery.
+重要的是要牢记发现安全问题后处理的不同方式。
 
-### 1. Responsible disclosure
+### 1. 负责任披露
 
-See a description [here](https://en.wikipedia.org/wiki/Responsible_disclosure).
+参见[此处](https://en.wikipedia.org/wiki/Responsible_disclosure)的描述。
 
-A researcher discovers a vulnerability in a component, and after collaboration with the component provider, they issue a [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures) (sometimes a specific vulnerability identifier to the provider is created but generally a CVE identifier is preferred) associated to the issue allowing the public referencing of the issue as well as the available fixation/mitigation.
+研究人员在组件中发现漏洞，并在与组件提供者合作后，他们发布与问题相关的 [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)（有时会为提供者创建特定的漏洞标识符，但通常首选 CVE 标识符），允许公开引用问题以及可用的修复/缓解措施。
 
-If in case the provider doesn't properly cooperate with the researcher, the following results are expected:
+如果提供者未能与研究人员适当合作，预期会出现以下情况：
 
-- CVE gets accepted by the vendor yet the provider [refuses to fix the issue](https://www.excellium-services.com/cert-xlm-advisory/cve-2019-7161/).
-- Most of the time, if the researcher doesn't receive back a response in 30 days, they go ahead and do a [full disclosure](#2.-full-disclosure) of the vulnerability.
+- CVE 被供应商接受，但提供者[拒绝修复问题](https://www.excellium-services.com/cert-xlm-advisory/cve-2019-7161/)。
+- 大多数情况下，如果研究人员在 30 天内未收到回复，他们将继续进行漏洞的[全面披露](#2-全面披露)。
 
-Here, the vulnerability is always referenced in the [CVE global database](https://nvd.nist.gov/vuln/data-feeds) used, generally, by the detection tools as one of the several input sources used.
+在这里，漏洞始终在 [CVE 全球数据库](https://nvd.nist.gov/vuln/data-feeds)中被引用，通常被检测工具用作多个输入源之一。
 
-### 2. Full disclosure
+### 2. 全面披露
 
-See a description [here](https://en.wikipedia.org/wiki/Full_disclosure), into the section named **Computers** about **Computer Security**.
+参见[此处](https://en.wikipedia.org/wiki/Full_disclosure)的描述，在**计算机**部分的**计算机安全**中。
 
-The researcher decides to release all the information including exploitation code/method on services like [Full Disclosure mailing list](https://seclists.org/fulldisclosure/), [Exploit-DB](https://www.exploit-db.com).
+研究人员决定在 [Full Disclosure 邮件列表](https://seclists.org/fulldisclosure/)、[Exploit-DB](https://www.exploit-db.com) 等服务上发布所有信息，包括利用代码/方法。
 
-Here a CVE is not always created then the vulnerability is not always in the CVE global database causing the detection tools to be potentially blind about unless the tools use other input sources.
+在这种情况下，CVE 并不总是被创建，因此漏洞并不总是在 CVE 全球数据库中，这可能导致检测工具盲目，除非工具使用其他输入源。
 
-## Remark about the security issue handling decision
+## 关于安全问题处理决策的备注
 
-When a security issue is detected, it's possible to decide to accept the risk represented by the security issue. However, this decision must be taken by the [Chief Risk Officer](https://en.wikipedia.org/wiki/Chief_risk_officer) (fallback possible to [Chief Information Security Officer](https://en.wikipedia.org/wiki/Chief_information_security_officer)) of the company based on technical feedback from the development team that have analyzed the issue (see the *[Cases](#cases)* section) as well as the CVEs [CVSS](https://www.first.org/cvss/user-guide) score indicators.
+当检测到安全问题时，可以决定接受该安全问题所代表的风险。然而，这个决定必须由公司的[首席风险官](https://en.wikipedia.org/wiki/Chief_risk_officer)（可以回退到[首席信息安全官](https://en.wikipedia.org/wiki/Chief_information_security_officer)）基于分析该问题的开发团队的技术反馈以及 CVE 的 [CVSS](https://www.first.org/cvss/user-guide) 评分指标来做出。
 
-## Cases
+## 案例
 
-When a security issue is detected, the development team can meet one of the situations (named *Case* in the rest of the cheat sheet) presented in the sub sections below.
+当检测到安全问题时，开发团队可能遇到以下小节中呈现的情况（在备忘录的其余部分称为*案例*）。
 
-If the vulnerably impact a [transitive dependency](https://en.wikipedia.org/wiki/Transitive_dependency) then the action will be taken on the direct dependency of the project because acting on a transitive dependency often impact the stability of the application.
+如果漏洞影响[传递依赖](https://en.wikipedia.org/wiki/Transitive_dependency)，则操作将在项目的直接依赖上进行，因为处理传递依赖通常会影响应用程序的稳定性。
 
-Acting on a on a transitive dependency require the development team to fully understand the complete relation/communication/usage from the project first level dependency until the dependency impacted by the security vulnerability, this task is very time consuming.
+处理传递依赖需要开发团队首先完全理解从项目第一级依赖到受安全漏洞影响的依赖的完整关系/通信/使用情况，这项任务非常耗时。
 
-### Case 1
+### 案例 1
 
-#### Context
+#### 背景
 
-Patched version of the component has been released by the provider.
+组件的修补版本已由提供者发布。
 
-#### Ideal condition of application of the approach
+#### 方法应用的理想条件
 
-Set of automated unit or integration or functional or security tests exist for the features of the application using the impacted dependency allowing to validate that the feature is operational.
+存在用于使用受影响依赖的应用程序功能的自动化单元、集成、功能或安全测试集，以验证功能是否正常运行。
 
-#### Approach
+#### 方法
 
-**Step 1:**
+**步骤 1：**
 
-Update the version of the dependency in the project on a testing environment.
+在测试环境中更新项目中依赖的版本。
 
-**Step 2:**
+**步骤 2：**
 
-Prior to running the tests, 2 output paths are possible:
+在运行测试之前，可能出现 2 种输出路径：
 
-- All tests succeed, and thus the update can be pushed to production.
-- One or several tests failed, several output paths are possible:
-    - Failure is due to change in some function calls (_e.g._ signature, argument, package, etc.). The development team must update their code to fit the new library. Once that is done, re-run the tests.
-    - Technical incompatibility of the released dependency (_e.g._ require a more recent runtime version) which leads to the following actions:
-    1. Raise the issue to the provider.
-    2. Apply [Case 2](#case-2) while waiting for the provider's feedback.
+- 所有测试成功，因此可以将更新推送到生产环境。
+- 一个或多个测试失败，可能出现几种输出路径：
+    - 失败是由于某些函数调用的更改（例如签名、参数、包等）。开发团队必须更新其代码以适应新库。完成后，重新运行测试。
+    - 发布的依赖存在技术不兼容性（例如需要更新的运行时版本），这将导致以下操作：
+    1. 向提供者提出问题。
+    2. 在等待提供者反馈时应用[案例 2](#案例-2)。
 
-### Case 2
+### 案例 2
 
-#### Context
+#### 背景
 
-Provider informs the team that it will take a while to fix the issue and, so, a patched version will not be available before months.
+提供者告知团队修复问题需要一段时间，因此在几个月内不会提供修补版本。
 
-#### Ideal condition of application of the approach
+#### 方法应用的理想条件
 
-Provider can share any of the below with the development team:
+提供者可以与开发团队共享以下任何信息：
 
-- The exploitation code.
-- The list of impacted functions by the vulnerability.
-- A workaround to prevent the exploitation of the issue.
+- 利用代码。
+- 漏洞影响的函数列表。
+- 防止利用问题的解决方法。
 
-#### Approach
+#### 方法
 
-**Step 1:**
+**步骤 1：**
 
-If a workaround is provided, it should be applied and validated on the testing environment, and thereafter deployed to production.
+如果提供了解决方法，应在测试环境中应用并验证，然后部署到生产环境。
 
-If the provider has given the team a list of the impacted functions, protective code must wrap the calls to these functions to ensure that the input and the output data is safe.
+如果提供者给出了受影响函数的列表，必须使用防护代码包装对这些函数的调用，以确保输入和输出数据是安全的。
 
-Moreover, security devices, such as the Web Application Firewall (WAF), can handle such issues by protecting the internal applications through parameter validation and by generating detection rules for those specific libraries. Yet, in this cheat sheet, the focus is set on the application level in order to patch the vulnerability as close as possible to the source.
+此外，Web 应用程序防火墙（WAF）等安全设备可以通过参数验证和为这些特定库生成检测规则来保护内部应用程序。但是，在本备忘录中，重点放在应用程序级别，以尽可能接近源头地修补漏洞。
 
-*Example using java code in which the impacted function suffers from a [Remote Code Execution](https://www.netsparker.com/blog/web-security/remote-code-evaluation-execution/) issue:*
+*使用 Java 代码的示例，其中受影响的函数存在[远程代码执行](https://www.netsparker.com/blog/web-security/remote-code-evaluation-execution/)问题：*
 
 ```java
 public void callFunctionWithRCEIssue(String externalInput){
-    //Apply input validation on the external input using regex
+    //使用正则表达式对外部输入进行输入验证
     if(Pattern.matches("[a-zA-Z0-9]{1,50}", externalInput)){
-        //Call the flawed function using safe input
+        //使用安全输入调用有缺陷的函数
         functionWithRCEIssue(externalInput);
     }else{
-        //Log the detection of exploitation
-        SecurityLogger.warn("Exploitation of the RCE issue XXXXX detected !");
-        //Raise an exception leading to a generic error send to the client...
+        //记录利用检测
+        SecurityLogger.warn("检测到 RCE 问题 XXXXX 的利用！");
+        //引发异常，导致向客户端发送通用错误...
     }
 }
 ```
 
-If the provider has provided nothing about the vulnerability, [Case 3](#-case-3) can be applied skipping the *step 2* of this case. We assume here that, at least, the [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures) has been provided.
+如果提供者对漏洞没有提供任何信息，可以应用[案例 3](#案例-3)，跳过本案例的*步骤 2*。我们在这里假设至少提供了 [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)。
 
-**Step 2:**
+**步骤 2：**
 
-If the provider has provided the team with the exploitation code, and the team made a security wrapper around the vulnerable library/code, execute the exploitation code in order to ensure that the library is now secure and doesn't affect the application.
+如果提供者提供了利用代码，并且团队已经为易受攻击的库/代码添加了安全包装，则执行利用代码，以确保库现在是安全的，不会影响应用程序。
 
-If you have a set of automated unit or integration or functional or security tests that exist for the application, run them to verify that the protection code added does not impact the stability of the application.
+如果存在应用程序的自动化单元、集成、功能或安全测试集，运行它们以验证添加的保护代码不会影响应用程序的稳定性。
 
-Add a comment in the project *README* explaining that the issue (specify the related [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)) is handled during the waiting time of a patched version because the detection tool will continue to raise an alert on this dependency.
+在项目的 *README* 中添加注释，解释在等待修补版本期间如何处理问题（指定相关的 [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)），因为检测工具将继续对此依赖项发出警报。
 
-**Note:** You can add the dependency to the ignore list but the ignore scope for this dependency must only cover the [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures) related to the vulnerability because a dependency can be impacted by several vulnerabilities having each one its own [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures).
+**注意：** 您可以将依赖项添加到忽略列表中，但此依赖项的忽略范围只能覆盖与漏洞相关的 [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)，因为一个依赖项可能受到多个漏洞的影响，每个漏洞都有自己的 [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)。
 
-### Case 3
+### 案例 3
 
-#### Context
+#### 背景
 
-Provider informs the team that they cannot fix the issue, so no patched version will be released at all (applies also if provider does not want to fix the issue or does not answer at all).
+提供者告知团队他们无法修复问题，因此根本不会发布修补版本（如果提供者不想修复问题或根本不回应，也适用此情况）。
 
-In this case the only information given to the development team is the [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures).
+在这种情况下，开发团队获得的唯一信息是 [CVE](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures)。
 
-**Notes:**
+**注意：**
 
-- This case is really complex and time consuming and is generally used as last resort.
-- If the impacted dependency is an open source library then we, the development team, can create a patch and create [pull request](https://help.github.com/en/articles/about-pull-requests) - that way we can protect our company/application from the source as well as helping others secure their applications.
+- 这种情况非常复杂且耗时，通常作为最后的手段。
+- 如果受影响的依赖是开源库，那么我们（开发团队）可以创建补丁并创建[拉取请求](https://help.github.com/en/articles/about-pull-requests) - 这样我们不仅可以保护我们的公司/应用程序，还可以帮助其他人保护他们的应用程序。
 
-#### Ideal condition of application of the approach
+#### 方法应用的理想条件
 
-Nothing specific because here we are in a *patch yourself* condition.
+没有特定条件，因为我们处于"自行修补"的情况。
 
-#### Approach
+#### 方法
 
-**Step 1:**
+**步骤 1：**
 
-If we are in this case due to one of the following conditions, it's a good idea to start a parallel study to find another component better maintained or if it's a commercial component with support **then put pressure** on the provider with the help of your [Chief Risk Officer](https://en.wikipedia.org/wiki/Chief_risk_officer) (fallback possible to [Chief Information Security Officer](https://en.wikipedia.org/wiki/Chief_information_security_officer)):
+如果出现以下情况，最好开始平行研究，以找到另一个维护更好的组件，或者如果是有支持的商业组件，**则在首席风险官**（[可回退到首席信息安全官](https://en.wikipedia.org/wiki/Chief_information_security_officer)）的帮助下对提供者施加压力：
 
-- Provider does not want to fix the issue.
-- Provider does not answer at all.
+- 提供者不想修复问题。
+- 提供者根本不回应。
 
-In all cases, here, we need to handle the vulnerability right now.
+在所有情况下，我们现在需要立即处理漏洞。
 
-**Step 2:**
+**步骤 2：**
 
-As we know the vulnerable dependency, we know where it is used in the application (if it's a transitive dependency then we can identify the first level dependency using it using the [IDE](https://en.wikipedia.org/wiki/Integrated_development_environment) built-in feature or the dependency management system used (Maven, Gradle, NuGet, npm, etc.). Note that IDE is also used to identify the calls to the dependency.
+既然我们知道易受攻击的依赖，就知道它在应用程序中的使用位置（如果是传递依赖，则可以使用 [IDE](https://en.wikipedia.org/wiki/Integrated_development_environment) 内置功能或使用的依赖管理系统（Maven、Gradle、NuGet、npm 等）识别使用它的第一级依赖）。注意 IDE 也用于识别对依赖的调用。
 
-Identifying calls to this dependency is fine but it is the first step. The team still lacks information on what kind of patching needs to be performed.
+识别对此依赖的调用是好的，但这只是第一步。团队仍然缺乏需要执行的修补类型的信息。
 
-To obtain these information, the team uses the CVE content to know which kind of vulnerability affects the dependency. The `description` property provides the answer: SQL injection, Remote Code Execution, Cross-Site Scripting, Cross-Site Request Forgery, etc.
+为获取这些信息，团队使用 CVE 内容来了解影响依赖的漏洞类型。`description` 属性提供答案：SQL 注入、远程代码执行、跨站脚本、跨站请求伪造等。
 
-After identifying the above 2 points, the team is aware of the type of patching that needs to be taken ([Case 2](#case-2) with the protective code) and where to add it.
+在识别上述 2 点之后，团队了解需要采取的修补类型（使用防护代码的[案例 2](#案例-2)）和添加位置。
 
-*Example:*
+*示例：*
 
-The team has an application using the Jackson API in a version exposed to the [CVE-2016-3720](https://nvd.nist.gov/vuln/detail/CVE-2016-3720).
+团队有一个使用 Jackson API 的应用程序，该版本暴露于 [CVE-2016-3720](https://nvd.nist.gov/vuln/detail/CVE-2016-3720)。
 
-The description of the CVE is as follows:
+CVE 的描述如下：
 
 ```text
-XML external entity (XXE) vulnerability in XmlMapper in the Data format extension for Jackson
-(aka jackson-dataformat-xml) allows attackers to have unspecified impact via unknown vectors.
+Jackson 的数据格式扩展（即 jackson-dataformat-xml）中的 XmlMapper 存在 XML 外部实体（XXE）漏洞，攻击者可以通过未知向量产生不确定的影响。
 ```
 
-Based on these information, the team determines that the necessary patching will be to add a [pre-validation of any XML data](XML_External_Entity_Prevention_Cheat_Sheet.md) passed to the Jakson API to prevent [XML external entity (XXE)](https://www.acunetix.com/blog/articles/xml-external-entity-xxe-vulnerabilities/) vulnerability.
+基于这些信息，团队确定必要的修补将是在传递给 Jackson API 的任何 XML 数据上添加[预验证](XML_External_Entity_Prevention_Cheat_Sheet.md)，以防止 [XML 外部实体（XXE）](https://www.acunetix.com/blog/articles/xml-external-entity-xxe-vulnerabilities/)漏洞。
 
-**Step 3:**
+**步骤 3：**
 
-If possible, create a unit test that mimics the vulnerability in order to ensure that the patch is effective and have a way to continuously ensure that the patch is in place during the evolution of the project.
+如果可能，创建一个模仿漏洞的单元测试，以确保补丁有效，并在项目演进过程中持续确保补丁到位。
 
-If you have a set of automated unit or integration or functional or security tests that exists for the application then run them to verify that the patch does not impact the stability of the application.
+如果存在应用程序的自动化单元、集成、功能或安全测试集，则运行它们以验证补丁不会影响应用程序的稳定性。
 
-### Case 4
+### 案例 4
 
-#### Context
+#### 背景
 
-The vulnerable dependency is found during one of the following situation in which the provider is not aware of the vulnerability:
+在以下情况下发现易受攻击的依赖，且提供者尚未意识到漏洞：
 
-- Via the discovery of a full disclosure post on the Internet.
-- During a penetration test.
+- 通过在互联网上发现全面披露的帖子。
+- 在渗透测试期间。
 
-#### Ideal condition of application of the approach
+#### 方法应用的理想条件
 
-Provider collaborates with you after being notified of the vulnerability.
+提供者在收到漏洞通知后与您合作。
 
-#### Approach
+#### 方法
 
-**Step 1:**
+**步骤 1：**
 
-Inform the provider about the vulnerability by sharing the post with them.
+通过与提供者共享帖子来告知他们关于漏洞的情况。
 
-**Step 2:**
+**步骤 2：**
 
-Using the information from the full disclosure post or the pentester's exploitation feedback, if the provider collaborates then apply [Case 2](#case-2), otherwise apply [Case 3](#case-3), and instead of analyzing the CVE information, the team needs to analyze the information from the full disclosure post/pentester's exploitation feedback.
+使用全面披露帖子或渗透测试者的利用反馈中的信息，如果提供者合作，则应用[案例 2](#案例-2)，否则应用[案例 3](#案例-3)，但不是分析 CVE 信息，团队需要分析全面披露帖子/渗透测试者利用反馈中的信息。
 
-## Tools
+## 工具
 
-This section lists several tools that can used to analyze the dependencies used by a project in order to detect the vulnerabilities.
+本节列出了几种可用于分析项目所使用依赖以检测漏洞的工具。
 
-It's important to ensure, during the selection process of a vulnerable dependency detection tool, that this one:
+在选择易受攻击依赖检测工具的过程中，确保该工具：
 
-- Uses several reliable input sources in order to handle both vulnerability disclosure ways.
-- Support for flagging an issue raised on a component as a [false-positive](https://www.whitehatsec.com/glossary/content/false-positive).
+- 使用多个可靠的输入源，以处理两种漏洞披露方式。
+- 支持将组件上提出的问题标记为[误报](https://www.whitehatsec.com/glossary/content/false-positive)。
 
-- Free
-    - [OWASP Dependency Check](https://owasp.org/www-project-dependency-check/):
-        - Full support: Java, .Net.
-        - Experimental support: Python, Ruby, PHP (composer), NodeJS, C, C++.
-    - [NPM Audit](https://docs.npmjs.com/cli/audit)
-        - Full support: NodeJS, JavaScript.
-        - HTML report available via this [module](https://www.npmjs.com/package/npm-audit-html).
-    - [OWASP Dependency Track](https://dependencytrack.org/) can be used to manage vulnerable dependencies across an organization.
+- 免费工具
+    - [OWASP 依赖检查](https://owasp.org/www-project-dependency-check/):
+        - 完全支持：Java, .Net.
+        - 实验性支持：Python, Ruby, PHP (composer), NodeJS, C, C++.
+    - [NPM 审计](https://docs.npmjs.com/cli/audit)
+        - 完全支持：NodeJS, JavaScript.
+        - 可通过此[模块](https://www.npmjs.com/package/npm-audit-html)获取 HTML 报告。
+    - [OWASP 依赖追踪](https://dependencytrack.org/) 可用于管理组织中的易受攻击依赖。
     - [ThreatMapper](https://github.com/deepfence/ThreatMapper)
-        - Full support: Base OS, Java, NodeJS, JavaScript, Ruby, Python
-        - Targets: Kubernetes (nodes and container), Docker (node and containers), Fargate (containers), Bare Metal/VM (Host and app)
-- Commercial
-    - [Snyk](https://snyk.io/) (open source and free option available):
-        - [Full support](https://snyk.io/docs/) for many languages and package manager.
+        - 完全支持：基础操作系统, Java, NodeJS, JavaScript, Ruby, Python
+        - 目标：Kubernetes（节点和容器）, Docker（节点和容器）, Fargate（容器）, 裸机/虚拟机（主机和应用）
+
+- 商业工具
+    - [Snyk](https://snyk.io/)（可用开源和免费选项）:
+        - 对[多种语言和包管理器](https://snyk.io/docs/)提供完全支持。
     - [JFrog XRay](https://jfrog.com/xray/):
-        - [Full support](https://jfrog.com/integration/) for many languages and package manager.
-    - [Renovate](https://renovatebot.com) (allow to detect old dependencies):
-        - [Full support](https://renovatebot.com/docs/) for many languages and package manager.
-    - [Requires.io](https://requires.io/) (allow to detect old dependencies - open source and free option available):
-        - [Full support](https://requires.io/features/): Python only.
+        - 对[多种语言和包管理器](https://jfrog.com/integration/)提供完全支持。
+    - [Renovate](https://renovatebot.com)（允许检测过时依赖）:
+        - 对[多种语言和包管理器](https://renovatebot.com/docs/)提供完全支持。
+    - [Requires.io](https://requires.io/)（允许检测过时依赖 - 可用开源和免费选项）:
+        - [完全支持](https://requires.io/features/)：仅限 Python。
