@@ -1,167 +1,169 @@
-# Software Supply Chain Security
+# 软件供应链安全
 
-## Introduction
+## 引言
 
-No piece of software is developed in a vacuum; regardless of the technologies used to develop it, software is embedded in a Software Supply Chain (SSC). According to [NIST](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf), an entity's SSC can be defined as "a collection of steps that create, transform, and assess the quality and  policy conformance of software artifacts". From a developer's perspective, these steps span the entire SDLC and are accomplished using a wide range of components and tools. Common examples (by no means exhaustive) of components that are especially relevant from a developer's perspective include:
+没有任何软件是在真空中开发的；无论使用何种技术开发，软件都嵌入在软件供应链（Software Supply Chain，SSC）中。根据[美国国家标准与技术研究院（NIST）](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf)的定义，一个实体的软件供应链可以被定义为"创建、转换并评估软件工件质量和策略符合性的一系列步骤"。从开发者的角度来看，这些步骤贯穿整个软件开发生命周期（SDLC），并通过广泛的组件和工具来完成。从开发者的角度看，一些（绝非详尽）相关的常见组件包括：
 
-- IDEs and code editors
-- Internally developed source code
-- Third-party software libraries
-- Version control systems (VCS)
-- Build tools (Maven, Rake, make, Grunt, etc.)
-- CI/CD software (Jenkins, CircleCI, TeamCity, etc.)
-- Configuration management tools (Ansible, Puppet, Chef, etc.)
-- Package management software and ecosystems (pip, npm, Composer, etc.)
+- 集成开发环境（IDE）和代码编辑器
+- 内部开发的源代码
+- 第三方软件库
+- 版本控制系统（VCS）
+- 构建工具（Maven、Rake、make、Grunt 等）
+- 持续集成/持续部署（CI/CD）软件（Jenkins、CircleCI、TeamCity 等）
+- 配置管理工具（Ansible、Puppet、Chef 等）
+- 包管理软件和生态系统（pip、npm、Composer 等）
 
-Each of these components must be secured; a flaw in a single component, such as a vulnerable third-party dependency or misconfigured VCS, can put an entire SSC in jeopardy. Thus, in order to strengthen Software Supply Chain Security (SCSS), developers should possess a general understanding of what the SSC is, common threats against it, and practices and techniques that can be applied to reduce SSC risk.
+每个组件都必须得到保护；单个组件中的缺陷，如有漏洞的第三方依赖或配置错误的版本控制系统，都可能危及整个软件供应链。因此，为了加强软件供应链安全（Software Supply Chain Security，SCSS），开发者应该对软件供应链有一个基本的了解，了解其常见威胁，并掌握可以降低软件供应链风险的实践和技术。
 
-## Overview of Threat Landscape
+## 威胁景观概述
 
-Given the breadth and complexity of the SSC, it is unsurprising that the threat landscape for SSC is similarly expansive. Threats include [dependency confusion](https://fossa.com/blog/dependency-confusion-understanding-preventing-attacks/), compromise of an upstream providers infrastructure, theft of code signing certificates, and CI/CD system exploits. More broadly, threats may be grouped into four categories based upon what component of the supply chain they seek to compromise [[4,5](#references)]:
+考虑到软件供应链的广度和复杂性，其威胁景观同样广泛。威胁包括[依赖混淆](https://fossa.com/blog/dependency-confusion-understanding-preventing-attacks/)、上游提供商基础设施的入侵、代码签名证书盗窃以及 CI/CD 系统漏洞。更broadly地说，威胁可以根据其试图破坏的供应链组件分为四类[[4,5](#参考文献)]：
 
-- Source code threats. These type of threats focus on violating the integrity of a source code which is then built and and deployed or potentially consumed by other software projects. Threats in this category include VCS exploits, the introduction of malicious or vulnerable code into a code base, or building code from an unauthorized branch.
-- Build environment threats. These threats modify a software artifact but without altering the underlying source code or exploiting the build process itself. Examples include build cache poisoning, compromising a privileged account used by the build system, or publishing software built from an untrusted source.
-- Dependency related threats. Threats that result from the consumption of both direct and transitive software dependencies. The most common threat is using a vulnerable or compromised dependency.
-- Deployment and runtime threats. These threats exploit either the deployment process or runtime environment. Common examples include compromising a privilege CI/CD account, software misconfigurations, and deployment of compromised binaries.
+- 源代码威胁。这类威胁专注于破坏源代码的完整性，这些源代码随后会被构建、部署，或被其他软件项目使用。此类威胁包括版本控制系统漏洞、向代码库引入恶意或有漏洞的代码，或从未经授权的分支构建代码。
 
-The characteristics of threat actors seeking exploit the SSC are similarly diverse. Although SSC compromise is often associated with highly sophisticated threat actors, such sophistication is not inherently necessary for attacking the SSC, especially if the attack focuses on compromising the SSC of entities with poor security practices. Threat actor motive also varies widely, A SSC exploit can result in loss of confidentiality, integrity, and/or availability of any organization's assets and thus fulfill a wide range of attacker goals such as espionage or financial gain.
+- 构建环境威胁。这些威胁会修改软件工件，但不改变底层源代码或利用构建过程本身。例如构建缓存投毒、入侵构建系统使用的特权账户，或发布来自不可信源的软件。
 
-Finally, it must be recognized that many SSC threats have the capability to propagate across many entities. This is due to consumer-supplier relationship that is integral to an SSC. For example, uf a large-scale software supplier, whether proprietary or open-source, is compromised, many downstream, consuming entities could also be impacted as a result. The 2020 SolarWinds and 2021 Codecov incidents are excellent real-world examples of this.
+- 依赖相关威胁。由于使用直接和传递性软件依赖而产生的威胁。最常见的威胁是使用有漏洞或被入侵的依赖。
 
-## Mitigations and Security Best Practices
+- 部署和运行时威胁。这些威胁利用部署过程或运行时环境中的漏洞。常见示例包括入侵特权 CI/CD 账户、软件配置错误以及部署被入侵的二进制文件。
 
-Mitigating SSC related risk can seem daunting, yet it need not be. Even for sophisticated attacks that may focus on compromising upstream suppliers, individual organization can take reasonable steps to defend its own assets and mitigate risk even if its supplier is compromised. Although some parts of SSCS may remain outside direct control of development teams, those teams must still do their part to improve SSCS in their organization; the guidance below is intended as starting point for developers to do just that.
+试图利用软件供应链的威胁行为者的特征同样多样。尽管软件供应链入侵常常与高度复杂的威胁行为者联系在一起，但攻击软件供应链并不必然需要如此高的复杂性，尤其是当攻击针对安全实践较差的实体时。威胁行为者的动机也各不相同。软件供应链入侵可能导致任何组织资产的机密性、完整性和/或可用性受损，从而满足间谍活动或经济利益等各种攻击者目标。
 
-### General
+最后，必须认识到许多软件供应链威胁具有跨多个实体传播的能力。这是由于软件供应链中固有的消费者-供应商关系。例如，如果一个大型软件供应商（无论是专有还是开源）被入侵，许多下游使用实体也可能因此受到影响。2020年的 SolarWinds 事件和2021年的 Codecov 事件就是这方面的绝佳现实案例。
 
-The practices described below are general techniques that can be used to mitigate risk related to a wide variety of threat types.
+## 缓解措施和安全最佳实践
 
-#### Implement Strong Access Control
+缓解软件供应链相关风险看起来可能令人生畏，但事实并非如此。即使面对可能专注于入侵上游供应商的复杂攻击，个别组织仍可采取合理措施来保护自身资产并降低风险，即使其供应商已被入侵。尽管软件供应链安全的某些部分可能超出开发团队的直接控制范围，但这些团队仍必须为改进组织内的软件供应链安全尽一份力；下面的指导旨在为开发者提供一个起点。
 
-  Compromised accounts, particularly privileged ones, represents a significant threats to SSCs. Account takeover can allow an attacker can perform a variety of malicious acts including injecting code into legitimate dependencies, manipulating CI/CD pipeline execution, and replacing a benign artifact with a malicious one. Strong access control for build, development, version control, and similar environments is thus critical. Best practices include adhering to  the basic security principles of least privileges and separation of duties, enforcing MFA, rotating credentials, and ensuring credentials are never stored or transmitted in clear text or committed to source control.
+### 通用实践
 
-#### Logging and Monitoring
+以下实践是可用于减轻各类威胁风险的通用技术。
 
-  When considering SSCS, the importance of detective controls should not be overlooked; these controls are essential for detecting attacks and enabling prompt respond. In the context of SSCS, logging is critical. All systems involved in the SSC, including VCS, build tools, delivery mechanisms, artifact repositories, and the systems responsible for running applications should be configured to log authentication attempts, configuration changes, and other events that could assist in identifying anomalous behavior or that could prove crucial for incident response efforts. Logs throughout the SSC must be sufficient in both depth and breadth to support detection and response
+#### 实施强访问控制
 
-  However, logging events is not sufficient. These logs must be monitored, and, if necessary, acted upon. A centralized SIEM, log aggregator, or similar tool is preferred, especially given the complexity of SSCs. Regardless of the technology used, the basic objective remains the same: log data should be actionable.
+被入侵的账户，尤其是特权账户，代表了软件供应链的重大威胁。账户接管可以让攻击者执行各种恶意行为，包括向合法依赖项注入代码、操纵 CI/CD 管道执行，以及将良性工件替换为恶意工件。因此，对构建、开发、版本控制和类似环境的强访问控制至关重要。最佳实践包括遵守最小权限和职责分离的基本安全原则、强制执行多因素认证（MFA）、轮换凭证，并确保凭证永不以明文存储或传输，也不提交到源代码控制。
 
-#### Leverage Security Automation
+#### 日志记录和监控
 
-For complex SSCs, automation of security tasks, such as scanning, monitoring, and testing is critical. Such automation, while not a replacement for manual reviews and other actions performed by skilled professionals, is capable of detecting, and in some cases responding to, vulnerabilities and potential attacks with a scale and consistency that is hard to achieve through manual human intervention. Types of tools that support automation include SAST, DAST, SCA, container image scanners and more. The exact tools most capable of delivering value to an organization will vary significantly based on the characteristics of the organization. However, regardless of the type of tools and vendors used, it is important to acknowledge that these tools themselves must be mainlined, secured, and configured correctly. Failure to do so could actually increase SSC risk for an organization, or at the very least, fail to bring meaningful benefit to the organization. Finally, it must be clearly understood that these tools are but one component of an overall SSCS program; they cannot be considered a comprehensive solution or be relied on to identify all vulnerabilities.
+在考虑软件供应链安全时，不应忽视检测控制的重要性；这些控制对于检测攻击和实现快速响应至关重要。在软件供应链安全的背景下，日志记录至关重要。软件供应链中涉及的所有系统，包括版本控制系统、构建工具、交付机制、工件仓库以及负责运行应用程序的系统，都应配置为记录认证尝试、配置更改和其他可能有助于识别异常行为或对事件响应工作至关重要的事件。整个软件供应链的日志必须在深度和广度上都足够支持检测和响应。
 
-### Mitigating Source Code Threats
+然而，仅记录事件是不够的。这些日志必须被监控，并在必要时采取行动。鉴于软件供应链的复杂性，首选使用集中式安全信息和事件管理（SIEM）、日志聚合器或类似工具。无论使用何种技术，基本目标都是相同的：日志数据应该是可操作的。
 
-The practices described below can help reduce SSC risk associated with source code and development.
+#### 利用安全自动化
 
-#### Peer Reviews
+对于复杂的软件供应链，自动化安全任务（如扫描、监控和测试）至关重要。这种自动化虽然不能替代由熟练专业人员执行的手动审查和其他操作，但能够以难以通过人工干预实现的规模和一致性来检测，有时甚至可以响应漏洞和潜在攻击。支持自动化的工具类型包括静态应用安全测试（SAST）、动态应用安全测试（DAST）、软件成分分析（SCA）、容器镜像扫描器等。对于能为组织带来最大价值的具体工具，将根据组织的特征有很大不同。然而，无论使用何种类型的工具和供应商，重要的是要认识到这些工具本身必须得到维护、保护和正确配置。否则，可能实际上会增加组织的软件供应链风险，或至少无法为组织带来有意义的收益。最后，必须清楚地理解，这些工具仅是整体软件供应链安全计划的一个组成部分；它们不能被视为全面的解决方案，也不能依赖它们识别所有漏洞。
 
-Manual code reviews are an important, relatively low cost technique for reducing SSC risk; these reviews can act as both detective controls and deterrents. Reviews should be performed by peers possessing both experience in the technology being used and secure coding processes and should occur before code is merged within a source control systems [[3](#references)]. The reviews should look for both unintentional security flaws as well as intentional code that could serve malicious purposes. The results of the review should be documented for later review if needed.
+### 缓解源代码威胁
 
-#### Secure Config of Version Control Systems
+以下实践可帮助降低与源代码和开发相关的软件供应链风险。
 
-Compromise or abuse of the source control system is consistently recognized as a significant SSC risk [[4,5](#references)]. The general security best practices of strong access control and logging and monitoring are two methods to help secure VCS. Security features specific to the VCS system, such as protected branches and merge policies in git, should also be leveraged. You can find a wide variety of recommended policies in this [documentation](https://policies.legitify.dev/). There are tools available to help manage configuration of SCM systems, such as [Legitify](https://github.com/Legit-Labs/legitify), an open-source tool by [Legit security](https://www.legitsecurity.com/). Legitify is designed to detect misconfigurations in GitHub and GitLab and assist with the implementation of best practices. Regardless of any security controls added a VCS, it must be remember that secrets should never be committed to these systems.
+#### 同行评审
 
-#### Secure Development Platform
+手动代码审查是一种相对低成本的重要技术，可以降低软件供应链风险；这些审查可以作为检测控制和威慑。审查应由具备所用技术经验和安全编码流程的同行执行，并在代码合并到源代码控制系统之前进行[[3](#参考文献)]。审查应同时查找非故意的安全缺陷和可能具有恶意目的的代码。审查结果应被记录，以便日后需要时进行回顾。
 
-IDEs, development plugins, and similar tools can help assist the development process. However, like all pieces of software, these components can have vulnerabilities and become an attack vector. Thus, it is important to take steps not only to ensure these tools are used securely, but also to secure the underlying system. The development system should have endpoint security software installed and should have threat assessments performed against it [[2](#references)]. Only trusted, well-vetted software should be used in the development process; this includes not only "core" development tools such as IDEs, but also any plugins or extensions.  Additionally, these tools should be included as part of an organization's system inventory.
+#### 版本控制系统的安全配置
 
-### Mitigating Dependency Threats
+源代码控制系统的入侵或滥用一直被认为是重大的软件供应链风险[[4,5](#参考文献)]。强访问控制和日志记录与监控的一般安全最佳实践是帮助保护版本控制系统的两种方法。还应利用版本控制系统特有的安全功能，如 Git 中的受保护分支和合并策略。您可以在这份[文档](https://policies.legitify.dev/)中找到各种推荐策略。有工具可以帮助管理源代码管理（SCM）系统的配置，如[Legitify](https://github.com/Legit-Labs/legitify)，这是[Legit security](https://www.legitsecurity.com/)的一个开源工具。Legitify 旨在检测 GitHub 和 GitLab 中的错误配置并协助实施最佳实践。无论在版本控制系统中添加了哪些安全控制，都必须记住永远不要将秘密提交到这些系统中。
 
-Best practices and techniques related to secure use of dependencies are described below.
+#### 安全开发平台
 
-#### Assess Suppliers
+集成开发环境（IDE）、开发插件和类似工具可以帮助辅助开发过程。然而，与所有软件一样，这些组件可能存在漏洞并成为攻击向量。因此，不仅要确保这些工具的安全使用，还要保护底层系统的安全至关重要。开发系统应安装端点安全软件，并对其进行威胁评估[[2](#参考文献)]。在开发过程中，只应使用经过信任和充分审查的软件；这不仅包括 IDE 等"核心"开发工具，还包括任何插件或扩展。此外，这些工具应作为组织系统清单的一部分。
 
-Before incorporating a third-party service, product, or software component into the SSC, the vendor and specific offering should both be thoroughly assessed for security. This applies to both open-source and proprietary offerings. The form and extent of the analysis will vary substantially in accordance with both the criticality and nature of the component being considered. Component maturity, security history, and the vendor's response to past vulnerabilities are useful information in nearly any case. For larger vendors or service offerings, determining whether or not a solution has been evaluated against third-party assessments and certifications, such as those performed against [FedRAMP](https://marketplace.fedramp.gov/products), [CSA](https://cloudsecurityalliance.org/star/registry), or various ISO standards (ISO/IEC 27001, ISO/IEC 15408,
-ISO/IEC 27034), can be a useful data point, but must not be relied on exclusively.
+### 缓解依赖威胁
 
-Due to its transparent nature, open-source projects offer additional assessment opportunities. Questions to consider include [[6](#references)]:
+下面描述了与安全使用依赖项相关的最佳实践和技术。
 
-- Is the project actively maintained?
-- Is the project sufficiently popular and well-known in the applicable community?
-- Is the project sufficiently mature?
-- Is the product or version being evaluated a "release" version, e.g. not an alpha, beta, or comparable versions?
-- Given the complexity of the project, does the project have a sufficient number of maintainers and contributors?
-- Does the project keep its dependencies updated?
-- Does the project have sufficient test coverage and do the tests include security relevant rules?
-- Is the project well-documented and does the document include guidance on how to use the component securely?
-- Does the project have an established and documented process for reporting vulnerabilities and are these vulnerabilities addressed in a timely manner?
-- Is the intended usage of the project consistent with the project's license?
+#### 评估供应商
 
-#### Understand and Monitor Software Dependencies
+在将第三方服务、产品或软件组件纳入软件供应链安全（SSC）之前，应对供应商和特定产品进行彻底的安全评估。这同样适用于开源和专有产品。分析的形式和范围将根据所考虑组件的关键性和性质而有很大不同。在几乎所有情况下，组件成熟度、安全历史以及供应商对过去漏洞的响应都是有用的信息。对于大型供应商或服务产品，确定解决方案是否已通过第三方评估和认证（如针对 [FedRAMP](https://marketplace.fedramp.gov/products)、[CSA](https://cloudsecurityalliance.org/star/registry) 或各种 ISO 标准（ISO/IEC 27001、ISO/IEC 15408、ISO/IEC 27034）的评估）可能是一个有用的数据点，但不能完全依赖这些。
 
-While third-party software dependencies can greatly accelerate the development process, they are also one of the leading risks associated with modern applications. Dependencies must not only be carefully selected before they are incorporated into an application, but also carefully monitored and maintained throughout the SDLC. In order achieve this, having insight into the various dependencies consumed by software is a crucial first step. To facilitate this, SBOMs may be used. Both production and consumption of these SBOMs should be automated, preferably as part of the  organization's CI/CD process.
+由于其透明的特性，开源项目提供了额外的评估机会。需要考虑的问题包括[[6](#参考文献)]：
 
-Once the organization has inventoried dependencies, it must also monitor them for known vulnerabilities. This should also be automated as much as possible; tools such as [OWASP Dependency Check](https://owasp.org/www-project-dependency-check/) or [retire.js](https://retirejs.github.io/retire.js/) can assist in this process. Additionally, sources such as the [NVD](https://nvd.nist.gov/), [OSVDB](https://osv.dev/list), or [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) may also be monitored for known vulnerabilities related to dependencies used in the organization's SSC.
+- 项目是否得到积极维护？
+- 项目在相关社区中是否足够知名和流行？
+- 项目是否足够成熟？
+- 正在评估的产品或版本是否为"发布"版本，例如不是 alpha、beta 或类似版本？
+- 考虑到项目的复杂性，项目是否有足够数量的维护者和贡献者？
+- 项目是否保持其依赖项的更新？
+- 项目是否有足够的测试覆盖率，测试是否包括安全相关规则？
+- 项目是否有充分的文档，文档是否包括如何安全使用组件的指导？
+- 项目是否建立了报告漏洞的明确流程，这些漏洞是否能及时得到解决？
+- 项目的预期用途是否与项目的许可证一致？
 
-#### SAST
+#### 理解和监控软件依赖项
 
-Although using SAST to detect potential security in custom developed code is a widely used security technique, it can also be used on OSS components within the SSC [[2](#references)]. As when using SAST on internally developed code, one must recognize that these tools can produce both false positives and false negatives. Thus, SAST results must not be accepted without manual verification and should not be interpreted as providing a comprehensive view of the project's security. However, as long as their limitations are understood, SAST scans can prove useful when analyzing both internally developed or OSS code.
+虽然第三方软件依赖项可以大大加速开发过程，但它们也是现代应用程序中最主要的风险之一。依赖项不仅在被纳入应用程序之前必须仔细选择，而且在整个软件开发生命周期（SDLC）中还必须仔细监控和维护。为了实现这一点，对软件使用的各种依赖项有深入了解是关键的第一步。为了便于此操作，可以使用软件物料清单（SBOMs）。这些 SBOMs 的生产和使用应尽可能自动化，最好作为组织 CI/CD 流程的一部分。
 
-#### Lockfile/Version Pinning
+一旦组织清点了依赖项，还必须监控已知的漏洞。这也应尽可能自动化；[OWASP Dependency Check](https://owasp.org/www-project-dependency-check/) 或 [retire.js](https://retirejs.github.io/retire.js/) 等工具可以协助此过程。此外，[NVD](https://nvd.nist.gov/)、[OSVDB](https://osv.dev/list) 或 [CISA KEV 目录](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) 等来源也可以监控与组织 SSC 中使用的依赖项相关的已知漏洞。
 
-To reduce the likelihood that a compromised or vulnerable version is unwittingly pulled into an application, one should limit the applications dependencies to a specific version that has been previously verified as legitimate and secure. This is commonly accomplished using lockfiles such as the package-lock.json file used by npm.
+#### 静态应用程序安全测试（SAST）
 
-### Build Threats
+尽管使用 SAST 检测自定义开发代码中的潜在安全问题是一种广泛使用的安全技术，但它也可用于 SSC 中的开源软件（OSS）组件[[2](#参考文献)]。与在内部开发代码上使用 SAST 时一样，必须认识到这些工具可能产生误报和漏报。因此，SAST 结果不应在没有手动验证的情况下被接受，也不应被解释为提供项目安全性的全面视图。然而，只要了解其局限性，SAST 扫描在分析内部开发或开源代码时仍然可能很有用。
 
-The section below describes techniques that are especially relevant for securing build related threats.
+#### 锁定文件/版本固定
 
-#### Inventory Build Tools
+为了减少无意中拉入已被破坏或存在漏洞的版本的可能性，应将应用程序的依赖项限制为先前已验证为合法和安全的特定版本。这通常是使用锁定文件（如 npm 使用的 package-lock.json 文件）来实现的。
 
-Knowing the components used in the SSC is essential to the security of that SSC. This concept extends to build tools. An inventory of all build tools, including versions and any plugins, should be automatically collected and mainlined, One must also monitor vulnerability databases, vendor security advisories and other sources for any vulnerabilities related to the identified build tools.
+### 构建威胁
 
-#### Harden Build Tools
+下面描述了与保护构建相关威胁特别相关的技术。
 
-Compromised build tools can enable a wide range of exploits and thus represent an appealing target for attackers. As such, all infrastructure and tools used in build process must be hardened to mitigate risk. Techniques for hardening build environments include [[2](#references)]:
+#### 清点构建工具
 
-- Ensure build tools are located in an appropriately segregated networks.
-- Use DLP and other tools and techniques to detect and prevent exfiltration.
-- Disable/remove any unused services.
-- Use version control systems to manage and store pipeline configurations.
+了解 SSC 中使用的组件对该 SSC 的安全至关重要。这一概念延伸到构建工具。应自动收集和维护所有构建工具的清单，包括版本和任何插件。还必须监控漏洞数据库、供应商安全公告和其他来源，以获取与已识别构建工具相关的任何漏洞。
 
-#### Enforce Code Signing
+#### 加固构建工具
 
-From a the perspective of software consumers, only accepting components which have been digitally signed and validating the signature before utilizing the software is an important task step in ensuring the component is authentic and has not been tampered with. For those performing code signing, it is imperative that the code signing infrastructure is thoroughly hardened. Failure to do so can result in compromise of the code signing system and lead further exploits, including those targeting consumers of the software.
+被破坏的构建工具可以实现各种漏洞利用，因此成为攻击者的诱人目标。因此，构建过程中使用的所有基础设施和工具都必须加固以降低风险。加固构建环境的技术包括[[2](#参考文献)]：
 
-#### Use Private Artifact Repository
+- 确保构建工具位于适当隔离的网络中。
+- 使用数据丢失防护（DLP）和其他工具和技术来检测和防止数据泄露。
+- 禁用/删除任何未使用的服务。
+- 使用版本控制系统管理和存储管道配置。
 
-Using a private artifact repository increases the control an organization has over the various artifacts that are used within the SSC. Artifacts should be reviewed before being allowed in the private repository and organizations must ensure that usage of these repositories cannot be bypassed. Although usage of private repositories can introduce extra maintenance or reduce agility, they can also be an important component of SSCS, especially for sensitive or critical applications.
+#### 强制代码签名
 
-#### Use Source Control for Build Scripts and Config
+从软件消费者的角度来看，只接受经过数字签名的组件并在使用软件前验证签名，是确保组件真实且未被篡改的重要步骤。对于执行代码签名的人来说，彻底加固代码签名基础设施至关重要。否则可能导致代码签名系统被攻击，进而引发针对软件消费者的进一步漏洞利用。
 
-The benefits of VCSs can be realized for items beyond source control; this is especially true for config and scripts related to CI/CD pipelines. Enforcing version control for these files allows one to incorporate reviews, merge rules, and like controls into the config update process. Using VCS also increase visibility, allowing one easy visibility into any changes introduced, whether malicious or benign [[2](#references)].
+#### 使用私有构件仓库
 
-#### Verify Provenance/Ensure Sufficient Metadata is Generated
+使用私有构件仓库可以增加组织对 SSC 中使用的各种构件的控制。应在允许进入私有仓库之前审查构件，并且组织必须确保无法绕过这些仓库的使用。尽管使用私有仓库可能会增加维护工作或降低敏捷性，但对于敏感或关键应用程序，它们可以成为软件供应链安全（SSCS）的重要组成部分。
 
-Having assurance that an SSC component comes from a trusted source and has not been tampered with is a important part of SSCS. Generation and consumption of provenance, defined in [SLSA 1.0](https://slsa.dev/spec/v1.0/provenance) as "the verifiable information about software artifacts describing where, when and how something was produced" is an important part of this. The provenance should be generated by the build platform (as opposed to a local development system), be very difficult for attackers to forge, and contain all details necessary to accurately link the result back to the builder [[7](#references)]. SLSA 1.0 compliant provenance can be generated using builders such as [FRSCA](https://github.com/buildsec/frsca) or [Github Actions](https://github.com/slsa-framework/slsa-github-generator) and verified [using SLSA Verifier](https://github.com/slsa-framework/slsa-verifier?tab=readme-ov-file)
+#### 对构建脚本和配置使用源代码控制
 
-#### Ephemeral, Isolated Builds
+版本控制系统（VCS）的好处不仅限于源代码控制；这对于与 CI/CD 管道相关的配置和脚本尤其如此。对这些文件强制版本控制允许将审查、合并规则等控制措施纳入配置更新过程。使用 VCS 还可以提高可见性，使人们能轻松了解引入的任何更改，无论是恶意的还是良性的[[2](#参考文献)]。
 
-Reuse and sharing of build environments may allow attackers to perform cache poising or otherwise more readily inject malicious code.  Builds should be performed in isolated, temporary ("ephemeral") environments. This can be achieved using technologies such as VMs or containers for builds and ensuring the environment is immediately destroyed afterward.
+#### 验证来源/确保生成足够的元数据
 
-#### Limit use of Parameters
+确保 SSC 组件来自可信来源且未被篡改是 SSCS 的重要部分。在 [SLSA 1.0](https://slsa.dev/spec/v1.0/provenance) 中定义的来源生成和使用，即"关于软件构件的可验证信息，描述了何时、何地以及如何生产"，是这一过程的重要组成部分。来源应由构建平台生成（而非本地开发系统），对攻击者来说极难伪造，并包含将结果准确链接回构建者所需的所有细节[[7](#参考文献)]。可以使用 [FRSCA](https://github.com/buildsec/frsca) 或 [Github Actions](https://github.com/slsa-framework/slsa-github-generator) 等构建器生成 SLSA 1.0 兼容的来源，并使用 [SLSA Verifier](https://github.com/slsa-framework/slsa-verifier?tab=readme-ov-file) 进行验证。
 
-Although passing user controllable parameters to a build process can increase flexibility, it also increases risk. If parameters can be modified by users in order to alter how a build is performed, an attacker with sufficient permission will also be able to modify the parameters and potentially compromise the build process [[8](#references)]. One should thus make an effort to minimize or eliminate any user controllable build parameters.
+#### 临时、隔离的构建
 
-### Deployment and Runtime Threats
+重用和共享构建环境可能使攻击者能够执行缓存投毒或更容易地注入恶意代码。构建应在隔离的临时（"临时"）环境中进行。这可以通过使用虚拟机或容器进行构建，并确保环境在之后立即销毁来实现。
 
-The section below outlines a couple of techniques that can be used to protect software during the deployment and runtime phases.
+#### 限制参数使用
 
-#### Scan Final Build Binary
+尽管向构建过程传递用户可控参数可以增加灵活性，但也增加了风险。如果用户可以修改参数以改变构建方式，具有足够权限的攻击者也将能够修改参数并可能破坏构建过程[[8](#参考文献)]。因此，应努力最小化或消除任何用户可控的构建参数。
 
-Once the build process has finished, one should not simply assume that the final result is secure. Binary composition analysis can help detect exposed secrets, detect unauthorized components or content, and verify integrity [[2](#references)]. This task should be performed by both suppliers and consumers.
+### 部署和运行时威胁
 
-#### Monitor Deployed Software for Vulnerabilities
+下面概述了在部署和运行阶段保护软件的几种技术。
 
-SSCS does not end with the deployment of the software; the deployed software must be monitored and maintained to reduce risk. New vulnerabilities, whether introduced due to an update or simply newly discovered (or made public), are a continual concern in software systems [[4](#references)]. When performing this monitoring, a wholistic approached must be used; code dependencies, container images, web servers, and operating system components are just a sampling of items that must be consider. To support this monitoring, an accurate and up-to-date inventory of system components is critical. Additionally, insecure configuration changes must be monitored and acted upon.
+#### 扫描最终构建的二进制文件
 
-## References
+构建过程完成后，不应简单地假设最终结果是安全的。二进制组成分析可以帮助检测暴露的秘密、检测未经授权的组件或内容，并验证完整性[[2](#参考文献)]。这项任务应由供应商和消费者共同执行。
 
-1. [NIST SP 800-204D: Strategies for the Integration of Software Supply Chain Security in DevSecOps CI/CD Pipelines](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf)
-2. [Securing the Software Supply Chain: Recommended Practices Guide for Developers](https://media.defense.gov/2022/Sep/01/2003068942/-1/-1/0/ESF_SECURING_THE_SOFTWARE_SUPPLY_CHAIN_DEVELOPERS.PDF)
-3. [Google Cloud Software Supply Chain Security: Safeguard Source](https://cloud.google.com/software-supply-chain-security/docs/safeguard-source)
-4. [Google Cloud Software Supply Chain Security: Attack Vectors](https://cloud.google.com/software-supply-chain-security/docs/attack-vectors)
-5. [SLSA 1.0: Threats](https://slsa.dev/spec/v1.0/threats)
-6. [OpenSSF: Concise Guide for Evaluating Open Source Software](https://best.openssf.org/Concise-Guide-for-Evaluating-Open-Source-Software)
-7. [SLSA 1.0: Requirements](https://slsa.dev/spec/v1.0/requirements#provenance-generation)
-8. [Google Cloud Security Supply Chain Security: Safeguard Builds](https://cloud.google.com/software-supply-chain-security/docs/safeguard-builds)
+#### 监控已部署软件的漏洞
+
+SSCS 在软件部署后并未结束；必须持续监控和维护已部署的软件以降低风险。无论是由于更新还是新发现（或公开）的漏洞，新的安全漏洞都是软件系统中持续存在的担忧[[4](#参考文献)]。在执行此监控时，必须采用全面的方法；代码依赖项、容器镜像、Web 服务器和操作系统组件只是必须考虑的项目的一小部分。为支持此监控，拥有准确和最新的系统组件清单至关重要。此外，还必须监控和处理不安全的配置更改。
+
+## 参考文献
+
+1. [NIST SP 800-204D：在 DevSecOps CI/CD 管道中集成软件供应链安全的策略](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf)
+2. [软件供应链安全：开发者推荐实践指南](https://media.defense.gov/2022/Sep/01/2003068942/-1/-1/0/ESF_SECURING_THE_SOFTWARE_SUPPLY_CHAIN_DEVELOPERS.PDF)
+3. [Google Cloud 软件供应链安全：保护源代码](https://cloud.google.com/software-supply-chain-security/docs/safeguard-source)
+4. [Google Cloud 软件供应链安全：攻击向量](https://cloud.google.com/software-supply-chain-security/docs/attack-vectors)
+5. [SLSA 1.0：威胁](https://slsa.dev/spec/v1.0/threats)
+6. [OpenSSF：评估开源软件的简明指南](https://best.openssf.org/Concise-Guide-for-Evaluating-Open-Source-Software)
+7. [SLSA 1.0：要求](https://slsa.dev/spec/v1.0/requirements#provenance-generation)
+8. [Google Cloud 安全供应链安全：保护构建](https://cloud.google.com/software-supply-chain-security/docs/safeguard-builds)
