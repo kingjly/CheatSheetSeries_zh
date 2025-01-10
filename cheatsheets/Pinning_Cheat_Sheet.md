@@ -1,174 +1,174 @@
-# Pinning Cheat Sheet
+# Pinning 备忘单
 
-## Introduction
+## 简介
 
-The Pinning Cheat Sheet is a technical guide to implementing certificate and public key pinning as discussed by Jeffrey Walton at the Virginia chapter's presentation [Securing Wireless Channels in the Mobile Space](https://wiki.owasp.org/images/8/8f/Securing-Wireless-Channels-in-the-Mobile-Space.ppt). This guide is focused on providing clear, simple, actionable guidance for securing the channel in a hostile environment where actors could be malicious and the conference of trust a liability.
+Pinning 备忘单是一份技术指南，旨在实现证书和公钥 Pinning（绑定）。该指南基于 Jeffrey Walton 在弗吉尼亚分会的演讲 [Securing Wireless Channels in the Mobile Space](https://wiki.owasp.org/images/8/8f/Securing-Wireless-Channels-in-the-Mobile-Space.ppt) 中的内容，提供了清晰、简单、可操作的指导，帮助在恶意环境中保护通信通道安全，防止信任机制被滥用。
 
-## What's the problem
+## 问题是什么？
 
-Users, developers, and applications expect security on their communication channels, but some channels may not meet this expectation. Channels built using well known protocols like SSL, and TLS can be vulnerable to Man-in-the-Middle (MITM) attacks if certificate-based trusts are misused. Malicious attacks come in two forms:
+用户、开发者和应用程序期望通信通道是安全的，但某些通道可能无法满足这一期望。基于众所周知的协议（如 SSL 和 TLS）构建的通道可能会因证书信任机制被滥用而受到中间人攻击（MITM）的威胁。恶意攻击通常有两种形式：
 
-1. An attacker is able to acquire a rogue digital certificate from a trusted certificate authority (CA) in the name of the victim site;
-2. The attacker is able to inject a dangerous CA into the client’s trust store.
+1. 攻击者从受信任的证书颁发机构（CA）获取了伪造的数字证书，冒充受害者网站；
+2. 攻击者将危险的 CA 注入到客户端的信任存储中。
 
-In the case of the latter issue, an attacker with the access to update a trust store will have the access to change the workings of the mobile application, potentially defeating pinning.
+在第二种情况下，攻击者如果能更新信任存储，就可能更改移动应用的行为，从而绕过 Pinning 机制。
 
-As [Certificate and Public Key Pinning](https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning) makes clear, this problem is very small due to years of security advancements by the certificate authority and browser communities.
+正如 [Certificate and Public Key Pinning](https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning) 所述，由于证书颁发机构和浏览器社区多年来的安全改进，这一问题的规模已非常小。
 
-## What Is Pinning
+## 什么是 Pinning？
 
-Pinning is the process of associating a host with their *expected* X509 certificate or public key. Once a certificate or public key is known or seen for a host, the certificate or public key is associated or 'pinned' to the host. If more than one certificate or public key is acceptable, then the program holds a *pinset* (taken from [Jon Larimer and Kenny Root Google I/O talk](https://www.youtube.com/watch?v=RPJENzweI-A)). In this case, the advertised credential must match one of the elements in the pinset.
+Pinning 是将主机与其*预期的* X509 证书或公钥关联的过程。一旦主机的证书或公钥被知晓或记录下来，就会将其与主机"绑定"。如果有多个证书或公钥是可接受的，那么程序会保存一个 *pinset*（取自 [Jon Larimer 和 Kenny Root 在 Google I/O 的演讲](https://www.youtube.com/watch?v=RPJENzweI-A)）。在这种情况下，声明的凭据必须匹配 pinset 中的某个元素。
 
-### When to Add a Pin
+### 何时添加 Pin
 
-A host or service's certificate or public key can be added to an application at development time, it can be added upon first encountering the certificate or public key (an approach commonly known as “Trust On First Use”, or TOFU), or it can be added and updated in real time via an unpinned channel. The former - adding at development time - is preferred since *preloading* the certificate or public key *out-of-band* usually means the attacker cannot taint the pin.
+主机或服务的证书或公钥可以在开发时添加，也可以在首次遇到证书或公钥时添加（这种方式通常称为"首次信任"（Trust On First Use，TOFU）），或者通过未绑定的通道实时添加和更新。首选方式是开发时添加，因为通过*带外*预加载证书或公钥通常意味着攻击者无法篡改 Pin。
 
-Keep in mind that this "when" is about at what point in time you pin. The first question should be, “Should I Pin?”. The answer to this is probably never.
+请注意，这里的"何时"是指在时间点上何时添加 Pin。而第一个问题应该是："我是否应该 Pin？"答案可能是从不。
 
-### When Do You Perform Pinning
+### 何时执行 Pinning
 
-There is almost no situation where you should consider pinning. The risk of outages almost always outweighs any security risks given advances in security. If you consider pinning, you should read [Certificate and Public Key Pinning](https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning) and fully understand the threat model.
+几乎没有情况需要考虑 Pinning。鉴于安全性的进步，宕机的风险几乎总是大于安全风险。如果考虑 Pinning，您应该阅读 [Certificate and Public Key Pinning](https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning) 并完全理解威胁模型。
 
-### When Do You Not Pin?
+### 何时不应该 Pin？
 
-- If you don’t control the client and server side of the connection, don’t pin.
-- If you can’t update the pinset securely, don’t pin.
-- If updating the pinset is disruptive, such as requiring application redeployment, probably don’t pin. (A possible exception is when you control the redeployment of the application, such as in forced updates within the confines of a corporation.)
-- If the certificate key pair cannot be predicted in advance before it is put into service, don’t pin.
-- If it is not a native mobile application, do not pin.
+- 如果您不能同时控制连接的客户端和服务器端，不要 Pin。
+- 如果您无法安全地更新 pinset，不要 Pin。
+- 如果更新 pinset 会造成干扰，例如需要重新部署应用程序，可能不要 Pin。（一个可能的例外是，您可以控制应用程序的重新部署，例如在公司内部强制更新。）
+- 如果证书密钥对在投入使用前无法预测，不要 Pin。
+- 如果不是原生移动应用程序，不要 Pin。
 
-### When to Apply Exceptions
+### 何时应用例外
 
-If you are working for an organization which practices "egress filtering" as part of a Data Loss Prevention (DLP) strategy, you will likely encounter *Interception Proxies*. We like to refer to these things as **"good" bad actors** (as opposed to **"bad" bad actors**) since both break end-to-end security and we can't tell them apart. In this case, **do not** offer to allow-list the interception proxy since it defeats your security goals. Add the interception proxy's public key to your pinset after being **instructed** to do so by the folks in Risk Acceptance.
+如果您所在的组织作为数据泄漏防护（DLP）策略的一部分实施"出口过滤"（egress filtering），您可能会遇到*拦截代理*。我们喜欢将这些称为**"好的坏角色"**（与**"坏的坏角色"**相对），因为两者都破坏了端到端的安全性，我们无法区分它们。在这种情况下，**不要**主动允许列入白名单的拦截代理，因为这会破坏您的安全目标。在风险接受部门的指示下，将拦截代理的公钥添加到您的 pinset 中。
 
-### How Do You Pin
+### 如何执行 Pinning
 
-The idea is to reuse the existing protocols and infrastructure, but use them in a hardened manner. For reuse, a program would keep doing the things it used to do when establishing a secure connection.
+Pinning 的核心思想是重用现有的协议和基础设施，但以更严格的方式使用它们。为了重用，程序在建立安全连接时会继续执行传统操作。
 
-To harden the channel, the program would take advantage of the `OnConnect` callback offered by a library, framework or platform. In the callback, the program would verify the remote host's identity by validating its certificate or public key. See [some examples](#examples-of-pinning) below.
+为了强化通道，程序可以利用库、框架或平台提供的 `OnConnect` 回调。在回调中，程序通过验证远程主机的证书或公钥来确认其身份。请参阅下面的[一些示例](#examples-of-pinning)。
 
-### What Should Be Pinned
+### 应该 Pin 什么？
 
-In order to decide what should be pinned you can follow the following steps.
+为了决定应该 Pin 什么，可以按照以下步骤操作：
 
-1. Decide if you want to pin the root CA, intermediate CA or leaf certificate:
+1. 决定是否要 Pin 根 CA、中间 CA 或叶子证书：
 
-- Pinning the **root CA** is generally not recommended since it highly increases the risk because it implies also trusting all its intermediate CAs.
-- Pinning a specific **issuing or intermediate CA** reduces the risk but the application will be also trusting any other certificates issued by that CA or sub-CAs, not only the ones meant for your application.
-- Pinning a **leaf certificate** is recommended but must include backup (e.g. intermediate CA or a pinset containing alternates). This provides 100% certainty that the app exclusively trusts the remote hosts it was designed to connect to while adding resiliency for failover or certificate rotation.
+   - Pin **根 CA** 通常不推荐，因为它会大大增加风险，因为这意味着也信任其所有的中间 CA。
+   - Pin 特定的**颁发或中间 CA**可以降低风险，但应用程序也会信任该 CA 或子 CA 签发的其他证书，而不仅仅是为您的应用程序设计的证书。
+   - Pin **叶子证书**是推荐的做法，但必须包括备份（例如中间 CA 或包含替代项的 pinset）。这可以确保应用程序仅信任其设计连接的远程主机，同时为故障转移或证书轮换提供弹性。
 
-For example, the application pins the remote endpoint leaf certificate but includes a backup pin for the intermediate CA. This increases the risk by trusting more certificate authorities but decreases the chances of bricking your app. If there's any issue with the leaf certificate, the app can always fall back to the intermediate CA until you release an app update.
+   例如，应用程序 Pin 远程端点的叶子证书，但包括中间 CA 的备份 Pin。这增加了信任更多证书颁发机构的风险，但减少了因证书问题导致应用程序无法工作的可能性。如果叶子证书有任何问题，应用程序可以回退到中间 CA，直到您发布应用程序更新。
 
-2. Choose if you want to pin the **whole certificate** or just its **public key**.
+2. 选择是否 Pin **整个证书**或仅 Pin **公钥**。
 
-3. If you chose the public key, you have two additional choices:
+3. 如果选择公钥，您还有两个额外的选项：
 
-- Pin the `subjectPublicKeyInfo`.
-- Pin one of the concrete types such as `RSAPublicKey` or `DSAPublicKey`.
+   - Pin `subjectPublicKeyInfo`。
+   - Pin 某种具体类型，例如 `RSAPublicKey` 或 `DSAPublicKey`。
 
-The three choices are explained below in more detail. You are encouraged to pin the `subjectPublicKeyInfo` because it has the public parameters (such as `{e,n}` for an RSA public key) **and** contextual information such as an algorithm and OID. The context will help you keep your bearings at times, and the figure to the right shows the additional information available.
+这三个选项将在下文中详细解释。建议 Pin `subjectPublicKeyInfo`，因为它包含公钥参数（例如 RSA 公钥的 `{e,n}`）**以及**上下文信息（如算法和 OID）。上下文信息有助于在某些情况下保持清晰，右图显示了可用的附加信息。
 
-#### Certificate
+#### 证书
 
-The certificate is easiest to pin. You can fetch the certificate out of band for the website, have the IT folks email your company certificate to you, use `openssl s_client` to retrieve the certificate, etc. At runtime, you can retrieve the website or server's certificate in a callback. Within the callback, you compare the retrieved certificate with the certificate embedded within the program. If the comparison fails, then fail the method or function, log it on the client-side and alert the end user. If your threat model warrants pinning, understand that users will click past any warnings, so do not give the user an option to proceed and bypass the pin.
+证书是最容易 Pin 的。您可以通过带外方式获取网站的证书，例如让 IT 部门通过电子邮件发送公司证书，使用 `openssl s_client` 检索证书等。在运行时，您可以通过回调检索网站或服务器的证书。在回调中，将检索到的证书与程序中嵌入的证书进行比较。如果比较失败，则方法或函数应失败，并在客户端记录日志并提醒最终用户。如果您的威胁模型需要 Pinning，请理解用户会忽略任何警告，因此不要给用户提供跳过 Pin 的选项。
 
-**Benefits:**
+**优点：**
 
-- It might be easier to implement than the other methods, especially in languages such as Cocoa/CocoaTouch and OpenSSL.
+- 在某些语言（如 Cocoa/CocoaTouch 和 OpenSSL）中，可能比其他方法更容易实现。
 
-**Downsides:**
+**缺点：**
 
-- If the site rotates its certificate on a regular basis, then your application would need to be updated regularly. If you do not control when this certificate is put into service, then pinning will lead to an outage.
+- 如果站点定期轮换证书，则需要定期更新应用程序。如果您无法控制证书何时投入使用，Pinning 将导致宕机。
 
-#### Public Key
+#### 公钥
 
-Public key pinning is more flexible but a little trickier due to the extra steps necessary to extract the public key from a certificate. As with a certificate, the program checks the extracted public key with its embedded copy of the public key. Given that most certificates today are only good for 90 days, using public key pinning can also make the timeline for updating pinsets longer, as you can pin a key where the certificate has not even been issued yet.
+公钥 Pinning 更加灵活，但由于需要额外步骤从证书中提取公钥，会稍微复杂一些。与证书类似，程序会将提取的公钥与嵌入的公钥副本进行比较。考虑到现今大多数证书只有 90 天有效期，使用公钥 Pinning 可以使 pinset 更新的时间线更长，因为您可以 Pin 一个尚未签发证书的密钥。
 
-**Benefits:**
+**优点：**
 
-- It allows access to public key parameters (such as `{e,n}` for an RSA public key) and contextual information such as an algorithm and OID.
-- It's more flexible than certificate pinning. The pin can be calculated long before the certificate is issued and if policy allows, the certificate can be renewed with the same key to avoid breaking pinning. The latter is a bad key management practice and should only be used in an emergency.
+- 可以访问公钥参数（例如 RSA 公钥的 `{e,n}`）和上下文信息，如算法和 OID。
+- 比证书 Pinning 更加灵活。Pin 可以在证书签发之前很久就计算出来，如果策略允许，可以使用相同的密钥续签证书以避免破坏 Pinning。后者是一种糟糕的密钥管理实践，只应在紧急情况下使用。
 
-**Downsides:**
+**缺点：**
 
-- It can be harder to work with keys (versus certificates) since you must extract the key from the certificate. Extraction is a minor inconvenience in Java and .Net, but it's uncomfortable in the iOS Cocoa/CocoaTouch framework and OpenSSL.
-- Some service providers generate new keys upon renewal making pre-caching impossible.
+- 处理密钥（相比证书）可能更加困难，因为必须从证书中提取密钥。在 Java 和 .Net 中提取是一个小小的不便，但在 iOS 的 Cocoa/CocoaTouch 框架和 OpenSSL 中则相当不便。
+- 一些服务提供商在续期时会生成新密钥，使得预缓存变得不可能。
 
-#### Hash
+#### 哈希
 
-While the three choices above used DER encoding, it's also acceptable to use a hash of the information. In fact, the original sample programs were written using digested certificates and public keys. The samples were changed to allow a programmer to inspect the objects with tools like `dumpasn1` and other ASN.1 decoders.
+虽然上述三种选择使用 DER 编码，使用信息的哈希值也是可以接受的。事实上，最初的示例程序是使用摘要的证书和公钥编写的。这些示例被更改，以允许程序员使用 `dumpasn1` 和其他 ASN.1 解码器检查对象。
 
-**Benefits:**
+**优点：**
 
-- It's convenient to use. A digested certificate fingerprint is often available as a native API for many libraries.
-- The hash is small and a fixed length.
+- 使用方便。摘要证书指纹通常作为许多库的原生 API 可用。
+- 哈希值小且长度固定。
 
-**Downsides:**
+**缺点：**
 
-- No access to public key parameters nor contextual information such as an algorithm and OID which might be needed in certain use cases.
-- If the site rotates its certificate on a regular basis, then your application would need to be updated regularly. If you do not control when this certificate is put into service, then pinning would lead to an outage.
+- 无法访问公钥参数和上下文信息（如算法和 OID），这在某些使用场景中可能是必需的。
+- 如果站点定期轮换证书，则应用程序需要定期更新。如果您无法控制证书何时投入使用，Pinning 将导致宕机。
 
-## Examples of Pinning
+## Pinning 示例
 
-This section discusses certificate and public key pinning in Android Java, iOS, .Net, and OpenSSL. Code has been omitted for brevity, but the key points for the platform are highlighted.
+本节讨论 Android Java、iOS、.Net 和 OpenSSL 中的证书和公钥 Pinning。为简洁起见，代码已被省略，但突出了各平台的关键点。
 
 ### Android
 
-Since Android N, the preferred way for implementing pinning is by leveraging Android's [Network Security Configuration](https://developer.android.com/training/articles/security-config.html) feature, which lets apps customize their network security settings in a safe, declarative configuration file without modifying app code.
+自 Android N 起，实现 Pinning 的首选方式是利用 Android 的[网络安全配置](https://developer.android.com/training/articles/security-config.html)功能，该功能允许应用在安全的声明性配置文件中自定义网络安全设置，无需修改应用代码。
 
-To enable pinning, [the `<pin-set>` configuration setting](https://developer.android.com/training/articles/security-config.html#CertificatePinning) can be used.
+要启用 Pinning，可以使用 [`<pin-set>` 配置设置](https://developer.android.com/training/articles/security-config.html#CertificatePinning)。
 
-Alternatively you can use methods such as the pinning from OkHTTP in order to set specific pins programmatically, as explained in the [OWASP Mobile Security Testing Guide (MSTG)](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x05g-Testing-Network-Communication.md#network-libraries-and-webviews) and [the OKHttp documentation](https://square.github.io/okhttp/3.x/okhttp/okhttp3/CertificatePinner.html).
+或者，您可以使用 OkHTTP 的 Pinning 方法以编程方式设置特定的 Pin，详见 [OWASP 移动安全测试指南（MSTG）](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x05g-Testing-Network-Communication.md#network-libraries-and-webviews)和 [OKHttp 文档](https://square.github.io/okhttp/3.x/okhttp/okhttp3/CertificatePinner.html)。
 
-The Android documentation provides an example of how SSL validation can be customized within the app's code (in order to implement pinning) in the [Unknown CA implementation document](https://developer.android.com/training/articles/security-ssl.html#UnknownCa). However, implementing pinning validation from scratch should be avoided, as implementation mistakes are extremely likely and usually lead to severe vulnerabilities.
+Android 文档在[未知 CA 实现文档](https://developer.android.com/training/articles/security-ssl.html#UnknownCa)中提供了如何在应用代码中自定义 SSL 验证的示例（以实现 Pinning）。但是，应避免从头开始实现 Pinning 验证，因为实现错误极有可能导致严重的漏洞。
 
-Lastly, if you want to validate whether the pinning is successful, please follow instructions from the [introduction into testing network communication](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x04f-Testing-Network-Communication.md#testing-network-communication) and the [Android specific network testing](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x05g-Testing-Network-Communication.md) chapters of the OWASP Mobile Security Testing Guide (MSTG).
+最后，如果要验证 Pinning 是否成功，请遵循 OWASP 移动安全测试指南（MSTG）中的[网络通信测试简介](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x04f-Testing-Network-Communication.md#testing-network-communication)和[Android 特定网络测试](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x05g-Testing-Network-Communication.md)章节。
 
 ### iOS
 
-Apple suggests pinning a CA public key by specifying it in `Info.plist` file under [App Transport Security Settings](https://developer.apple.com/documentation/security/preventing_insecure_network_connections). More details in the article ["Identity Pinning: How to configure server certificates for your app"](https://developer.apple.com/news/?id=g9ejcf8y).
+Apple 建议通过在 `Info.plist` 文件的 [App Transport Security 设置](https://developer.apple.com/documentation/security/preventing_insecure_network_connections)中指定 CA 公钥来进行 Pinning。更多详情请参见文章["身份 Pinning：如何为您的应用配置服务器证书"](https://developer.apple.com/news/?id=g9ejcf8y)。
 
-[TrustKit](https://github.com/datatheorem/TrustKit), an open-source SSL pinning library for iOS and macOS is available. It provides an easy-to-use API for implementing pinning, and has been deployed in many apps.
+[TrustKit](https://github.com/datatheorem/TrustKit)是一个适用于 iOS 和 macOS 的开源 SSL Pinning 库。它提供了易于使用的 Pinning API，并已在许多应用中部署。
 
-Otherwise, more details regarding how SSL validation can be customized on iOS (in order to implement pinning) are available in the [HTTPS Server Trust Evaluation](https://developer.apple.com/library/content/technotes/tn2232/_index.html) technical note. However, implementing pinning validation from scratch should be avoided, as implementation mistakes are extremely likely and usually lead to severe vulnerabilities.
+否则，关于如何在 iOS 上自定义 SSL 验证以实现 Pinning 的更多详情，请参见 [HTTPS 服务器信任评估](https://developer.apple.com/library/content/technotes/tn2232/_index.html)技术说明。但是，应避免从头开始实现 Pinning 验证，因为实现错误极有可能导致严重的漏洞。
 
-Lastly, if you want to validate whether the pinning is successful, please follow instructions from the [introduction into testing network communication](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x04f-Testing-Network-Communication.md#testing-network-communication) and the [iOS specific network testing](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x06g-Testing-Network-Communication.md) chapters of the OWASP Mobile Security Testing Guide (MSTG).
+最后，如果要验证 Pinning 是否成功，请遵循 OWASP 移动安全测试指南（MSTG）中的[网络通信测试简介](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x04f-Testing-Network-Communication.md#testing-network-communication)和 [iOS 特定网络测试](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x06g-Testing-Network-Communication.md)章节。
 
 ### .Net
 
-.Net pinning can be achieved by using [`ServicePointManager`](https://docs.microsoft.com/en-us/dotnet/api/system.net.servicepointmanager?view=netframework-4.7.2). An example can be found at the [OWASP MSTG](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x05g-Testing-Network-Communication.md#xamarin-applications).
+.Net Pinning 可以通过使用 [`ServicePointManager`](https://docs.microsoft.com/en-us/dotnet/api/system.net.servicepointmanager?view=netframework-4.7.2) 来实现。示例可以在 [OWASP MSTG](https://github.com/OWASP/owasp-mstg/blob/master/Document/0x05g-Testing-Network-Communication.md#xamarin-applications) 中找到。
 
-Download the [.Net sample program](../assets/Pinning_Cheat_Sheet_Certificate_DotNetSample.zip).
+下载 [.Net 示例程序](../assets/Pinning_Cheat_Sheet_Certificate_DotNetSample.zip)。
 
 ### OpenSSL
 
-Pinning can occur at one of two places with OpenSSL. First is the user supplied `verify_callback`. Second is after the connection is established via `SSL_get_peer_certificate`. Either method will allow you to access the peer's certificate.
+OpenSSL 中的 Pinning 可以在两个地方发生。第一个是用户提供的 `verify_callback`。第二个是通过 `SSL_get_peer_certificate` 在连接建立后。这两种方法都允许您访问对等方的证书。
 
-Though OpenSSL performs the X509 checks, you must fail the connection and tear down the socket on error. By design, a server that does not supply a certificate will result in `X509_V_OK` with a **NULL** certificate. To check the result of the customary verification:
+尽管 OpenSSL 执行 X509 检查，但您必须在出错时终止连接并关闭套接字。根据设计，未提供证书的服务器将导致带有 **NULL** 证书的 `X509_V_OK`。要检查常规验证的结果：
 
-1. You must call `SSL_get_verify_result` and verify the return code is `X509_V_OK`;
-2. You must call `SSL_get_peer_certificate` and verify the certificate is **non-NULL**.
+1. 必须调用 `SSL_get_verify_result` 并验证返回代码是 `X509_V_OK`；
+2. 必须调用 `SSL_get_peer_certificate` 并验证证书是 **非 NULL**。
 
-Download: [OpenSSL sample program](../assets/Pinning_Cheat_Sheet_Certificate_OpenSSLSample.zip).
+下载：[OpenSSL 示例程序](../assets/Pinning_Cheat_Sheet_Certificate_OpenSSLSample.zip)。
 
 ### Electron
 
-[electron-ssl-pinning](https://github.com/dialogs/electron-ssl-pinning), an open-source SSL pinning library for [Electron](https://electronjs.org) based applications. It provides an easy-to-use API for implementing pinning and also provides a tool for fetching configuration based on needed hosts.
+[electron-ssl-pinning](https://github.com/dialogs/electron-ssl-pinning)是一个用于基于 [Electron](https://electronjs.org) 的应用程序的开源 SSL Pinning 库。它提供了易于使用的 Pinning API，并提供了基于所需主机获取配置的工具。
 
-Otherwise, you can validate certificates by yourself using [ses.setCertificateVerifyProc(proc)](https://electronjs.org/docs/api/session#sessetcertificateverifyprocproc).
+否则，您可以使用 [ses.setCertificateVerifyProc(proc)](https://electronjs.org/docs/api/session#sessetcertificateverifyprocproc) 自行验证证书。
 
-## References
+## 参考文献
 
-- OWASP [Injection Theory](https://owasp.org/www-community/Injection_Theory)
-- OWASP [Data Validation](https://wiki.owasp.org/index.php/Data_Validation)
-- OWASP [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md)
-- OWASP [Mobile Security Testing Guide](https://github.com/OWASP/owasp-mstg)
-- IETF [RFC 1421 (PEM Encoding)](http://www.ietf.org/rfc/rfc1421.txt)
-- IETF [RFC 4648 (Base16, Base32, and Base64 Encodings)](http://www.ietf.org/rfc/rfc4648.txt)
+- OWASP [注入理论](https://owasp.org/www-community/Injection_Theory)
+- OWASP [数据验证](https://wiki.owasp.org/index.php/Data_Validation)
+- OWASP [传输层安全备忘单](Transport_Layer_Security_Cheat_Sheet.md)
+- OWASP [移动安全测试指南](https://github.com/OWASP/owasp-mstg)
+- IETF [RFC 1421 (PEM 编码)](http://www.ietf.org/rfc/rfc1421.txt)
+- IETF [RFC 4648 (Base16、Base32 和 Base64 编码)](http://www.ietf.org/rfc/rfc4648.txt)
 - IETF [RFC 5280 (Internet X.509, PKIX)](http://www.ietf.org/rfc/rfc5280.txt)
-- IETF [RFC 3279 (PKI, X509 Algorithms and CRL Profiles)](http://www.ietf.org/rfc/rfc3279.txt)
-- IETF [RFC 4055 (PKI, X509 Additional Algorithms and CRL Profiles)](http://www.ietf.org/rfc/rfc4055.txt)
+- IETF [RFC 3279 (PKI, X509 算法和 CRL 配置文件)](http://www.ietf.org/rfc/rfc3279.txt)
+- IETF [RFC 4055 (PKI, X509 附加算法和 CRL 配置文件)](http://www.ietf.org/rfc/rfc4055.txt)
 - IETF [RFC 2246 (TLS 1.0)](http://www.ietf.org/rfc/rfc2246.txt)
 - IETF [RFC 4346 (TLS 1.1)](http://www.ietf.org/rfc/rfc4346.txt)
 - IETF [RFC 5246 (TLS 1.2)](http://www.ietf.org/rfc/rfc5246.txt)
-- IETF [PKCS #1: RSA Cryptography Specifications Version 2.2](https://tools.ietf.org/html/rfc8017)
+- IETF [PKCS #1: RSA 密码学规范 版本 2.2](https://tools.ietf.org/html/rfc8017)
