@@ -1,176 +1,174 @@
-# Transaction Authorization Cheat Sheet
+# 交易授权备忘录
 
-## Purpose and audience
+## 目的和受众
 
-This cheat sheet discusses how developers can secure transaction authorizations and prevent them from being bypassed. These guidelines are for:
+本备忘录讨论开发者如何保护交易授权并防止其被绕过。这些指南适用于：
 
-- **Banks** - who must create functional and non-functional requirements for transaction authorization.
-- **Developers** – who need to eliminate vulnerabilities in transaction authorizations.
-- **Pentesters** – who must determine if transaction authorizations are secure.
+- **银行** - 需要为交易授权创建功能性和非功能性需求。
+- **开发者** - 需要消除交易授权中的漏洞。
+- **渗透测试人员** - 必须确定交易授权是否安全。
 
-## Introduction
+## 引言
 
-Generally, mobile and online applications will require users to submit a second factor so the system can check whether they are authorized to perform a sensitive operation (such as wire transfer authorization). In this document, we say that these actions are *transaction authorizations*.
+通常，移动和在线应用程序要求用户提交第二因素，以便系统检查他们是否有权执行敏感操作（如电汇授权）。在本文档中，我们将这些操作称为*交易授权*。
 
-Transaction authorizations are often used in financial systems, but the need for secure transactions has driven the adoption of authorizations across the internet.  For example, an email that allows users to unlock a user account by providing them with a secret code or a link that has a token contains a transaction authorization. A transaction authorization can be implemented with methods such as:
+交易授权经常用于金融系统，但对安全交易的需求已推动授权在互联网上的广泛应用。例如，一封允许用户通过提供秘密代码或带有令牌的链接来解锁用户账户的电子邮件也包含交易授权。交易授权可以通过以下方法实现：
 
-- A card that has a transaction authorization number
-- A time-based one-time password (OTP) token, such as an [OATH TOTP (Time-based One-Time Password)](https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
-- A OTP sent by SMS or provided by phone
-- A digital signature provided by a smart card or a smartphone
-- A challenge-response token, including unconnected card readers or solutions which scan transaction data from the user's computer screen
+- 具有交易授权号码的卡片
+- 基于时间的一次性密码（OTP）令牌，如 [OATH TOTP（基于时间的一次性密码）](https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
+- 通过短信发送或通过电话提供的 OTP
+- 由智能卡或智能手机提供的数字签名
+- 挑战-响应令牌，包括非连接读卡器或从用户计算机屏幕扫描交易数据的解决方案
 
-Some of these forms of transaction authorizations can be implemented with a physical device or in a mobile application.
+这些交易授权形式可以通过物理设备或移动应用程序实现。
 
-## 1. Functional Guidelines
+## 1. 功能指南
 
-### 1.1 Transaction authorization method has to allow a user to identify and acknowledge significant transaction data
+### 1.1 交易授权方法必须允许用户识别和确认重要的交易数据
 
-Since developers cannot assume that a user's computer is secure, an external authorization component would be have to check data for a typical transaction.
+由于开发者不能假设用户的计算机是安全的，外部授权组件必须检查典型交易的数据。
 
-When the developer builds components for transaction authorizations, they should use the *What You See Is What You Sign* principle. An authorization method must permit a user to identify and acknowledge the data that is significant to a given transaction. For example, in the case of a wire transfer, the user should be able to identify the target account and amount.
+当开发者构建交易授权组件时，应使用*所见即所签*原则。授权方法必须允许用户识别和确认对给定交易重要的数据。例如，在电汇的情况下，用户应能识别目标账户和金额。
 
-As developers determine what transaction data is significant, their decisions should be based on:
+开发者在确定重要交易数据时，应基于以下考虑：
 
-- The real risk
-- The technical capabilities and constraints of the chosen authorization method
-- The users having a positive experience
+- 实际风险
+- 所选授权方法的技术能力和约束
+- 用户获得正面体验
 
-For example, if an SMS message confirms significant transaction data, the developer could respond by returning the target account, amount and type of transfer to the user. However, it is inconvenient for an unconnected [CAP reader](https://en.wikipedia.org/wiki/Chip_Authentication_Program) to require users to enter that data. In such cases, the developer should probably return the minimium amount of significant transaction data (e.g. partial target account number and amount) for confirmation.
+例如，如果短信确认重要的交易数据，开发者可以向用户返回目标账户、金额和转账类型。然而，对于非连接的 [CAP 读卡器](https://en.wikipedia.org/wiki/Chip_Authentication_Program)，要求用户输入这些数据是不方便的。在这种情况下，开发者可能应返回最少量的重要交易数据（例如部分目标账户号码和金额）以供确认。
 
-In general, the user must verify all significant transaction data as a part of the transaction authorization process. If a transaction process requires a user to enter transaction data into an external device, the user should be prompted to confirm a specific value in the transaction (e.g. a target account number). The absence of a meaningful prompt could be easily abused by social engineering techniques and malware as described below in Section 1.4. Also, for more detailed discussion of input overloading problems, see [here](http://www.cl.cam.ac.uk/~sjm217/papers/fc09optimised.pdf).
+通常，用户必须在交易授权过程中验证所有重要的交易数据。如果交易过程要求用户在外部设备中输入交易数据，则应提示用户确认交易中的特定值（例如目标账户号码）。缺乏有意义的提示可能很容易被社会工程技术和恶意软件滥用，如下文 1.4 节所述。关于输入溢出问题的更详细讨论，请参见[此处](http://www.cl.cam.ac.uk/~sjm217/papers/fc09optimised.pdf)。
 
-### 1.2 Change of authorization token should be authorized using the current authorization token
+### 1.2 更改授权令牌应使用当前授权令牌进行授权
 
-If a user can use the application interface to change the authorization token, they should be able to authorize the operation with their current authorization credentials (as is the case with [password change procedure](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/04-Authentication_Testing/09-Testing_for_Weak_Password_Change_or_Reset_Functionalities.html)). For example: when a user changes a phone number for SMS codes an authorization SMS code should be sent to the current phone number.
+如果用户可以使用应用程序界面更改授权令牌，他们应能使用当前授权凭据授权该操作（类似于[密码更改程序](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/04-Authentication_Testing/09-Testing_for_Weak_Password_Change_or_Reset_Functionalities.html)）。例如：当用户更改短信码的电话号码时，授权短信码应发送到当前电话号码。
 
-### 1.3 Change of authorization method should be authorized using the current authorization method
+### 1.3 更改授权方法应使用当前授权方法进行授权
 
-Some applications allow a user to chose how their transactions will be authorized. In such cases, the developer should make sure that the application can confirm the user's method of authorization to prevent any malware from changing the user's authorization method to the most vulnerable method. Additionally, the application should inform the user about any potential dangers associated with their authorization method.
+某些应用程序允许用户选择交易授权方式。在这种情况下，开发者应确保应用程序可以确认用户的授权方法，以防止任何恶意软件将用户的授权方法更改为最脆弱的方法。此外，应用程序应告知用户与其授权方法相关的潜在危险。
 
-### 1.4 Users should be able to easily distinguish the authentication process from the transaction authorization process
+### 1.4 用户应能轻松区分认证过程和交易授权过程
 
-Since developers need to prevent users from authorizing fraudulent operations, their applications should not require a user to perform the same actions for authentication and transaction authorization. Consider the following example:
+由于开发者需要防止用户授权欺诈操作，他们的应用程序不应要求用户对认证和交易授权执行相同的操作。考虑以下示例：
 
-1. An application is using the same method for user authentication and for transaction authorization {i.e. with an OTP token).
-2. Malware could use a man-in-the-middle attack to present a user with a false error message when they submit credentials to the application, which could trick the user into repeating the authentication procedure. The first credential will be used by the malware for authentication and the second credential would be used to authorize a fraudulent transaction. Even challenge-response schemes could be abused using this scenario, since malware can present a challenge taken from a fraudulent transaction and trick the user to provide a response. Such an attack scenario is used widely in [malware attacks against electronic banking](http://securityintelligence.com/back-basics-malware-authors-downgrade-tactics-stay-radar/#.VX_qI_krLDc).
+1. 应用程序对用户认证和交易授权使用相同的方法（即使用 OTP 令牌）。
+2. 恶意软件可以使用中间人攻击，在用户向应用程序提交凭据时显示虚假错误消息，这可能诱使用户重复认证程序。第一个凭据将被恶意软件用于认证，第二个凭据将用于授权欺诈交易。即使是挑战-响应方案也可能被滥用，因为恶意软件可以提供来自欺诈交易的挑战，并诱骗用户提供响应。这种攻击场景在[针对电子银行的恶意软件攻击](http://securityintelligence.com/back-basics-malware-authors-downgrade-tactics-stay-radar/#.VX_qI_krLDc)中被广泛使用。
 
-To stop such attacks, developers can make sure that authentication actions are different than transaction authorizations by:
+为阻止此类攻击，开发者可以通过以下方式确保认证操作与交易授权不同：
 
-- Using different methods to authenticate and to authorize
-- Employing different actions in an external security component (i.e using a different mode of operation in a CAP reader)
-- Presenting the user with a clear message about what they are "signing" (What You See Is What You Sign Principle)
+- 使用不同的方法进行认证和授权
+- 在外部安全组件中采用不同的操作（即在 CAP 读卡器中使用不同的操作模式）
+- 向用户清晰地展示他们正在"签署"的内容（所见即所签原则）
 
-Social engineering methods [can be used despite authentication and operation authorization methods](http://securityintelligence.com/tatanga-attack-exposes-chiptan-weaknesses/#.VZAy9PkrLDc) but the application shouldn't make it easier for such attack scenarios.
+尽管[社会工程方法可以绕过认证和操作授权方法](http://securityintelligence.com/tatanga-attack-exposes-chiptan-weaknesses/#.VZAy9PkrLDc)，但应用程序不应使这种攻击场景变得更容易。
 
-### 1.5 Each transaction should be authorized using unique authorization credentials
+### 1.5 每笔交易应使用唯一的授权凭据
 
-If applications only ask for transaction authorization credentials once (such as a static password, code sent through SMS, or a token response), the user could authorize any transaction during the entire session or reuse the same credentials when they need to authorize a transaction. In this scenario, attackers can employ malware to sniff credentials and use them to authorize any transaction without the user's knowledge.
+如果应用程序仅要求一次交易授权凭据（如静态密码、通过短信发送的代码或令牌响应），用户可以在整个会话期间授权任何交易，或在需要授权交易时重复使用相同的凭据。在这种情况下，攻击者可以使用恶意软件嗅探凭据并在用户不知情的情况下授权任何交易。
 
-## 2. Non-functional guidelines
+## 2. 非功能性指南
 
-### 2.1 Authorization should be performed and enforced server-side
+### 2.1 授权应在服务器端执行和强制
 
-Like [all other security controls](https://cwe.mitre.org/data/definitions/602.html), transaction authorizations should be enforced on the server side. It should **never** be possible to influence an authorization's result by altering the data that flows from a client to a server by:
+与[所有其他安全控制](https://cwe.mitre.org/data/definitions/602.html)一样，交易授权应在服务器端强制执行。通过以下方式更改从客户端到服务器的数据，**绝不**应该影响授权结果：
 
-- Tampering with parameters that contain transaction data
-- Adding/removing parameters which will disable authorization check
-- Causing an error
+- 篡改包含交易数据的参数
+- 添加/删除参数以禁用授权检查
+- 引发错误
 
-To ensure that data is only managed on the server side, security programming best practices should be applied, such as:
+为确保数据仅在服务器端管理，应应用安全编程最佳实践，例如：
 
-- [Default deny](https://wiki.owasp.org/index.php/Positive_security_model)
-- Avoiding debugging functionality in production code
+- [默认拒绝](https://wiki.owasp.org/index.php/Positive_security_model)
+- 避免在生产代码中使用调试功能
 
-Other safeguards should be considered to prevent tampering, such as encrypting the data for confidentiality and integrity, then decrypting and verifying the data on the server side.
+还应考虑其他防篡改保护措施，如加密数据以确保机密性和完整性，然后在服务器端解密和验证数据。
 
-### 2.2 Authorization method should be enforced server-side
+### 2.2 授权方法应在服务器端强制执行
 
-If multiple transaction authorization methods are made available to the user, the server side must make sure that the transaction occurs with the user's chosen authorization method or the authorization method enforced by application policies. Otherwise, malware could downgrade an authorization method to even the least secure authorization method. Developers must make it impossible for attackers to change a chosen authorization method by manipulating the parameters provided from the client.
+如果为用户提供多种交易授权方法，服务器端必须确保交易使用用户选择的授权方法或应用程序策略强制的授权方法。否则，恶意软件可能会将授权方法降级到最不安全的授权方法。开发者必须使攻击者无法通过操纵客户端提供的参数来更改所选授权方法。
 
-Developers should be especially careful if they are asked to add a new authorization method that enhances security. Unfortunately, developers often decide to build a new authorization method on top of an old codebase. This case is insecure and an attacker could manipulate a client to successfully authorize a transaction by sending parameters using the old method, despite the fact that the application has already switched to a new method.
+如果要求开发者添加增强安全性的新授权方法，他们应特别小心。不幸的是，开发者经常决定在旧代码库上构建新的授权方法。这种情况是不安全的，攻击者可以操纵客户端，通过使用旧方法发送参数来成功授权交易，尽管应用程序已切换到新方法。
 
-### 2.3 Transaction verification data should be generated server-side
+### 2.3 交易验证数据应在服务器端生成
 
-If developers decide to transmit significant transaction data programmatically to an authorization component, they should take extra care to prevent any client modifications to the transaction data at authorization. **All significant transaction data must be verified by the user, generated and stored on a server, then passed to an authorization component without any possibility of tampering by the client.**
+如果开发者决定以编程方式将重要的交易数据传输到授权组件，他们应格外小心，防止客户端在授权时修改交易数据。**所有重要的交易数据必须由用户验证，在服务器上生成和存储，然后传递给授权组件，且不可能被客户端篡改。**
 
-And when developers collect significant transaction data on the client side and pass it on to the server, malware could manipulate the data and show faked transaction data in an authorization component.
+当开发者在客户端收集重要的交易数据并传递给服务器时，恶意软件可能会操纵数据并在授权组件中显示伪造的交易数据。
 
-### 2.4 Application should prevent authorization credentials brute-forcing
+### 2.4 应用程序应防止授权凭据暴力破解
 
-**Developers must make sure that their application can't allow attackers to brute-force a transaction at the point where transaction authorization credentials are submitted to the server for verification. After a set number of failed authorization attempts, the entire transaction authorization process should be restarted.** Also, there are other methods to prevent brute-forcing and stop other automation-related techniques, see [OWASP Authentication Cheat Sheet](Authentication_Cheat_Sheet.md#prevent-brute-force-attacks).
+**开发者必须确保其应用程序不允许攻击者在向服务器提交交易授权凭据进行验证时暴力破解交易。在一定数量的授权尝试失败后，整个交易授权过程应重新启动。**另外，还有其他方法可以防止暴力破解和停止其他自动化相关技术，请参见 [OWASP 认证备忘录](Authentication_Cheat_Sheet.md#prevent-brute-force-attacks)。
 
-### 2.5 Application should control which transaction state transitions are allowed
+### 2.5 应用程序应控制允许的交易状态转换
 
-Transaction authorization is usually performed in multiple steps, e.g.:
+交易授权通常分多个步骤执行，例如：
 
-1. The user enters the transaction data.
-2. The user requests authorization from the application.
-3. The application initializes an authorization mechanism.
-4. The user verifies/confirms the transaction data.
-5. The user responds with the authorization credentials.
-6. The application validates authorization and executes a transaction.
+1. 用户输入交易数据。
+2. 用户向应用程序请求授权。
+3. 应用程序初始化授权机制。
+4. 用户验证/确认交易数据。
+5. 用户使用授权凭据响应。
+6. 应用程序验证授权并执行交易。
 
-**The developers must ensure that the business logic flow for a transaction authorization occurs in in sequential order so users (or attackers) cannot perform the steps out of order or even skip any of the steps. This should protect against attack techniques such as:
+**开发者必须确保交易授权的业务逻辑流程按顺序进行，使用户（或攻击者）无法乱序执行步骤或跳过任何步骤。这应防止以下攻击技术：**
 
-- Overwriting transaction data before user will enter the authorization credentials
-- Skipping transaction authorization
+- 在用户输入授权凭据之前覆盖交易数据
+- 跳过交易授权
 
- See [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) requirement **15.1**).
+参见 [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) 要求 **15.1**。
 
-### 2.6 Transaction data should be protected against modification
+### 2.6 应保护交易数据免遭修改
 
-Developers must not allow attackers to modify transaction data when the user enters the data for the first time. Poor implementations may allow malware to:
+开发者不得允许攻击者在用户首次输入数据时修改交易数据。糟糕的实现可能允许恶意软件：
 
-1. Replay the first step in Section 2.5 (sending transaction data) in the background before the user enters authorization credentials and then overwrite transaction details with a fraudulent transaction.
-2. Create and add new transaction data parameters to a HTTP request that is authorizing the transaction. In such a case, a transaction authorization process that is poorly implemented might authorize the initial transaction and then execute a fraudulent transaction (specific example of [Time of Check to Time of Use vulnerability](https://cwe.mitre.org/data/definitions/367.html)).
+1. 在用户输入授权凭据之前在后台重放第 2.5 节中的第一步（发送交易数据），然后用欺诈性交易覆盖交易详细信息。
+2. 在授权交易的 HTTP 请求中创建和添加新的交易数据参数。在这种情况下，实施不当的交易授权过程可能会授权初始交易，然后执行欺诈性交易（[检查时间到使用时间漏洞](https://cwe.mitre.org/data/definitions/367.html)的具体示例）。
 
-There are multiple methods that can prevent transaction data from being modified during authorization:
+有多种方法可以防止在授权期间修改交易数据：
 
-1. If transaction data is modified, the code could invalidate any previously entered authorization data (e.g. Generated OTP) and the challenge.
-2. Modifications to transaction data could trigger a reset of the authorization process.
-3. Any attempt to modify transaction data after user entry is an attack on the system and it should be logged, monitored, and carefully investigated.
+1. 如果修改了交易数据，代码可以使任何先前输入的授权数据（例如生成的 OTP）和挑战失效。
+2. 修改交易数据可能触发授权过程重置。
+3. 任何在用户输入后尝试修改交易数据的行为都是对系统的攻击，应记录、监控并仔细调查。
 
-### 2.7 Confidentiality of transaction data should be protected during all client-server communications
+### 2.7 应在所有客户端-服务器通信中保护交易数据的机密性
 
-The transaction authorization process should protect the privacy of transaction data that the user will be authorizing (i.e. at Section 2.5, steps 2 and 4).
+交易授权过程应保护用户将授权的交易数据的隐私（即第 2.5 节中的步骤 2 和 4）。
 
-### 2.8 System should check each transaction execution and make sure it has been properly authorized
+### 2.8 系统应检查每笔交易执行并确保已正确授权
 
-The final result of the transaction entry and authorization process (as described in Section 2.5) is also called the *transaction execution*. There should be a final control gate before transaction execution which verifies whether the transaction was properly authorized by the user. This control should be tied to execution and prevent attacks such as:
+交易输入和授权过程的最终结果（如第 2.5 节所述）也称为*交易执行*。在交易执行之前应有一个最终控制门，验证交易是否已由用户正确授权。此控制应与执行绑定，并防止以下攻击：
 
-- Time of Check to Time of Use (TOCTOU) – example in Section 2.6
-- Skipping authorization check in the transaction entry process (see. Section 2.5)
+- 检查时间到使用时间（TOCTOU）- 参见第 2.6 节示例
+- 在交易输入过程中跳过授权检查（参见第 2.5 节）
 
-### 2.9 Authorization credentials should only be valid during a limited time period
+### 2.9 授权凭据应仅在有限的时间内有效
 
-In some attacks, a user's authorization credentials are passed by malware to a command-and-control server and then are used from an attacker-controlled machine. Often, this process is often performed manually by an attacker. To make sure that these are attacks are difficult, the server should only allow transaction authorization to occur in a limited time window which should occur between the generation of a challenge (or OTP) and the completion of an authorization. Additionally, such safeguards will also help stop resource exhaustion attacks. This time period should be carefully selected so it will not disrupt normal user behavior.
+在某些攻击中，用户的授权凭据被恶意软件传递给指挥控制服务器，然后在攻击者控制的机器上使用。这个过程通常由攻击者手动执行。为确保这些攻击难以进行，服务器应仅允许在生成挑战（或 OTP）和完成授权之间的有限时间窗口内进行交易授权。此外，这种保护措施还将有助于阻止资源耗尽攻击。这个时间段应仔细选择，以不干扰正常用户行为。
 
-### 2.10 Authorization credentials should be unique for every operation
+### 2.10 授权凭据对每个操作都应唯一
 
-To prevent multiple replay attacks, each set of authorization credentials should be unique for every operation. These credentials can be generated with different methods depending on the mechanism. For example: developers can use a timestamp, a sequence number, or a random value in signed transaction data or as a part of a challenge.
+为防止多次重放攻击，每组授权凭据对每个操作都应唯一。这些凭据可以根据机制使用不同方法生成。例如：开发者可以在签名的交易数据中或作为挑战的一部分使用时间戳、序列号或随机值。
 
-## Remarks
+## 备注
 
-Here are some other issues that should be considered while implementing transaction authorizations, but are beyond the scope of this cheat sheet:
+以下是实施交易授权时应考虑的一些其他问题，但超出了本备忘录的范围：
 
-- Which transactions should be authorized? All transactions or only some of them? Each application is different and an application owner should decide if all transactions should be authorized or only some of them. The developers should consider risk analysis, risk exposition of given application, and other safeguards implemented in an application.
-- **We recommend the use of cryptographic operations to protect transactions and to ensure integrity, confidentiality and non-repudiation.**
-- **It is critically important to provision & protect the device signing keys during device "pairing" is as is the actual signing protocol itself. Malware may attempt to inject/replace or steal the signing keys.**
-- User awareness: For example in transaction authorization methods, when a user types in significant transaction data to an authorization component (e.g. an external dedicated device or a mobile application), users should be trained to rewrite transaction data from a trusted source and not from a computer screen.
-- **There are some anti-malware solutions that protect against such threats but these solutions [cannot be 100% effective](http://www.securing.pl/en/script-based-malware-detection-in-online-banking-security-overview/index.html) and should be used only as an additional layer of protection.**
-- Protecting your signing keys with a second factor such as passwords, biometrics, etc. or leveraging secure elements (TEE, TPM, Smart card).
+- 应授权哪些交易？所有交易还是仅部分交易？每个应用程序都不同，应用程序所有者应决定是授权所有交易还是仅部分交易。开发者应考虑风险分析、给定应用程序的风险暴露以及在应用程序中实施的其他保护措施。
+- **我们建议使用加密操作来保护交易并确保完整性、机密性和不可否认性。**
+- **在设备"配对"期间提供和保护设备签名密钥与实际签名协议本身同样至关重要。恶意软件可能试图注入/替换或窃取签名密钥。**
+- 用户意识：例如在交易授权方法中，当用户在授权组件（如外部专用设备或移动应用程序）中输入重要的交易数据时，应训练用户从可信来源重新输入交易数据，而不是从计算机屏幕上。
+- **有一些反恶意软件解决方案可以防范此类威胁，但这些解决方案[无法 100% 有效](http://www.securing.pl/en/script-based-malware-detection-in-online-banking-security-overview/index.html)，应仅作为额外的保护层。**
+- 使用第二因素（如密码、生物识别等）保护签名密钥，或利用安全元素（TEE、TPM、智能卡）。
 
-## References and future reading
+## 参考文献和延伸阅读
 
-References and future reading:
-
-- Wojciech Dworakowski: [E-banking transaction authorization - possible vulnerabilities, security verification and best practices for implementation. Presentation from AppSec EU 2015](http://www.slideshare.net/wojdwo/ebanking-transaction-authorization-appsec-eu-2015-amsterdam).
-- Saar Drimer, Steven J. Murdoch, and Ross Anderson: [Optimised to Fail - Card Readers for Online Banking](http://www.cl.cam.ac.uk/~sjm217/papers/fc09optimised.pdf).
-- Jakub Kałużny, Mateusz Olejarka: [Script-based Malware Detection in Online Banking Security Overview](http://www.securing.pl/en/script-based-malware-detection-in-online-banking-security-overview/index.html).
-- [List of websites and whether or not they support 2FA](https://twofactorauth.org/).
-- Laerte Peotta, Marcelo D. Holtz, Bernardo M. David, Flavio G. Deus, Rafael Timóteo de Sousa Jr: [A Formal Classification Of Internet Banking Attacks and Vulnerabilities](http://airccse.org/journal/jcsit/0211ijcsit13.pdf).
-- Marco Morana, Tony Ucedavelez: [Threat Modeling of Banking Malware-Based Attacks](https://owasp.org/www-pdf-archive/Marco_Morana_and_Tony_UV_-_Threat_Modeling_of_Banking_Malware.pdf).
-- OWASP [Anti-Malware - Knowledge Base](https://wiki.owasp.org/index.php/OWASP_Anti-Malware_-_Knowledge_Base).
-- OWASP [Anti-Malware Project - Awareness Program](https://wiki.owasp.org/index.php/OWASP_Anti-Malware_Project_-_Awareness_Program).
-- Arjan Blom , Gerhard de Koning Gans , Erik Poll , Joeri de Ruiter , and Roel Verdult: [Designed to Fail - A USB-Connected Reader for Online Banking](http://www.cs.ru.nl/~rverdult/Designed_to_Fail_A_USB-Connected_Reader_for_Online_Banking-NORDSEC_2012.pdf)
+- Wojciech Dworakowski：[电子银行交易授权 - 可能的漏洞、安全验证和实施最佳实践。2015 年 AppSec EU 大会演讲](http://www.slideshare.net/wojdwo/ebanking-transaction-authorization-appsec-eu-2015-amsterdam)。
+- Saar Drimer, Steven J. Murdoch, 和 Ross Anderson：[优化失败 - 在线银行读卡器](http://www.cl.cam.ac.uk/~sjm217/papers/fc09optimised.pdf)。
+- Jakub Kałużny, Mateusz Olejarka：[在线银行安全中基于脚本的恶意软件检测概述](http://www.securing.pl/en/script-based-malware-detection-in-online-banking-security-overview/index.html)。
+- [支持双因素认证的网站列表](https://twofactorauth.org/)。
+- Laerte Peotta, Marcelo D. Holtz, Bernardo M. David, Flavio G. Deus, Rafael Timóteo de Sousa Jr：[互联网银行攻击和漏洞的正式分类](http://airccse.org/journal/jcsit/0211ijcsit13.pdf)。
+- Marco Morana, Tony Ucedavelez：[银行恶意软件攻击的威胁建模](https://owasp.org/www-pdf-archive/Marco_Morana_and_Tony_UV_-_Threat_Modeling_of_Banking_Malware.pdf)。
+- OWASP [反恶意软件 - 知识库](https://wiki.owasp.org/index.php/OWASP_Anti-Malware_-_Knowledge_Base)。
+- OWASP [反恶意软件项目 - 意识计划](https://wiki.owasp.org/index.php/OWASP_Anti-Malware_Project_-_Awareness_Program)。
+- Arjan Blom, Gerhard de Koning Gans, Erik Poll, Joeri de Ruiter, 和 Roel Verdult：[注定失败 - 用于在线银行的 USB 连接读卡器](http://www.cs.ru.nl/~rverdult/Designed_to_Fail_A_USB-Connected_Reader_for_Online_Banking-NORDSEC_2012.pdf)
