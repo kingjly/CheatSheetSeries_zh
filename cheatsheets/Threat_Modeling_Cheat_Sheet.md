@@ -1,122 +1,123 @@
-# Threat Modeling Cheat Sheet
 
-## Introduction
+# 威胁建模备忘录
 
-Threat modeling is an important concept for modern application developers to understand. This goal of this cheatsheet is provide a concise, but actionable, reference for both those new to threat modeling and those seeking a refresher. The official project page is [https://owasp.org/www-project-threat-model/](https://owasp.org/www-project-threat-model/).
+## 引言
 
-## Overview
+威胁建模对于现代应用开发者来说是一个重要的概念。本备忘录的目标是为威胁建模的新手和需要复习的人提供简明但可操作的参考。官方项目页面是 [https://owasp.org/www-project-threat-model/](https://owasp.org/www-project-threat-model/)。
 
-In the context of application security, threat modeling is a structured, repeatable process used to gain actionable insights into the security characteristics of a particular system. It involves modeling a system from a security perspective, identifying applicable threats based on this model, and determining responses to these threats. Threat modeling analyzes a system from an adversarial perspective, focusing on ways in which an attacker can exploit a system.
+## 概述
 
-Threat modeling is ideally performed early in the SDLC, such as during the design phase. Moreover, it is not something that is performed once and never again. A threat model is something that should be maintained, updated and refined alongside the system. Ideally, threat modeling should be integrated seamlessly into a team's normal SDLC process; it should be treated as standard and necessary step in the process, not an add-on.
+在应用安全的背景下，威胁建模是一个结构化、可重复的过程，用于获取特定系统安全特征的可操作洞察。它涉及从安全角度对系统进行建模、基于此模型识别适用的威胁，并确定对这些威胁的响应。威胁建模从对手的角度分析系统，重点关注攻击者可能利用系统的方式。
 
-According to the [Threat Modeling Manifesto](https://www.threatmodelingmanifesto.org/), the threat modeling process should answer the following four questions:
+威胁建模最好在软件开发生命周期（SDLC）的早期阶段进行，例如设计阶段。此外，这不是一次性的工作。威胁模型应该随系统一起维护、更新和完善。理想情况下，威胁建模应无缝地集成到团队的正常 SDLC 流程中；它应被视为流程中标准且必要的步骤，而非附加任务。
 
-1. What are we working on?
-2. What can go wrong?
-3. What are we going to do about it?
-4. Did we do a good enough job?
+根据[威胁建模宣言](https://www.threatmodelingmanifesto.org/)，威胁建模过程应回答以下四个问题：
 
-These four questions will act as the foundation for the four major phases described below.
+1. 我们正在处理什么？
+2. 可能出现什么问题？
+3. 我们将如何应对？
+4. 我们是否做得足够好？
 
-## Advantages
+这四个问题将作为下面描述的四个主要阶段的基础。
 
-Before turning to an overview of the process, it may be worth addressing the question: why threat model? Why bother adding more work to the development process? What are the benefits? The following section will briefly outline some answers to these questions.
+## 优势
 
-### Identify Risks Early On
+在概述流程之前，值得解答这个问题：为什么要进行威胁建模？为什么要为开发过程增加更多工作？有什么好处？下面将简要概述这些问题的答案。
 
-Threat modeling seeks to identify potential security issues during the design phase. This allows security to be "built-into" a system rather than "bolted-on". This is far more efficient than having to identify and resolve security flaws after a system is in production.
+### 及早识别风险
 
-### Increased Security Awareness
+威胁建模旨在设计阶段识别潜在的安全问题。这使得安全可以"内置"于系统，而非"附加"到系统。这比在生产环境中识别和解决安全缺陷更加高效。
 
-Proper threat modeling requires participants to think creatively and critically about the security and threat landscape of a specific application. It challenges individuals to "think like an attacker" and apply general security knowledge to a specific context. Threat modeling is also typically a team effort with members being encouraged to share ideas and provide feedback on others. Overall, threat modeling can prove to be a highly educational activity that benefits participants.
+### 提高安全意识
 
-### Improved Visibility of Target of Evaluation (TOE)
+正确的威胁建模要求参与者对特定应用的安全和威胁环境进行创造性和批判性思考。它挑战个人"像攻击者一样思考"，并将一般安全知识应用于特定情境。威胁建模通常也是一项团队工作，鼓励成员分享想法并对他人的意见提供反馈。总的来说，威胁建模可以成为一项极具教育意义的活动，使参与者受益。
 
-Threat modeling requires a deep understanding of the system being evaluated. To properly threat model, one must understand data flows, trust boundaries, and other characteristics of the system. Thus, [Stiliyana Simeonova](https://securityintelligence.com/threat-modeling-in-the-enterprise-part-1-understanding-the-basics/) asserts that improved visibility into a system and its interactions is one advantage of threat modeling.
+### 改善评估目标（TOE）的可见性
 
-## Addressing Each Question
+威胁建模需要深入了解被评估的系统。要正确进行威胁建模，必须了解数据流、信任边界和系统的其他特征。因此，[Stiliyana Simeonova](https://securityintelligence.com/threat-modeling-in-the-enterprise-part-1-understanding-the-basics/) 断言，威胁建模的一个优势是提高了对系统及其交互的可见性。
 
-There is no universally accepted industry standard for the threat modeling process, no "right" answer for every use case. However, despite this diversity, most approaches do include the processes of system modeling, threat identification, and risk response in some form. Inspired by these commonalities and guided by the four key questions of threat modeling discussed above, this cheatsheet will break the threat modeling down into four basic steps: application decomposition, threat identification and ranking, mitigations, and review and validation. There are processes that are less aligned to this, including PASTA and OCTAVE, each of which has passionate advocates.
+## 解答每个问题
 
-### System Modeling
+目前没有被普遍接受的威胁建模流程行业标准，也没有适用于每种情况的"正确"答案。然而，尽管存在这种多样性，大多数方法都以某种形式包括系统建模、威胁识别和风险响应的过程。受这些共性的启发，并遵循上面讨论的威胁建模四个关键问题，本备忘录将威胁建模分解为四个基本步骤：应用分解、威胁识别和排序、缓解措施以及审查和验证。还有一些不太符合这种方法的流程，如 PASTA 和 OCTAVE，每种方法都有热情的支持者。
 
-The step of system modeling seeks to answer the question "what are we building"? Without understanding a system, one cannot truly understand what threats are most applicable to it; thus, this step provides a critical foundation for subsequent activities. Although different techniques may be used in this first step of threat modeling, data flow diagrams (DFDs) are arguably the most common approach.
+### 系统建模
 
-DFDs allow one to visually model a system and its interactions with data and other entities; they are created using a [small number of simple symbols](https://github.com/adamshostack/DFD3). DFDs may be created within dedicated threat modeling tools such as [OWASP's Threat Dragon](https://github.com/OWASP/threat-dragon) or [Microsoft's Threat Modeling Tool](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool) or using general purpose diagraming solutions such as [draw.io](https://draw.io). If you prefer an -as-code approach, [OWASP's pytm](https://owasp.org/www-project-pytm/) can help there. Depending on the scale and complexity of the system being modeled, multiple DFDs may be required. For example, one could create a DFD representing a high-level overview of the entire system along with a number of more focused DFDs which detail sub-systems. Technical tools are not strictly necessary; whiteboarding may be sufficient in some instances, though it is preferable to have the DFDs in a form that can be easily stored, referenced, and updated as needed.
+系统建模步骤旨在回答"我们正在构建什么？"这个问题。如果不了解系统，就无法真正理解对该系统最适用的威胁；因此，这一步为后续活动提供了关键基础。尽管在威胁建模的第一步可能使用不同的技术，但数据流图（DFD）可以说是最常见的方法。
 
-Regardless of how a DFD or comparable model is generated, it is important that the solution provides a clear view of trust boundaries, data flows, data stores, processes, and the external entities which may interact with the system. These often represent possible attack points and provide crucial input for the subsequent steps.
+数据流图允许对系统及其与数据和其他实体的交互进行可视化建模；它们使用[少量简单的符号](https://github.com/adamshostack/DFD3)创建。可以在专门的威胁建模工具（如 [OWASP 的 Threat Dragon](https://github.com/OWASP/threat-dragon) 或 [微软的威胁建模工具](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool)）中创建 DFD，也可以使用通用绘图解决方案（如 [draw.io](https://draw.io)）。如果你更喜欢代码形式的方法，[OWASP 的 pytm](https://owasp.org/www-project-pytm/) 可以提供帮助。根据被建模系统的规模和复杂性，可能需要多个 DFD。例如，可以创建一个代表整个系统的高级概述的 DFD，以及若干更详细地描述子系统的 DFD。技术工具并非绝对必要；在某些情况下，白板可能就足够了，尽管最好将 DFD 保存在可以轻松存储、引用和更新的形式。
 
-Another approach to Data Flow Diagrams (DFD) could be the brainstorming technique, which is an effective method for generating ideas and discovering the project's domain. Applying brainstorming in this context can bring numerous benefits, such as increased team engagement, unification of knowledge and terminology, a shared understanding of the domain, and quick identification of key processes and dependencies. One of the main arguments for using brainstorming is its flexibility and adaptability to almost any scenario, including business logic. Additionally, this technique is particularly useful when less technical individuals participate in the session, as it eliminates barriers related to understanding and applying the components of DFD models and their correctness.
+无论如何生成 DFD 或可比较的模型，重要的是解决方案能清晰地展示信任边界、数据流、数据存储、进程以及可能与系统交互的外部实体。这些往往代表可能的攻击点，并为后续步骤提供关键输入。
 
-Brainstorming engages all participants, fostering better communication and mutual understanding of issues. Every team member has the opportunity to contribute, which increases the sense of responsibility and involvement. During a brainstorming session, participants can collaboratively define and agree on key terms and concepts, leading to a unified language used in the project. This is especially important in complex projects where different teams might have different approaches to terminology. Due to the dynamic nature of brainstorming, the team can quickly identify key business processes and their interrelations.
+另一种数据流图（DFD）的方法是头脑风暴技术，这是一种有效的生成想法和发现项目领域的方法。在这种情况下应用头脑风暴可带来诸多好处，如提高团队参与度、统一知识和术语、建立对领域的共同理解，以及快速识别关键流程和依赖关系。使用头脑风暴的主要论点之一是其灵活性和适应性，几乎可以应用于任何场景，包括业务逻辑。此外，当参与者不太懂技术时，这种技术特别有用，因为它消除了理解和应用 DFD 模型及其正确性的相关障碍。
 
-Integrating the results of brainstorming with formal modeling techniques can lead to a better understanding of the domain and more effective system design.
+头脑风暴让所有参与者都参与其中，促进更好的沟通和对问题的相互理解。每个团队成员都有机会贡献，这增加了责任感和参与度。在头脑风暴会议期间，参与者可以协作定义和商定关键术语和概念，从而形成项目中使用的统一语言。这在复杂项目中尤其重要，不同团队可能对术语有不同的理解。由于头脑风暴的动态特性，团队可以快速识别关键业务流程及其相互关系。
 
-### Threat Identification
+将头脑风暴的结果与正式建模技术相结合，可以更好地理解领域并实现更有效的系统设计。
 
-After the system has been modeled, it is now time to address the question of "what can go wrong?". This question must be explored with the inputs from the first step in mind; that is, it should focus on identifying and ranking threats within the context of the specific system being evaluated. In attempting to answer this question, threat modelers have a wealth of data sources and techniques at their disposal. For illustration purposes, this cheatsheet will leverage STRIDE; however, in practice, other approaches may be used alongside or instead of STRIDE.
+### 威胁识别
 
-STRIDE is a mature and popular threat modeling technique and mnemonic originally developed by Microsoft employees. To facilitate threat identification, STRIDE groups threats into one of six general prompts and engineers are encouraged to systematically consider how these general threats may materialize within the context of the specific system being evaluated. Each STRIDE threat may be considered a violation of a desirable security attribute; the categories and associated desirable attributes are are as follows:
+在系统建模后，现在是解答"可能出现什么问题？"这个问题的时候。这个问题必须结合第一步的输入来探索；也就是说，它应该专注于在被评估的特定系统背景下识别和排序威胁。在试图回答这个问题时，威胁建模者有丰富的数据源和技术可供选择。为了说明，本备忘录将使用 STRIDE；然而，在实践中，可能会与 STRIDE 一起使用或代替其他方法。
 
-| Threat Category             | Violates          | Examples                                                                                                    |
-| --------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
-| **S**poofing                | Authenticity      | An attacker steals the authentication token of a legitimate user and uses it to impersonate the user.       |
-| **T**ampering               | Integrity         | An attacker abuses the application to perform unintended updates to a database.                             |
-| **R**epudiation             | Non-repudiability | An attacker manipulates logs to cover their actions.                                                        |
-| **I**nformation Disclosure  | Confidentiality   | An attacker extract data from a database containing user account info.                                      |
-| **D**enial of Service       | Availability      | An attacker locks a legitimate user out of their account by performing many failed authentication attempts. |
-| **E**levation of Privileges | Authorization     | An attacker tampers with a JWT to change their role.                                                        |
+STRIDE 是最初由微软员工开发的成熟且流行的威胁建模技术和助记符。为了便于威胁识别，STRIDE 将威胁分为六个一般性提示，并鼓励工程师系统地考虑这些一般性威胁如何在被评估的特定系统背景下具体化。每个 STRIDE 威胁可以被视为对理想安全属性的违反；类别及相关的理想属性如下：
 
-STRIDE provides valuable structure for responding to the question of "what can go wrong". It is also a highly flexible approach and getting started need not be complex. Simple techniques such as brainstorming and whiteboarding or even [games](https://github.com/adamshostack/eop/) may be used initially. STRIDE is also incorporated into popular threat modeling tools such as [OWASP's Threat Dragon](https://github.com/OWASP/threat-dragon) and [Microsoft's Threat Modeling Tool](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool). Additionally, as a relatively high-level process, STRIDE pairs well with more tactical approaches such as kill chains or [MITRE's ATT&CK](https://attack.mitre.org/) (please refer to [this article](https://web.isc2ncrchapter.org/under-attck-how-mitres-methodology-to-find-threats-and-embed-counter-measures-might-work-in-your-organization/) for an overview of how STRIDE and ATT&CK can work together).
+| 威胁类别             | 违反          | 示例                                                                                     |
+| -------------------- | ------------- | ---------------------------------------------------------------------------------------- |
+| **S**poofing（欺骗） | 真实性        | 攻击者窃取合法用户的身份验证令牌并使用它来冒充用户。                                     |
+| **T**ampering（篡改） | 完整性        | 攻击者滥用应用程序对数据库执行非预期的更新。                                             |
+| **R**epudiation（抵赖） | 不可抵赖性    | 攻击者操纵日志以掩盖其行为。                                                             |
+| **I**nformation Disclosure（信息泄露） | 机密性        | 攻击者从包含用户账户信息的数据库中提取数据。                                             |
+| **D**enial of Service（拒绝服务） | 可用性        | 攻击者通过执行多次失败的身份验证尝试，将合法用户锁定在其账户之外。                       |
+| **E**levation of Privileges（权限提升） | 授权          | 攻击者篡改 JWT 以更改其角色。                                                            |
 
-After possible threats have been identified, people will frequently rank them. In theory, ranking should be based on the mathematical product of an identified threat's likelihood and its impact. A threat that is likely to occur and result in serious damage would be prioritized much higher than one that is unlikely to occur and would only have a moderate impact. However, these both can be challenging to calculate, and they ignore the work to fix a problem. Some advocate for including that in a single prioritization.
+STRIDE 为回答"可能出现什么问题？"提供了宝贵的结构。它也是一种高度灵活的方法，入门不需要很复杂。简单的技术如头脑风暴、白板甚至[游戏](https://github.com/adamshostack/eop/)都可以初步使用。STRIDE 还被整合到流行的威胁建模工具中，如 [OWASP 的 Threat Dragon](https://github.com/OWASP/threat-dragon) 和 [微软的威胁建模工具](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool)。此外，作为相对高层次的流程，STRIDE 与更战术的方法（如杀伤链或 [MITRE 的 ATT&CK](https://attack.mitre.org/)）很好地配合（请参考[这篇文章](https://web.isc2ncrchapter.org/under-attck-how-mitres-methodology-to-find-threats-and-embed-counter-measures-might-work-in-your-organization/)了解 STRIDE 和 ATT&CK 如何协同工作）。
 
-### Response and Mitigations
+识别可能的威胁后，人们通常会对其进行排序。理论上，排序应基于已识别威胁的发生可能性和影响的数学乘积。一个很可能发生并造成严重损害的威胁将被优先级排得much更高，而不太可能发生且只会产生中等影响的威胁则排在后面。然而，这两者都很难计算，而且忽略了解决问题的工作。有些人主张将这些因素纳入单一优先级考虑中。
 
-Equipped with an understanding of both the system and applicable threats, it is now time to answer "what are we going to do about it"?. Each threat identified earlier must have a response. Threat responses are similar, but not identical, to risk responses. [Adam Shostack](https://shostack.org/resources/threat-modeling) lists the following responses:
+### 响应和缓解措施
 
-- **Mitigate:** Take action to reduce the likelihood that the threat will materialize.
-- **Eliminate:** Simply remove the feature or component that is causing the threat.
-- **Transfer:** Shift responsibility to another entity such as the customer.
-- **Accept:** Do not mitigate, eliminate, or transfer the risk because none of the above options are acceptable given business requirements or constraints.
+掌握了对系统和适用威胁的理解后，现在是回答"我们将如何应对？"的时候。之前识别的每个威胁都必须有一个响应。威胁响应类似但不完全等同于风险响应。[Adam Shostack](https://shostack.org/resources/threat-modeling) 列出了以下响应：
 
-If one decides to mitigates a threat, mitigation strategies must be formulated and documented as requirements. Depending on the complexity of the system, nature of threats identified, and the process used for identifying threats (STRIDE or another method), mitigation responses may be applied at either the category or individual threat level. In the former case, the mitigation would apply to all threats within that category. Mitigations strategies must be actionable not hypothetical; they must be something that can actually be built into to the system being developed. Although mitigations strategies must be tailored to the particular application, resources such as as [OWASP's ASVS](https://owasp.org/www-project-application-security-verification-standard/) and [MITRE's CWE list](https://cwe.mitre.org/index.html) can prove valuable when formulating these responses.
+- **缓解：** 采取行动减少威胁实现的可能性。
+- **消除：** 简单地移除导致威胁的功能或组件。
+- **转移：** 将责任转移给另一个实体，如客户。
+- **接受：** 鉴于业务需求或约束，不缓解、消除或转移风险。
 
-### Review and Validation
+如果决定缓解威胁，必须制定并将缓解策略记录为需求。根据系统的复杂性、已识别威胁的性质以及用于识别威胁的流程（STRIDE 或其他方法），缓解响应可以在类别或单个威胁级别应用。在前一种情况下，缓解将适用于该类别中的所有威胁。缓解策略必须是可操作的，而非假设性的；它们必须是可以实际构建到正在开发的系统中的内容。尽管缓解策略必须针对特定应用量身定制，但诸如 [OWASP 的 ASVS](https://owasp.org/www-project-application-security-verification-standard/) 和 [MITRE 的 CWE 列表](https://cwe.mitre.org/index.html) 等资源在制定这些响应时可能会很有价值。
 
-Finally, it is time to answer the question "did we do a good enough job"? The threat model must be reviewed by all stakeholders, not just the development or security teams. Areas to focus on include:
+### 审查与验证
 
-- Does the DFD (or comparable) accurately reflect the system?
-- Have all threats been identified?
-- For each identified threat, has a response strategy been agreed upon?
-- For identified threats for which mitigation is the desired response, have mitigation strategies been developed which reduce risk to an acceptable level?
-- Has the threat model been formally documented? Are artifacts from the threat model process stored in such a way that it can be accessed by those with "need to know"?
-- Can the agreed upon mitigations be tested? Can success or failure of the requirements and recommendations from the threat model be measured?
+最后，是时候回答"我们是否做得足够好"这个问题了？威胁模型必须由所有利益相关者审查，而不仅仅是开发或安全团队。重点关注的领域包括：
 
-## Threat Modeling and the Development Team
+- 数据流图（或类似图）是否准确反映了系统？
+- 是否已识别所有威胁？
+- 对于每个已识别的威胁，是否已商定应对策略？
+- 对于希望通过缓解来应对的已识别威胁，是否已制定能将风险降低到可接受水平的缓解策略？
+- 威胁模型是否已正式归档？威胁模型过程的工件是否以"需要知道"的人可访问的方式存储？
+- 可以测试商定的缓解措施吗？可以衡量威胁模型的需求和建议的成功或失败吗？
 
-### Challenges
+## 威胁建模与开发团队
 
-Threat modeling can be challenging for development teams for several key reasons. Firstly, many developers lack sufficient knowledge and experience in the field of security, which hinders their ability to effectively use methodologies and frameworks, identify, and model threats. Without proper training and understanding of basic security principles, developers may overlook potential threats or incorrectly assess their risks.
+### 挑战
 
-Additionally, the threat modeling process can be complex and time-consuming. It requires a systematic approach and in-depth analysis, which is often difficult to reconcile with tight schedules and the pressure to deliver new functionalities. Development teams may feel a lack of tools and resources to support them in this task, leading to frustration and discouragement.
+出于几个关键原因，威胁建模对开发团队来说可能具有挑战性。首先，许多开发人员缺乏安全领域的充分知识和经验，这阻碍了他们有效使用方法论和框架、识别和建模威胁的能力。如果没有对基本安全原则的适当培训和理解，开发人员可能会忽视潜在威胁或错误评估其风险。
 
-Another challenge is the communication and collaboration between different departments within the organization. Without effective communication between development teams, security teams, and other stakeholders, threat modeling can be incomplete or misdirected.
+此外，威胁建模过程可能复杂且耗时。它需要系统性方法和深入分析，这往往难以与紧张的进度和交付新功能的压力相协调。开发团队可能感到缺乏支持此任务的工具和资源，从而导致沮丧和气馁。
 
-### Addressing the Challenges
+另一个挑战是组织内不同部门之间的沟通和协作。如果开发团队、安全团队和其他利益相关者之间缺乏有效沟通，威胁建模可能不完整或方向错误。
 
-In many cases, the solution lies in inviting members of the security teams to threat modeling sessions, which can significantly improve the process. Security specialists bring essential knowledge about potential threats that is crucial for effective identification, risk analysis, and mitigation. Their experience and understanding of the latest trends and techniques used by cybercriminals can provide key insights for learning and developing the competencies of development teams. Such joint sessions not only enhance developers' knowledge but also build a culture of collaboration and mutual support within the organization, leading to a more comprehensive approach to security.
+### 应对挑战
 
-To change the current situation, organizations should invest in regular IT security training for their development teams. These training sessions should be conducted by experts and tailored to the specific needs of the team. Additionally, it is beneficial to implement processes and tools that simplify and automate threat modeling. These tools can help in identifying and assessing threats, making the process more accessible and less time-consuming.
+在许多情况下，解决方案在于邀请安全团队成员参与威胁建模会议，这可以显著改善流程。安全专家带来关于潜在威胁的关键知识，对有效识别、风险分析和缓解至关重要。他们对网络犯罪分子使用的最新趋势和技术的经验和理解可以为学习和发展开发团队的能力提供关键见解。这种联合会议不仅能提高开发人员的知识，还能建立组织内部的协作和相互支持文化，从而形成更全面的安全方法。
 
-It is also important to promote a culture of security throughout the organization, where threat modeling is seen as an integral part of the Software Development Life Cycle (SDLC), rather than an additional burden. Regular review sessions and cross-team workshops can improve collaboration and communication, leading to a more effective and comprehensive approach to security. Through these actions, organizations can make threat modeling a less burdensome and more efficient process, bringing real benefits to the security of their systems.
+为改变当前状况，组织应投资于为其开发团队进行定期 IT 安全培训。这些培训会议应由专家进行，并针对团队的具体需求定制。此外，实施简化和自动化威胁建模的流程和工具也很有益。这些工具可以帮助识别和评估威胁，使流程更易访问且耗时更少。
 
-## References
+重要的是要在整个组织中推广安全文化，使威胁建模被视为软件开发生命周期（SDLC）不可或缺的一部分，而非额外负担。定期审查会议和跨团队研讨会可以改善协作和沟通，从而形成更有效、更全面的安全方法。通过这些行动，组织可以使威胁建模成为一个负担更少、效率更高的过程，为其系统的安全带来真正的好处。
 
-### Methods and Techniques
+## 参考资料
 
-An alphabetical list of techniques:
+### 方法和技术
+
+按字母顺序排列的技术：
 
 - [LINDDUN](https://linddun.org/)
 - [PASTA](https://cdn2.hubspot.net/hubfs/4598121/Content%20PDFs/VerSprite-PASTA-Threat-Modeling-Process-for-Attack-Simulation-Threat-Analysis.pdf)
@@ -124,23 +125,23 @@ An alphabetical list of techniques:
 - [OCTAVE](https://insights.sei.cmu.edu/library/introduction-to-the-octave-approach/)
 - [VAST](https://go.threatmodeler.com/vast-methodology-data-sheet)
 
-### Tools
+### 工具
 
 - [Cairis](https://github.com/cairis-platform/cairis)
-- [draw.io](https://draw.io) - see also [threat modeling libraries](https://github.com/michenriksen/drawio-threatmodeling) for the tool
-- [IriusRisk](https://www.iriusrisk.com/) - offers a free Community Edition
-- [Microsoft Threat Modeling Tool](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool)
-- [OWASP's Threat Dragon](https://github.com/OWASP/threat-dragon)
-- [OWASP's pytm](https://owasp.org/www-project-pytm/)
-- [TaaC-AI](https://github.com/yevh/TaaC-AI) - AI-driven Threat modeling-as-a-Code (TaaC)
-- Threat Composer - [Demo](https://awslabs.github.io/threat-composer), [Repository](https://github.com/awslabs/threat-composer/)
+- [draw.io](https://draw.io) - 另请参见该工具的[威胁建模库](https://github.com/michenriksen/drawio-threatmodeling)
+- [IriusRisk](https://www.iriusrisk.com/) - 提供免费社区版
+- [微软威胁建模工具](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool)
+- [OWASP 威胁龙](https://github.com/OWASP/threat-dragon)
+- [OWASP pytm](https://owasp.org/www-project-pytm/)
+- [TaaC-AI](https://github.com/yevh/TaaC-AI) - 人工智能驱动的代码形式威胁建模（TaaC）
+- 威胁编辑器 - [演示](https://awslabs.github.io/threat-composer), [仓库](https://github.com/awslabs/threat-composer/)
 
-### General Reference
+### 常规参考
 
-- [Awesome Threat Modeling](https://github.com/hysnsec/awesome-threat-modelling) - resource list
-- [Tactical Threat Modeling](https://safecode.org/wp-content/uploads/2017/05/SAFECode_TM_Whitepaper.pdf)
-- [Threat Modeling: A Summary of Available Methods](https://insights.sei.cmu.edu/library/threat-modeling-a-summary-of-available-methods/)
-- Threat modeling for builders, free online training available on [AWS SkillBuilder](https://explore.skillbuilder.aws/learn/course/external/view/elearning/13274/threat-modeling-for-builders-workshop), and [AWS Workshop Studio](https://catalog.workshops.aws/threatmodel/en-US)
-- [Threat Modeling Handbook](https://security.cms.gov/policy-guidance/threat-modeling-handbook)
-- [Threat Modeling Process](https://owasp.org/www-community/Threat_Modeling_Process)
-- [The Ultimate Beginner's Guide to Threat Modeling](https://shostack.org/resources/threat-modeling)
+- [优秀威胁建模](https://github.com/hysnsec/awesome-threat-modelling) - 资源列表
+- [战术威胁建模](https://safecode.org/wp-content/uploads/2017/05/SAFECode_TM_Whitepaper.pdf)
+- [威胁建模：可用方法总结](https://insights.sei.cmu.edu/library/threat-modeling-a-summary-of-available-methods/)
+- 面向构建者的威胁建模，可在 [AWS 技能构建器](https://explore.skillbuilder.aws/learn/course/external/view/elearning/13274/threat-modeling-for-builders-workshop)和 [AWS 工作坊工作室](https://catalog.workshops.aws/threatmodel/en-US)获取免费在线培训
+- [威胁建模手册](https://security.cms.gov/policy-guidance/threat-modeling-handbook)
+- [威胁建模流程](https://owasp.org/www-community/Threat_Modeling_Process)
+- [威胁建模终极新手指南](https://shostack.org/resources/threat-modeling)
