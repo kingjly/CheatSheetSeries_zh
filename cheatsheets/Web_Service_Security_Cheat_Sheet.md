@@ -1,130 +1,130 @@
-# Web Service Security Cheat Sheet
+# Web 服务安全备忘录
 
-## Introduction
+## 引言
 
-This article is focused on providing guidance for securing web services and preventing web services related attacks.
+本文旨在提供保护 Web 服务和防止 Web 服务相关攻击的指导。
 
-Please notice that due to the difference in implementation between different frameworks, this cheat sheet is kept at a high level.
+请注意，由于不同框架的实现差异，本备忘录保持在较高层面。
 
-## Transport Confidentiality
+## 传输保密性
 
-Transport confidentiality protects against eavesdropping and man-in-the-middle attacks against web service communications to/from the server.
+传输保密性防止对 Web 服务通信的窃听和中间人攻击。
 
-**Rule**: All communication with and between web services containing sensitive features, an authenticated session, or transfer of sensitive data must be encrypted using well-configured [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security). This is recommended even if the messages themselves are encrypted because [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) provides numerous benefits beyond traffic confidentiality including integrity protection, replay defenses, and server authentication. For more information on how to do this properly see the [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md).
+**规则**：所有包含敏感功能、经过身份验证的会话或传输敏感数据的 Web 服务通信，必须使用配置良好的 [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) 进行加密。即使消息本身已加密，也建议这样做，因为 [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) 提供了众多超出流量保密性的好处，包括完整性保护、重放防御和服务器身份验证。有关如何正确执行此操作的更多信息，请参见[传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)。
 
-## Server Authentication
+## 服务器身份验证
 
-**Rule**: TLS must be used to authenticate the service provider to the service consumer. The service consumer should verify the server certificate is issued by a trusted provider, is not expired, is not revoked, matches the domain name of the service, and that the server has proven that it has the private key associated with the public key certificate (by properly signing something or successfully decrypting something encrypted with the associated public key).
+**规则**：必须使用 TLS 向服务消费者验证服务提供者的身份。服务消费者应验证服务器证书是由可信提供者颁发的、未过期、未被吊销、与服务域名匹配，并且服务器已通过私钥（通过正确签名某些内容或成功解密使用相关公钥加密的内容）证明其身份。
 
-## User Authentication
+## 用户身份验证
 
-User authentication verifies the identity of the user or the system trying to connect to the service. Such authentication is usually a function of the container of the web service.
+用户身份验证验证试图连接到服务的用户或系统的身份。这种身份验证通常是 Web 服务容器的功能。
 
-**Rule**: If used, Basic Authentication must be conducted over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security), but Basic Authentication is not recommended because it discloses secrets in plan text (base64 encoded) in HTTP Headers.
+**规则**：如果使用基本身份验证，必须通过 [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) 进行，但不建议使用基本身份验证，因为它会在 HTTP 标头中以明文（base64 编码）形式泄露秘密。
 
-**Rule**: Client Certificate Authentication using [Mutual-TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) is a common form of authentication that is recommended where appropriate. See: [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md).
+**规则**：使用[双向 TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) 的客户端证书身份验证是一种推荐的身份验证方式。请参见：[身份验证备忘录](Authentication_Cheat_Sheet.md)。
 
-## Transport Encoding
+## 传输编码
 
-[SOAP](https://en.wikipedia.org/wiki/SOAP) encoding styles are meant to move data between software objects into XML format and back again.
+[SOAP](https://en.wikipedia.org/wiki/SOAP) 编码样式旨在在软件对象之间以 XML 格式移动数据。
 
-**Rule**: Enforce the same encoding style between the client and the server.
+**规则**：在客户端和服务器之间强制执行相同的编码样式。
 
-## Message Integrity
+## 消息完整性
 
-This is for data at rest. The integrity of data in transit can easily be provided by [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security).
+这是针对静态数据。传输中数据的完整性可以通过 [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) 轻松提供。
 
-When using [public key cryptography](https://en.wikipedia.org/wiki/Public-key_cryptography), encryption does guarantee confidentiality but it does not guarantee integrity since the receiver's public key is public. For the same reason, encryption does not ensure the identity of the sender.
+使用[公钥密码学](https://en.wikipedia.org/wiki/Public-key_cryptography)时，加密确实保证了保密性，但由于接收者的公钥是公开的，它不保证完整性。出于同样的原因，加密也不确保发送者的身份。
 
-**Rule**: For XML data, use XML digital signatures to provide message integrity using the sender's private key. This signature can be validated by the recipient using the sender's digital certificate (public key).
+**规则**：对于 XML 数据，使用 XML 数字签名，通过发送者的私钥提供消息完整性。接收者可以使用发送者的数字证书（公钥）验证此签名。
 
-## Message Confidentiality
+## 消息保密性
 
-Data elements meant to be kept confidential must be encrypted using a strong encryption cipher with an adequate key length to deter brute-forcing.
+必须使用强加密算法和足够的密钥长度来加密需要保密的数据元素，以阻止暴力破解。
 
-**Rule**: Messages containing sensitive data must be encrypted using a strong encryption cipher. This could be transport encryption or message encryption.
+**规则**：包含敏感数据的消息必须使用强加密算法加密。这可以是传输加密或消息加密。
 
-**Rule**: Messages containing sensitive data that must remain encrypted at rest after receipt must be encrypted with strong data encryption, not just transport encryption.
+**规则**：接收后必须保持加密的包含敏感数据的消息，必须使用强数据加密，而不仅仅是传输加密。
 
-## Authorization
+## 授权
 
-Web services need to authorize web service clients the same way web applications authorize users. A web service needs to make sure a web service client is authorized to perform a certain action (coarse-grained) on the requested data (fine-grained).
+Web 服务需要像 Web 应用程序授权用户一样授权 Web 服务客户端。Web 服务需要确保 Web 服务客户端有权对请求的数据执行特定操作（粗粒度）。
 
-**Rule**: A web service should authorize its clients whether they have access to the method in question. Following an authentication challenge, the web service should check the privileges of the requesting entity whether they have access to the requested resource. This should be done on every request, and a challenge-response Authorization mechanism added to sensitive resources like password changes, primary contact details such as email, physical address, payment or delivery instructions.
+**规则**：Web 服务应授权其客户端是否有权访问相关方法。在身份验证挑战之后，Web 服务应检查请求实体的权限，是否有权访问请求的资源。这应在每个请求上进行，并为敏感资源（如密码更改、主要联系人详细信息，如电子邮件、物理地址、支付或交付说明）添加挑战-响应授权机制。
 
-**Rule**: Ensure access to administration and management functions within the Web Service Application is limited to web service administrators. Ideally, any administrative capabilities would be in an application that is completely separate from the web services being managed by these capabilities, thus completely separating normal users from these sensitive functions.
+**规则**：确保对 Web 服务应用程序中的管理和管理功能的访问仅限于 Web 服务管理员。理想情况下，任何管理功能都应位于与这些功能管理的 Web 服务完全分离的应用程序中，从而完全将普通用户与这些敏感功能隔离。
 
-## Schema Validation
+## 架构验证
 
-Schema validation enforces constraints and syntax defined by the schema.
+架构验证强制执行架构定义的约束和语法。
 
-**Rule**: Web services must validate [SOAP](https://en.wikipedia.org/wiki/SOAP) payloads against their associated XML schema definition ([XSD](https://www.w3schools.com/xml/schema_intro.asp)).
+**规则**：Web 服务必须根据其关联的 XML 架构定义（[XSD](https://www.w3schools.com/xml/schema_intro.asp)）验证 [SOAP](https://en.wikipedia.org/wiki/SOAP) 负载。
 
-**Rule**: The [XSD](https://www.w3schools.com/xml/schema_intro.asp) defined for a [SOAP](https://en.wikipedia.org/wiki/SOAP) web service should, at a minimum, define the maximum length and character set of every parameter allowed to pass into and out of the web service.
+**规则**：为 [SOAP](https://en.wikipedia.org/wiki/SOAP) Web 服务定义的 [XSD](https://www.w3schools.com/xml/schema_intro.asp) 至少应定义传入和传出 Web 服务的每个参数的最大长度和字符集。
 
-**Rule**: The [XSD](https://www.w3schools.com/xml/schema_intro.asp) defined for a [SOAP](https://en.wikipedia.org/wiki/SOAP) web service should define strong (ideally allow-list) validation patterns for all fixed format parameters (e.g., zip codes, phone numbers, list values, etc.).
+**规则**：为 [SOAP](https://en.wikipedia.org/wiki/SOAP) Web 服务定义的 [XSD](https://www.w3schools.com/xml/schema_intro.asp) 应为所有固定格式参数（如邮政编码、电话号码、列表值等）定义强（理想情况下是允许列表）验证模式。
 
-## Content Validation
+## 内容验证
 
-**Rule**: Like any web application, web services need to validate input before consuming it. Content validation for XML input should include:
+**规则**：与任何 Web 应用程序一样，Web 服务需要在使用输入之前验证输入。XML 输入的内容验证应包括：
 
-- Validation against malformed XML entities.
-- Validation against [XML Bomb attacks](https://en.wikipedia.org/wiki/Billion_laughs_attack).
-- Validating inputs using a strong allowlist.
-- Validating against [external entity attacks](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_%28XXE%29_Processing).
+- 验证畸形 XML 实体。
+- 验证 [XML 炸弹攻击](https://en.wikipedia.org/wiki/Billion_laughs_attack)。
+- 使用强允许列表验证输入。
+- 防范[外部实体攻击](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_%28XXE%29_Processing)。
 
-## Output Encoding
+## 输出编码
 
-Web services need to ensure that the output sent to clients is encoded to be consumed as data and not as scripts. This gets pretty important when web service clients use the output to render HTML pages either directly or indirectly using AJAX objects.
+Web 服务需要确保发送给客户端的输出被编码为数据，而不是脚本。当 Web 服务客户端直接或间接使用 AJAX 对象渲染 HTML 页面时，这一点变得尤为重要。
 
-**Rule**: All the rules of output encoding applies as per [Cross Site Scripting Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md).
+**规则**：所有输出编码规则均遵循[跨站脚本防护备忘录](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)。
 
-## Virus Protection
+## 病毒防护
 
-[SOAP](https://en.wikipedia.org/wiki/SOAP) provides the ability to attach files and documents to [SOAP](https://en.wikipedia.org/wiki/SOAP) messages. This gives the opportunity for hackers to attach viruses and malware to these [SOAP](https://en.wikipedia.org/wiki/SOAP) messages.
+[SOAP](https://en.wikipedia.org/wiki/SOAP) 提供将文件和文档附加到 [SOAP](https://en.wikipedia.org/wiki/SOAP) 消息的能力。这为黑客提供了将病毒和恶意软件附加到这些 [SOAP](https://en.wikipedia.org/wiki/SOAP) 消息的机会。
 
-**Rule**: Ensure Virus Scanning technology is installed and preferably inline so files and attachments could be checked before being saved on disk.
+**规则**：确保安装病毒扫描技术，并最好是内联的，以便在保存到磁盘之前检查文件和附件。
 
-**Rule**: Ensure Virus Scanning technology is regularly updated with the latest virus definitions/rules.
+**规则**：确保病毒扫描技术定期更新最新的病毒定义/规则。
 
-## Message Size
+## 消息大小
 
-Web services like web applications could be a target for DOS attacks by automatically sending the web services thousands of large size [SOAP](https://en.wikipedia.org/wiki/SOAP) messages. This either cripples the application making it unable to respond to legitimate messages or it could take it down entirely.
+与 Web 应用程序一样，Web 服务可能成为 DOS 攻击的目标，方法是自动向 Web 服务发送数千个大尺寸的 [SOAP](https://en.wikipedia.org/wiki/SOAP) 消息。这可能会使应用程序瘫痪，无法响应合法消息，或完全使其瘫痪。
 
-**Rule**: [SOAP](https://en.wikipedia.org/wiki/SOAP) Messages size should be limited to an appropriate size limit. Larger size limit (or no limit at all) increases the chances of a successful DoS attack.
+**规则**：[SOAP](https://en.wikipedia.org/wiki/SOAP) 消息大小应限制在适当的大小限制内。更大的大小限制（或完全没有限制）会增加成功 DoS 攻击的几率。
 
-## Availability
+## 可用性
 
-### Resources Limiting
+### 资源限制
 
-During regular operation, web services require computational power such as CPU cycles and memory. Due to malfunctioning or while under attack, a web service may required too much resources, leaving the host system unstable.
+在正常运行期间，Web 服务需要计算能力，如 CPU 周期和内存。由于故障或受到攻击，Web 服务可能需要过多资源，使主机系统不稳定。
 
-**Rule**: Limit the amount of CPU cycles the web service can use based on expected service rate, in order to have a stable system.
+**规则**：根据预期服务速率限制 Web 服务可以使用的 CPU 周期数，以保持系统稳定。
 
-**Rule**: Limit the amount of memory the web service can use to avoid system running out of memory. In some cases the host system may start killing processes to free up memory.
+**规则**：限制 Web 服务可以使用的内存量，以避免系统内存耗尽。在某些情况下，主机系统可能开始终止进程以释放内存。
 
-**Rule**: Limit the number of simultaneous open files, network connections and started processes.
+**规则**：限制同时打开的文件数、网络连接数和启动的进程数。
 
-### Message Throughput
+### 消息吞吐量
 
-Throughput represents the number of web service requests served during a specific amount of time.
+吞吐量表示在特定时间内服务的 Web 服务请求数。
 
-**Rule**: Configuration should be optimized for maximum message throughput to avoid running into DoS-like situations.
+**规则**：配置应针对最大消息吞吐量进行优化，以避免陷入类似 DoS 的情况。
 
-### XML Denial of Service Protection
+### XML 拒绝服务保护
 
-XML Denial of Service is probably the most serious attack against web services. So the web service must provide the following validation:
+XML 拒绝服务可能是针对 Web 服务最严重的攻击。因此，Web 服务必须提供以下验证：
 
-**Rule**: Validation against recursive payloads.
+**规则**：防范递归负载。
 
-**Rule**: Validation against oversized payloads.
+**规则**：防范超大负载。
 
-**Rule**: Protection against [XML entity expansion](https://www.ws-attacks.org/XML_Entity_Expansion).
+**规则**：防范 [XML 实体扩展](https://www.ws-attacks.org/XML_Entity_Expansion)。
 
-**Rule**: Validating against overlong element names. If you are working with [SOAP](https://en.wikipedia.org/wiki/SOAP)-based Web Services, the element names are those [SOAP](https://en.wikipedia.org/wiki/SOAP) Actions.
+**规则**：验证过长的元素名称。如果使用基于 [SOAP](https://en.wikipedia.org/wiki/SOAP) 的 Web 服务，这些元素名称是 [SOAP](https://en.wikipedia.org/wiki/SOAP) 动作。
 
-This protection should be provided by your XML parser/schema validator. To verify, build test cases to make sure your parser to resistant to these types of attacks.
+这种保护应由 XML 解析器/架构验证器提供。要验证，请构建测试用例，确保解析器能抵抗这些类型的攻击。
 
-## Endpoint Security Profile
+## 端点安全配置文件
 
-**Rule**: Web services must be compliant with [Web Services-Interoperability (WS-I)](https://en.wikipedia.org/wiki/Web_Services_Interoperability) Basic Profile at minimum.
+**规则**：Web 服务必须至少符合 [Web 服务互操作性（WS-I）](https://en.wikipedia.org/wiki/Web_Services_Interoperability) 基本配置文件。
