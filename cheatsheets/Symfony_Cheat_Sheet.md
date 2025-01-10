@@ -1,48 +1,48 @@
-# Symfony Cheat Sheet
+# Symfony 安全备忘录
 
-## Introduction
+## 引言
 
-This cheat sheet aims to provide developers with security tips when building applications using the Symfony framework.
-It covers common vulnerabilities and best practices to ensure that your Symfony applications are secure.
+本备忘录旨在为使用 Symfony 框架构建应用程序的开发者提供安全建议。
+它涵盖了常见的漏洞和最佳实践，以确保您的 Symfony 应用程序安全。
 
-While Symfony comes with built-in security mechanisms, developers must be aware of potential vulnerabilities and best practices to ensure the applications they build are secure.
-This guide aims to cover common security issues, emphasizing the importance of understanding Symfony's security features and how to utilize them effectively.
-Whether you're a newcomer to Symfony or an experienced developer looking to reinforce your security practices, this document serves as a valuable resource.
-By following the guidelines outlined here, you can strengthen the security of your Symfony applications and create a safer digital environment for users and data.
+尽管 Symfony 自带内置的安全机制，但开发者必须了解潜在的漏洞和最佳实践，以确保他们构建的应用程序是安全的。
+本指南旨在涵盖常见的安全问题，强调理解 Symfony 安全特性及其有效利用的重要性。
+无论您是 Symfony 新手还是希望加强安全实践的经验丰富的开发者，本文档都是一个宝贵的资源。
+通过遵循此处概述的指南，您可以增强 Symfony 应用程序的安全性，为用户和数据创建一个更安全的数字环境。
 
-## Main Sections
+## 主要章节
 
-### Cross-Site Scripting (XSS)
+### 跨站脚本攻击（XSS）
 
-Cross-Site Scripting (XSS) is a type of attack where malicious JavaScript code is injected into a displayed variable.
-For example, if the value of the variable name is `<script>alert('hello')</script>`, and we display it in HTML like this: `Hello {{name}}`, the injected script will be executed when the HTML is rendered.
+跨站脚本攻击（Cross-Site Scripting，XSS）是一种将恶意 JavaScript 代码注入显示变量的攻击类型。
+例如，如果变量 name 的值是 `<script>alert('hello')</script>`，并且我们在 HTML 中这样显示：`Hello {{name}}`，那么在 HTML 渲染时，注入的脚本将被执行。
 
-Symfony comes by default with twig templates that automatically protect applications from XSS attacks by using **output escaping** to transform variables containing special characters by wrapping the variable with `{{ }}` statement.
+Symfony 默认使用 Twig 模板，通过**输出转义**自动保护应用程序免受 XSS 攻击，方法是使用 `{{ }}` 语句包装包含特殊字符的变量。
 
 ```twig
 <p>Hello {{name}}</p>
-{# if 'name' is '<script>alert('hello!')</script>', Twig will output this:
+{# 如果 'name' 是 '<script>alert('hello!')</script>'，Twig 将输出：
 '<p>Hello &lt;script&gt;alert(&#39;hello!&#39;)&lt;/script&gt;</p>' #}
 ```
 
-If you are rendering a variable that is trusted and contains HTML contents, you can use *Twig raw filter* to disable output escaping.
+如果您要渲染一个受信任且包含 HTML 内容的变量，可以使用 *Twig 原始过滤器* 来禁用输出转义。
 
 ```twig
 <p>{{ product.title|raw }}</p>
-{# if 'product.title' is 'Lorem <strong>Ipsum</strong>', Twig will output
-exactly that instead of 'Lorem &lt;strong&gt;Ipsum&lt;/strong&gt;' #}
+{# 如果 'product.title' 是 'Lorem <strong>Ipsum</strong>'，Twig 将原样输出
+而不是 'Lorem &lt;strong&gt;Ipsum&lt;/strong&gt;' #}
 ```
 
-Explore the [Twig output escaping documentation](https://twig.symfony.com/doc/3.x/api.html#escaper-extension) to gain insights into disabling output escaping for a specific block or an entire template.
+查看 [Twig 输出转义文档](https://twig.symfony.com/doc/3.x/api.html#escaper-extension)，了解如何为特定块或整个模板禁用输出转义。
 
-For other information on XSS prevention that is not specific to Symfony, you may refer to the [Cross Site Scripting Prevention Cheatsheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md).
+关于不特定于 Symfony 的 XSS 防护的更多信息，您可以参考 [跨站脚本防护备忘录](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)。
 
-### Cross-Site Request Forgery (CSRF)
+### 跨站请求伪造（CSRF）
 
-Symfony Form component automatically includes CSRF tokens in the forms, providing built-in protection against CSRF attacks.
-Symfony validates these tokens automatically, eliminating the need for manual intervention to safeguard your application.
+Symfony 表单组件自动在表单中包含 CSRF 令牌，提供针对 CSRF 攻击的内置保护。
+Symfony 自动验证这些令牌，无需手动干预即可保护您的应用程序。
 
-By default the CSRF token is added as a hidden field called `_token`, but this can be customized with other settings on a form-by-form basis:
+默认情况下，CSRF 令牌作为名为 `_token` 的隐藏字段添加，但可以在每个表单的基础上使用其他设置进行自定义：
 
 ```php
 use Symfony\Component\Form\AbstractType;
@@ -50,43 +50,41 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class PostForm extends AbstractType
 {
-
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             // ... 
-            'csrf_protection' => true,  // enable/disable csrf protection for this form
+            'csrf_protection' => true,  // 为此表单启用/禁用 csrf 保护
             'csrf_field_name' => '_csrf_token',
-            'csrf_token_id'   => 'post_item', // change arbitrary string used to generate
+            'csrf_token_id'   => 'post_item', // 更改用于生成的任意字符串
         ]);
     }
-
 }
 ```
 
-If you don't use Symfony Forms you can generate and validate CSRF tokens by yourself. To do this you have to install `symfony/security-csrf` component.
+如果您不使用 Symfony 表单，可以自行生成和验证 CSRF 令牌。为此，您需要安装 `symfony/security-csrf` 组件。
 
 ```bash
 composer install symfony/security-csrf
 ```
 
-Enable/disable the CSRF protection in `config/packages/framework.yaml` file:
+在 `config/packages/framework.yaml` 文件中启用/禁用 CSRF 保护：
 
 ```yaml
 framework:
     csrf_protection: ~
 ```
 
-Next, consider this HTML Twig template when a CSRF token is generated by the `csrf_token()` Twig function
+接下来，考虑这个 HTML Twig 模板，其中 CSRF 令牌由 `csrf_token()` Twig 函数生成：
 
 ```twig
 <form action="{{ url('delete_post', { id: post.id }) }}" method="post">
     <input type="hidden" name="token" value="{{ csrf_token('delete-post') }}">
-    <button type="submit">Delete post</button>
+    <button type="submit">删除帖子</button>
 </form>
 ```
 
-Then you can get the value of the CSRF token in the controller using the `isCsrfTokenValid()` function:
+然后，您可以在控制器中使用 `isCsrfTokenValid()` 函数获取 CSRF 令牌的值：
 
 ```php
 use App\Entity\Post;
@@ -97,11 +95,10 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ExampleController extends AbstractController
 {
-
     #[Route('/posts/{id}', methods: ['DELETE'], name: 'delete_post')]
     public function delete(Post $post, Request $request): Response 
     { 
-        $token = $request->request->get('token')
+        $token = $request->request->get('token');
         if($this->isCsrfTokenValid($token)) {
             // ...
         }
@@ -111,16 +108,16 @@ class ExampleController extends AbstractController
 }
 ```
 
-You can find more information about CSRF not related to Symfony in [Cross-Site Request Forgery (CSRF) Cheat Sheet](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md).
+您可以在 [跨站请求伪造（CSRF）备忘录](Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md) 中找到更多与 Symfony 无关的 CSRF 信息。
 
-### SQL Injection
+### SQL 注入
 
-SQL Injection is a type of security vulnerability that occurs when an attacker is able to manipulate a SQL query in a way that it can execute arbitrary SQL code.
-This can allow attackers to view, modify, or delete data in the database, potentially leading to unauthorized access or data loss.
+SQL 注入是一种安全漏洞，当攻击者能够以执行任意 SQL 代码的方式操纵 SQL 查询时发生。
+这可能允许攻击者查看、修改或删除数据库中的数据，从而可能导致未经授权的访问或数据丢失。
 
-Symfony, particularly when used with Doctrine ORM (Object-Relational Mapping), provides protection against SQL injection through prepared statements parameters.
-Thanks to this it is harder to mistakenly write unprotected queries, however, it is still possible.
-The following example shows **insecure DQL usage**:
+特别是在与 Doctrine ORM（对象关系映射）一起使用时，Symfony 通过预处理语句参数提供了防止 SQL 注入的保护。
+由于这一点，更难以无意中编写未受保护的查询，但仍然是可能的。
+以下示例展示了**不安全的 DQL 使用**：
 
 ```php
 use Doctrine\ORM\EntityManagerInterface;
@@ -144,16 +141,16 @@ class ExampleController extends AbstractController {
 
 ```
 
-The examples below show the **correct ways** to provide protection against SQL Injection:
+下面的示例展示了防止 SQL 注入的**正确方法**：
 
-- Using entity repository built-in method
+- 使用实体仓库内置方法
 
 ```php
 $id = $request->query->get('id');
 $post = $em->getRepository(Post::class)->findOneBy(['id' => $id]);
 ```
 
-- Using Doctrine DQL Language
+- 使用 Doctrine DQL 语言
 
 ```php
 $query = $em->createQuery("SELECT p FROM App\Entity\Post p WHERE p.id = :id");
@@ -161,7 +158,7 @@ $query->setParameter('id', $id);
 $post = $query->getSingleResult();
 ```
 
-- Using DBAL Query Builder
+- 使用 DBAL 查询构建器
 
 ```php
 $qb = $em->createQueryBuilder();
@@ -173,15 +170,15 @@ $post = $qb->select('p')
             ->getSingleResult();
 ```
 
-For more information about Doctrine, you can refer to [their documentation](https://www.doctrine-project.org/index.html).
-You may also refer to the [SQL Injection Prevention Cheatsheet](SQL_Injection_Prevention_Cheat_Sheet.md) for more information that is not specific to either Symfony or Doctrine.
+关于 Doctrine 的更多信息，您可以参考[他们的文档](https://www.doctrine-project.org/index.html)。
+您还可以参考 [SQL 注入预防备忘录](SQL_Injection_Prevention_Cheat_Sheet.md)以获取不特定于 Symfony 或 Doctrine 的更多信息。
 
-### Command Injection
+### 命令注入
 
-Command Injection occurs when malicious code is injected into an application system and executed.
-For more information refer to [Command Injection Defense Cheat Sheet](OS_Command_Injection_Defense_Cheat_Sheet.md).
+命令注入发生在恶意代码被注入并在应用系统中执行的情况。
+更多信息请参考[命令注入防御备忘录](OS_Command_Injection_Defense_Cheat_Sheet.md)。
 
-Consider the following example, where a file is removed using the exec() function without any input escaping:
+考虑以下示例，其中使用 exec() 函数删除文件且没有对输入进行转义：
 
 ```php
 use Symfony\Component\HttpFoundation\Request;
@@ -204,15 +201,15 @@ class ExampleController
 }
 ```
 
-In the above code, there is no validation of the user's input. Imagine what could happen if the user provides a malicious value like `test.txt && rm -rf .` . To mitigate this risk, it is advisable to use native PHP functions like in this case `unlink()` or Symfony Filesystem Component `remove()` method instead of `exec()`.
+在上面的代码中，没有对用户输入进行验证。想象一下，如果用户提供了像 `test.txt && rm -rf .` 这样的恶意值会发生什么。为了降低这种风险，建议使用原生 PHP 函数，如此处的 `unlink()` 或 Symfony 文件系统组件的 `remove()` 方法，而不是 `exec()`。
 
-For specific PHP filesystem functions relevant to your case, you can refer to the [PHP documentation](https://www.php.net/manual/en/refs.fileprocess.file.php) or [Symfony Filesystem Component documentation](https://symfony.com/doc/current/components/filesystem.html).
+对于与您的情况相关的特定 PHP 文件系统函数，您可以参考 [PHP 文档](https://www.php.net/manual/en/refs.fileprocess.file.php) 或 [Symfony 文件系统组件文档](https://symfony.com/doc/current/components/filesystem.html)。
 
-### Open Redirection
+### 开放重定向
 
-Open Redirection is a security flaw that occurs when a web application redirects users to a URL specified in an invalidated parameter. Attackers exploit this vulnerability to redirect users to malicious sites.
+开放重定向是一种安全缺陷，当 Web 应用程序将用户重定向到未经验证的参数指定的 URL 时发生。攻击者利用这一漏洞将用户重定向到恶意站点。
 
-In the provided PHP code snippet:
+在提供的 PHP 代码片段中：
 
 ```php
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -232,18 +229,18 @@ class ExampleController extends AbstractController
 }
 ```
 
-The controller function redirects users based on the `url` query parameter without proper validation. Attackers can craft malicious URLs, leading unsuspecting users to malicious sites. To prevent open redirection, always validate and sanitize user input before redirection, and avoid using untrusted input directly in redirect functions.
+控制器函数基于 `url` 查询参数重定向用户，且没有适当的验证。攻击者可以制作恶意 URL，导致毫无戒心的用户访问恶意站点。为防止开放重定向，始终在重定向之前验证和清理用户输入，并避免在重定向函数中直接使用不可信的输入。
 
-### File Upload Vulnerabilities
+### 文件上传漏洞
 
-File upload vulnerabilities are security issues that arise when an application does not properly validate and handle file uploads. It's important to ensure that file uploads are handled securely to prevent various types of attacks. Here are some general guidelines to help mitigate this issue in Symfony:
+文件上传漏洞是指应用程序未能正确验证和处理文件上传时出现的安全问题。确保安全处理文件上传以防止各种类型的攻击非常重要。以下是在 Symfony 中缓解此问题的一些通用准则：
 
-#### Validate file type and size
+#### 验证文件类型和大小
 
-Always validate the file type on the server side to ensure that only allowed file types are accepted.
-Also, consider limiting the size of uploaded files to prevent denial-of-service attacks and to ensure that your server has enough resources to handle the uploads.
+始终在服务器端验证文件类型，确保只接受允许的文件类型。
+同时，考虑限制上传文件的大小，以防止拒绝服务攻击并确保服务器有足够的资源处理上传。
 
-Example with PHP Attributes:
+使用 PHP 属性的示例：
 
 ```php
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -264,7 +261,7 @@ class UploadDto
 }
 ```
 
-Example with Symfony Form:
+使用 Symfony 表单的示例：
 
 ```php
 use Symfony\Component\Form\AbstractType;
@@ -292,24 +289,24 @@ class FileForm extends AbstractType
 }
 ```
 
-#### Use unique filenames
+#### 使用唯一文件名
 
-Ensure that each uploaded file has a unique name to prevent overwriting existing files. You can use a combination of a unique identifier and the original filename to generate a unique name.
+确保每个上传的文件都有唯一的名称，以防止覆盖现有文件。您可以使用唯一标识符和原始文件名的组合来生成唯一的名称。
 
-#### Store uploaded files securely
+#### 安全存储上传文件
 
-Store uploaded files outside the public directory to prevent direct access. If you use a public directory to store them, configure your web server to deny access to the upload directory.
+将上传的文件存储在公共目录之外，以防止直接访问。如果您使用公共目录存储文件，请配置您的 Web 服务器以拒绝访问上传目录。
 
-Refer to the [File Upload Cheatsheet](File_Upload_Cheat_Sheet.md) to learn more.
+请参考 [文件上传备忘录](File_Upload_Cheat_Sheet.md) 以了解更多。
 
-### Directory Traversal
+### 目录遍历
 
-A directory or path traversal attack aims to access files and directories that are stored on a server by manipulating input data that reference files with “../” *dot-dot-slash* sequences and its variations or by using absolute file paths.
-For more details refer to [OWASP Path Traversal](https://owasp.org/www-community/attacks/Path_Traversal).
+目录或路径遍历攻击旨在通过操纵引用文件的输入数据，使用 "../"（点-点-斜杠）序列及其变体或使用绝对文件路径来访问存储在服务器上的文件和目录。
+更多详细信息请参考 [OWASP 路径遍历](https://owasp.org/www-community/attacks/Path_Traversal)。
 
-You can protect your application from a directory traversal attack by validating whether the absolute path of the requested file location is correct or strip out the directory information from filename input.
+您可以通过验证请求文件位置的绝对路径是否正确，或从文件名输入中剥离目录信息来保护应用程序免受目录遍历攻击。
 
-- Check if the path exists using the PHP *realpath* function and check that it leads to the storage directory
+- 使用 PHP 的 *realpath* 函数检查路径是否存在，并检查它是否指向存储目录
 
 ```php
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -331,7 +328,7 @@ class ExampleController extends AbstractController
 
         if ($realPath === false || !str_starts_with($realPath, $realBase))
         {
-            //Directory Traversal!
+            //目录遍历！
         }
 
         // ...
@@ -340,7 +337,7 @@ class ExampleController extends AbstractController
 }
 ```
 
-- Strip out directory information with PHP *basename* function
+- 使用 PHP 的 *basename* 函数剥离目录信息
 
 ```php
 // ...
@@ -351,47 +348,47 @@ $filePath = $storagePath . '/' . basename($filename);
 // ...
 ```
 
-### Dependencies vulnerabilities
+### 依赖漏洞
 
-Dependency vulnerabilities can expose your application to various risks, making it crucial to adopt best practices.
-Keep all Symfony components and third-party libraries up-to-date.
+依赖漏洞可能使您的应用程序面临各种风险，因此采用最佳实践至关重要。
+保持所有 Symfony 组件和第三方库是最新的。
 
-Composer, the dependency manager for PHP makes it easy to update PHP packages:
+Composer（PHP 的依赖管理器）使更新 PHP 包变得很容易：
 
 ```bash
 composer update
 ```
 
-When using multiple dependencies, some of them may contain security vulnerabilities.
-To address this concern, Symfony comes with [Symfony Security Checker](https://symfony.com/doc/current/setup.html#checking-security-vulnerabilities). This tool specifically examines the *composer.lock* file in your project to identify any known security vulnerabilities within the dependencies that have been installed and address any potential security issues in your Symfony project.
+使用多个依赖项时，其中一些可能包含安全漏洞。
+为了解决这一问题，Symfony 提供了 [Symfony 安全检查器](https://symfony.com/doc/current/setup.html#checking-security-vulnerabilities)。该工具专门检查项目中的 *composer.lock* 文件，以识别已安装依赖项中的已知安全漏洞，并解决 Symfony 项目中的潜在安全问题。
 
-To use Security Checker run the following command using [Symfony CLI](https://github.com/symfony-cli/symfony-cli):
+使用 [Symfony CLI](https://github.com/symfony-cli/symfony-cli) 运行安全检查器：
 
 ```bash
 symfony check:security
 ```
 
-You should also consider similar tools:
+您还应考虑使用类似的工具：
 
-- [Local PHP Security Checker](https://github.com/fabpot/local-php-security-checker)
+- [本地 PHP 安全检查器](https://github.com/fabpot/local-php-security-checker)
 
-- [Enlightn Security Checker](https://github.com/enlightn/security-checker)
+- [Enlightn 安全检查器](https://github.com/enlightn/security-checker)
 
-### Cross-Origin Resource Sharing (CORS)
+### 跨域资源共享（CORS）
 
-CORS is a security feature implemented in web browsers to control how web applications in one domain can request and interact with resources hosted on other domains.
+CORS 是在 Web 浏览器中实现的一项安全功能，用于控制一个域中的 Web 应用程序如何请求和与托管在其他域上的资源交互。
 
-In Symfony, you can manage CORS policies using `nelmio/cors-bundle`. This bundle lets you control CORS rules precisely without changing your server settings.
+在 Symfony 中，您可以使用 `nelmio/cors-bundle` 管理 CORS 策略。该包允许您精确控制 CORS 规则，而无需更改服务器设置。
 
-To install it with Composer, run:
+使用 Composer 安装：
 
 ```bash
 composer require nelmio/cors-bundle
 ```
 
-For Symfony Flex users, the installation generates a basic configuration file in the `config/packages` directory automatically. Take a look at the example configuration for routes starting with */API* prefix.
+对于 Symfony Flex 用户，安装会自动在 `config/packages` 目录中生成基本配置文件。查看以 */API* 前缀开头的路由的示例配置。
 
-```yaml
+
 # config/packages/nelmio_cors.yaml
 nelmio_cors:
     defaults:
@@ -402,12 +399,12 @@ nelmio_cors:
         expose_headers: ['Link']
         max_age: 3600
     paths:
-        '^/api': ~  # ~ means that configurations for this path is inherited from defaults
+        '^/api': ~  # ~ 表示此路径的配置继承自默认值
 ```
 
-### Security-related Headers
+### 安全相关的响应头
 
-It's advisable to enhance the security of your Symfony application by adding to your responses essential security headers as:
+建议通过添加以下基本安全响应头来增强 Symfony 应用程序的安全性：
 
 - Strict-Transport-Security
 - X-Frame-Options
@@ -421,9 +418,11 @@ It's advisable to enhance the security of your Symfony application by adding to 
 - Cross-Origin-Resource-Policy
 - Cache-Control
 
-To find more details about individual headers refer to the [OWASP secure headers project](https://owasp.org/www-project-secure-headers/).
+要了解各个响应头的更多详细信息，请参考 [OWASP 安全响应头项目](https://owasp.org/www-project-secure-headers/)。
 
-In Symfony, you can add those headers either manually or automatically by listening the [ResponseEvent](https://symfony.com/doc/current/reference/events.html#kernel-response) to your to every response or configuring web servers like Nginx or Apache.
+在 Symfony 中，您可以通过以下方式手动或自动添加这些响应头：
+- 监听 [ResponseEvent](https://symfony.com/doc/current/reference/events.html#kernel-response) 以添加到每个响应
+- 配置 Nginx 或 Apache 等 Web 服务器
 
 ```php
 use Symfony\Component\HttpFoundation\Request;
@@ -432,50 +431,50 @@ $response = new Response();
 $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
 ```
 
-### Session & Cookies Management
+### 会话和 Cookies 管理
 
-By default, sessions are securely configured and enabled. However, they can be controlled manually in `config/packages/framework.yaml` under the `framework.session` key. Make sure to set the following in your session configuration to make your application more aware.
+默认情况下，会话是安全配置且已启用的。但是，可以在 `config/packages/framework.yaml` 的 `framework.session` 键下手动控制。确保在会话配置中设置以下内容，使您的应用程序更加安全。
 
-Ensure `cookie_secure` is not explicitly set to `false`(it is set to `true` by default). Setting http only to `true` means that the cookie won't be accessible by JavaScript.
+确保 `cookie_secure` 未明确设置为 `false`（默认为 `true`）。将 `httponly` 设置为 `true` 意味着 Cookie 将不可被 JavaScript 访问。
 
 ```yaml
 cookie_httponly: true
 ```
 
-Make sure to set a short session TTL duration. According to [OWASP's recommendations](Session_Management_Cheat_Sheet.md), aim for a session TTL of 2-5 minutes for high-value applications and 15-30 minutes for lower-risk applications.
+确保设置较短的会话 TTL（生存时间）持续时间。根据 [OWASP 的建议](Session_Management_Cheat_Sheet.md)，对于高价值应用程序，会话 TTL 应为 2-5 分钟；对于低风险应用程序，应为 15-30 分钟。
 
 ```yaml
 cookie_lifetime: 5
 ```
 
-It is recommended to set `cookie_samesite` to either `lax` or `strict` to prevent cookies from being sent from cross-origin requests. `lax` allows the cookie to be sent along with "safe" top-level navigations and same-site requests. With `strict`  it would not be possible to send any cookie when the HTTP request is not from the same domain.
+建议将 `cookie_samesite` 设置为 `lax` 或 `strict`，以防止 Cookie 从跨域请求发送。`lax` 允许 Cookie 随"安全"的顶级导航和同站点请求一起发送。使用 `strict` 时，如果 HTTP 请求不是来自同一域，则无法发送任何 Cookie。
 
 ```yaml
 cookie_samesite: lax|strict
 ```
 
-Setting `cookie_secure` to `auto` assures us that cookies are only sent over secure connections, meaning `true` for HTTPS and `false` for HTTP protocol.
+将 `cookie_secure` 设置为 `auto` 可确保 Cookie 仅通过安全连接发送，即 HTTPS 为 `true`，HTTP 协议为 `false`。
 
 ```yaml
 cookie_secure: auto
 ```
 
-OWASP provides more general information about sessions in [Session Management Cheat Sheet](Session_Management_Cheat_Sheet.md).
-You may also refer to the [Cookie Security Guide](https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20171130_Cookie_Security_Myths_Misconceptions_David_Johansson.pdf).
+OWASP 在 [会话管理备忘录](Session_Management_Cheat_Sheet.md) 中提供了有关会话的更多一般信息。
+您还可以参考 [Cookie 安全指南](https://owasp.org/www-chapter-london/assets/slides/OWASPLondon20171130_Cookie_Security_Myths_Misconceptions_David_Johansson.pdf)。
 
 ---
-In Symfony, sessions are managed by the framework itself and rely on Symfony's session handling mechanisms rather than PHP's default session handling via the `session.auto_start = 1` directive in the php.ini file.
-The `session.auto_start = 1` directive in PHP is used to automatically start a session on each request, bypassing explicit calls to `session_start()`. However, when using Symfony for session management, it's recommended to disable `session.auto_start` to prevent conflicts and unexpected behavior.
+在 Symfony 中，会话由框架本身管理，依赖于 Symfony 的会话处理机制，而不是 PHP 的默认会话处理（通过 php.ini 中的 `session.auto_start = 1` 指令）。
+PHP 中的 `session.auto_start = 1` 指令用于在每个请求上自动启动会话，绕过对 `session_start()` 的显式调用。但是，在使用 Symfony 进行会话管理时，建议禁用 `session.auto_start` 以防止冲突和意外行为。
 
-### Authentication
+### 认证
 
-[Symfony Security](https://symfony.com/doc/current/security.html) provides a robust authentication system that includes providers, firewalls, and access controls to ensure a secure and controlled access environment. Authentication settings can be configured in `config/packages/security.yaml`.
+[Symfony 安全](https://symfony.com/doc/current/security.html)提供了一个强大的认证系统，包括提供者、防火墙和访问控制，以确保安全和受控的访问环境。可以在 `config/packages/security.yaml` 中配置认证设置。
 
-- **Providers**
+- **提供者**
 
-    Symfony authentication relies on providers to fetch user information from various storage types such as databases, LDAP, or custom sources. Providers get users based on the defined property and load the corresponding user object.
+    Symfony 认证依赖于提供者从各种存储类型（如数据库、LDAP 或自定义源）获取用户信息。提供者根据定义的属性获取用户并加载相应的用户对象。
 
-    In the example below [Entity User Provider](https://symfony.com/doc/current/security/user_providers.html#security-entity-user-provider) is presented which uses Doctrine to fetch user by unique identifier.
+    在下面的示例中，展示了[实体用户提供者](https://symfony.com/doc/current/security/user_providers.html#security-entity-user-provider)，它使用 Doctrine 通过唯一标识符获取用户。
 
     ```yaml
     providers:
@@ -485,16 +484,16 @@ The `session.auto_start = 1` directive in PHP is used to automatically start a s
                 property: email
     ```
 
-- **Firewalls**
+- **防火墙**
 
-    Symfony uses firewalls to define security configurations for different parts of an application. Each firewall defines a specific set of rules and actions for incoming requests. They protect different sections of the application by specifying which routes or URLs are secured, the authentication mechanisms to use, and how to handle unauthorized access. A firewall can be associated with specific patterns, request methods, access controls, and authentication providers.
+    Symfony 使用防火墙为应用程序的不同部分定义安全配置。每个防火墙为传入请求定义一组特定的规则和操作。它们通过指定哪些路由或 URL 是安全的、要使用的认证机制以及如何处理未经授权的访问来保护应用程序的不同部分。防火墙可以与特定模式、请求方法、访问控制和认证提供者相关联。
 
     ```yaml
     firewalls:
-        dev: # disable security on routes used in development env
+        dev: # 禁用开发环境中使用的路由的安全性
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        admin: # handle authentication in /admin pattern routes
+        admin: # 处理 /admin 模式路由的认证
             lazy: true
             provider: app_user_provider
             pattern: ^/admin
@@ -502,77 +501,77 @@ The `session.auto_start = 1` directive in PHP is used to automatically start a s
             logout:
                 path: app_logout
                 target: app_login
-        main: # main firewall that include all remaining routes
+        main: # 包含所有剩余路由的主防火墙
             lazy: true
             provider: app_user_provider
     ```
 
-- **Access Control**
+- **访问控制**
 
-    Access control determines which users can access specific parts of an application. These rules consist of path patterns and required roles or permissions. Access control rules are configured under `access_control` key.
+    访问控制决定哪些用户可以访问应用程序的特定部分。这些规则由路径模式和所需的角色或权限组成。访问控制规则在 `access_control` 键下配置。
 
     ```yaml
     access_control:
-        - { path: ^/admin, roles: ROLE_ADMIN } # only user with ROLE_ADMIN role is allowed
-        - { path: ^/login, roles: PUBLIC_ACCESS } # everyone can access this route
+        - { path: ^/admin, roles: ROLE_ADMIN } # 只有具有 ROLE_ADMIN 角色的用户才被允许
+        - { path: ^/login, roles: PUBLIC_ACCESS } # 每个人都可以访问此路由
     ```
 
-### Error Handling Disclosure
+### 错误处理披露
 
-Symfony has a robust error-handling system. By default, Symfony applications are configured to display detailed error messages only in the development environment for security reasons. In the production environment, a generic error page is shown. Symfony's error handling system also allows customized error pages based on different HTTP status codes, providing a seamless and branded user experience. Additionally, Symfony logs detailed error information, aiding developers in identifying and resolving issues efficiently.
+Symfony 有一个强大的错误处理系统。默认情况下，出于安全原因，Symfony 应用程序配置为仅在开发环境中显示详细的错误消息。在生产环境中，显示通用错误页面。Symfony 的错误处理系统还允许基于不同 HTTP 状态码的自定义错误页面，提供无缝和品牌化的用户体验。此外，Symfony 还会记录详细的错误信息，帮助开发者高效地识别和解决问题。
 
-For more information about error handling unrelated to Symfony refer to [Error Handling Cheat Sheet](Error_Handling_Cheat_Sheet.md).
+有关与 Symfony 无关的错误处理的更多信息，请参考 [错误处理备忘录](Error_Handling_Cheat_Sheet.md)。
 
-### Sensitive data
+### 敏感数据
 
-In Symfony, the best way to store configurations like API keys, etc., is through the use of environment variables, which are dependent on the application's location.
-To ensure the security of sensitive values, Symfony provides a *secrets management system* in which values are additionally encoded using cryptographic keys and stored as **secrets**.
+在 Symfony 中，存储 API 密钥等配置的最佳方式是使用依赖于应用程序位置的环境变量。
+为了确保敏感值的安全，Symfony 提供了一个*秘密管理系统*，其中值使用加密密钥额外编码并存储为**秘密**。
 
-Consider an example where an API_KEY is stored as a secret:
+考虑一个将 API_KEY 存储为秘密的示例：
 
-To generate a pair of cryptographic keys you can run the following command. The private key file is highly sensitive and it shouldn't be committed in a repository.
+要生成一对加密密钥，可以运行以下命令。私钥文件非常敏感，不应提交到仓库。
 
 ```bash
 bin/console secrets:generate-keys
 ```
 
-This command will generate a file for the API_KEY secret in `config/secrets/env(dev|prod|etc.)`
+此命令将在 `config/secrets/env(dev|prod|etc.)` 中为 API_KEY 秘密生成一个文件
 
 ```bash
 bin/console secret:set API_KEY
 ```
 
-You can access secret values in your code in the same manner as environment variables.
-It's very important to note that if there are environment variables and secrets with identical names, **the values from environment variables will always override secrets**.
+您可以像访问环境变量一样在代码中访问秘密值。
+需要非常重要的是，如果存在名称相同的环境变量和秘密，**环境变量的值将始终覆盖秘密**。
 
-For more details refer to [Symfony Secrets Documentation](https://symfony.com/doc/current/configuration/secrets.html).
+更多详细信息请参考 [Symfony 秘密文档](https://symfony.com/doc/current/configuration/secrets.html)。
 
-### Summary
+### 总结
 
-- Make sure your app is not in debug mode while in production. To turn off debug mode, set your `APP_ENV` environment variable to `prod`:
+- 确保在生产环境中关闭调试模式。要关闭调试模式，请将 `APP_ENV` 环境变量设置为 `prod`：
 
     ```ini
     APP_ENV=prod
     ```
 
-- Make sure your PHP configuration is secure. You may refer to the [PHP Configuration Cheat Sheet](PHP_Configuration_Cheat_Sheet.md) for more information on secure PHP configuration settings.
+- 确保您的 PHP 配置是安全的。您可以参考 [PHP 配置备忘录](PHP_Configuration_Cheat_Sheet.md)，了解更多关于安全的 PHP 配置设置。
 
-- Ensure that the SSL certificate is properly configured in your web server and configure it to enforce HTTPS by redirecting HTTP traffic to HTTPS.
+- 确保在 Web 服务器中正确配置 SSL 证书，并配置强制 HTTPS，将 HTTP 流量重定向到 HTTPS。
 
-- Implement security headers to enhance the security posture of your application.
+- 实施安全响应头以增强应用程序的安全性。
 
-- Ensure that file and directory permissions are set correctly to minimize security risks.
+- 确保正确设置文件和目录权限，以最大程度地降低安全风险。
 
-- Implement regular backups of your production database and critical files. Have a recovery plan in place to quickly restore your application in case of any issues.
+- 对生产数据库和关键文件实施定期备份。制定恢复计划，以便在出现任何问题时快速恢复应用程序。
 
-- Use security checkers to scan your dependencies to identify known vulnerabilities.
+- 使用安全检查器扫描依赖项，识别已知的漏洞。
 
-- Consider setting up monitoring tools and error reporting mechanisms to quickly identify and address issues in your production environment. Explore tools like [Blackfire.io](https://www.blackfire.io).
+- 考虑设置监控工具和错误报告机制，以快速识别和解决生产环境中的问题。探索诸如 [Blackfire.io](https://www.blackfire.io) 之类的工具。
 
-## References
+## 参考资料
 
-- [Symfony CSRF Documentation](https://symfony.com/doc/current/security/csrf.html)
-- [Symfony Twig Documentation](https://symfony.com/doc/current/templates.html)
-- [Symfony Validation Documentation](https://symfony.com/doc/current/validation.html)
-- [Symfony Blackfire Documentation](https://symfony.com/doc/current/the-fast-track/en/29-performance.html)
-- [Doctrine Security Documentation](https://www.doctrine-project.org/projects/doctrine-dbal/en/3.7/reference/security.html)
+- [Symfony CSRF 文档](https://symfony.com/doc/current/security/csrf.html)
+- [Symfony Twig 文档](https://symfony.com/doc/current/templates.html)
+- [Symfony 验证文档](https://symfony.com/doc/current/validation.html)
+- [Symfony Blackfire 文档](https://symfony.com/doc/current/the-fast-track/en/29-performance.html)
+- [Doctrine 安全文档](https://www.doctrine-project.org/projects/doctrine-dbal/en/3.7/reference/security.html)
