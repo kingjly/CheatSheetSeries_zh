@@ -1,5 +1,5 @@
-# DEPRECATED: TLS Cipher String Cheat Sheet
+# 已弃用：TLS 密码字符串备忘录
 
-The TLS Cipher String Cheat Sheet has been deprecated.
+TLS 密码字符串备忘录已被弃用。
 
-Please visit the [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md) instead.
+请访问 [传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)。
