@@ -1,337 +1,266 @@
-# Cloud Architecture Security Cheat Sheet
+# 云架构安全备忘录
 
-## Introduction
+## 引言
 
-This cheat sheet will discuss common and necessary security patterns to follow when creating and reviewing cloud architectures. Each section will cover a specific security guideline or cloud design decision to consider. This sheet is written for a medium to large scale enterprise system, so additional overhead elements will be discussed, which may be unecessary for smaller organizations.
+本备忘录将讨论在创建和审查云架构时需要遵循的常见且必要的安全模式。每个章节将涵盖特定的安全准则或需要考虑的云设计决策。本文档针对中大型企业系统编写，因此将讨论一些对于较小型组织可能不必要的额外开销元素。
 
-## Risk Analysis, Threat Modeling, and Attack Surface Assessments
+## 风险分析、威胁建模和攻击面评估
 
-With any application architecture, understanding the risks and threats is extremely important for proper security. No one can spend their entire budget or bandwidth focused on security, so properly allocating security resources is necessary.
-Therefore, enterprises must perform risk assessments, threat modeling activites, and attack surface assessments to identify the following:
+对于任何应用程序架构，了解风险和威胁对于适当的安全性至关重要。没有人能将整个预算或带宽都集中在安全上，因此正确分配安全资源是必要的。
 
-- What threats an application might face
-- The likelihood of those threats actualizing as attacks
-- The attack surface with which those attacks could be targeted
-- The business impact of losing data or functionality due to said attack
+因此，企业必须进行风险评估、威胁建模活动和攻击面评估，以识别以下内容：
 
-This is all necessary to properly scope the security of an architecture. However, these are subjects that can/should be discussed in greater detail. Use the resources link below to investigate further as part of a healthy secure architecture conversation.
+- 应用程序可能面临的威胁
+- 这些威胁实际转化为攻击的可能性
+- 这些攻击可能针对的攻击面
+- 由于此类攻击导致数据或功能丢失的业务影响
 
-- [Threat Modeling Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html)
-- [Attack Surface Analysis Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html)
-- [CISA Cyber Risk Assessment](https://www.cisa.gov/sites/default/files/2023-02/22_1201_safecom_guide_to_cybersecurity_risk_assessment_508-r1.pdf)
+这些都是正确界定架构安全性所必需的。然而，这些主题需要更详细地讨论。使用下面的资源链接，作为健康安全架构对话的一部分进行进一步调查。
 
-## Public and Private Components
+- [威胁建模备忘录](https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html)
+- [攻击面分析备忘录](https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html)
+- [CISA 网络风险评估](https://www.cisa.gov/sites/default/files/2023-02/22_1201_safecom_guide_to_cybersecurity_risk_assessment_508-r1.pdf)
 
-### Secure Object Storage
+## 公有和私有组件
 
-Object storage usually has the following options for accessing data:
+### 安全对象存储
 
-- Accessing resources using built-in Identity and Access Management policies
-- Using cryptographically signed URLs and HTTP requests
-- Directly accessing with public storage
+对象存储通常有以下数据访问选项：
 
-#### IAM Access
+- 使用内置的身份和访问管理（IAM）策略访问资源
+- 使用加密签名的 URL 和 HTTP 请求
+- 直接使用公共存储
 
-This method involves indirect access on tooling such as a managed or self-managed service running on ephemeral or persistent infrastructure. This infrastructure contains a persistent control plane IAM credential, which interacts with the object storage on the user's behalf. The method is best used when the application has other user interfaces or data systems available, when it is important to hide as much of the storage system as possible, or when the information shouldn't/won't be seen by an end user (metadata). It can be used in combination with web authentication and logging to better track and control access to resources. The key security concern for this approach is relying on developed code or policies which could contain weaknesses.
+#### IAM 访问
 
-|                 Pros                 |                       Cons                         |
-|:------------------------------------:|:--------------------------------------------------:|
-|       No direct access to data       |          Potential use of broad IAM policy         |
-| No user visibility to object storage | Credential loss gives access to control plane APIs |
-|   Identifiable and loggable access   |           Credentials could be hardcoded           |
+此方法涉及在临时或持久基础架构上运行的托管或自管理服务的间接访问。该基础架构包含持久的控制平面 IAM 凭证，代表用户与对象存储交互。当应用程序具有其他用户界面或数据系统、尽可能隐藏存储系统、或信息不应/不会被最终用户看到（元数据）时，此方法最佳。可以与 Web 身份验证和日志记录结合使用，以更好地跟踪和控制资源访问。此方法的关键安全隐患是依赖可能包含弱点的开发代码或策略。
 
-This approach is acceptable for sensitive user data, but must follow rigorous coding and cloud best practices, in order to properly secure data.
+|                优点                 |                       缺点                         |
+|:-----------------------------------:|:--------------------------------------------------:|
+|       无直接数据访问               |          可能使用广泛的 IAM 策略                  |
+| 对象存储对用户不可见               | 凭证丢失会给控制平面 API 访问权限                 |
+|   可识别和可记录的访问             |           凭证可能被硬编码                         |
 
-#### Signed URLs
+对于敏感用户数据，此方法是可接受的，但必须遵循严格的编码和云最佳实践，以正确保护数据。
 
-URL Signing for object storage involves using some method or either statically or dynamically generating URLs, which cryptographically guarantee that an entity can access a resource in storage. This is best used when direct access to specific user files is necessary or preferred, as there is no file transfer overhead. It is advisable to only use this method for user data which is not very sensitive. This method can be secure, but has notable cons. Code injection may still be possible if the method of signed URL generation is custom, dynamic and injectable, and anyone can access the resource anonymously, if given the URL. Developers must also consider if and when the signed URL should expire, adding to the complexity of the approach.
+#### 签名 URL
 
-|                    Pros                   |                    Cons                   |
+对象存储的 URL 签名涉及静态或动态生成 URL 的方法，密码学地保证实体可以访问存储中的资源。当需要或首选直接访问特定用户文件且没有文件传输开销时，此方法最佳。建议仅对不太敏感的用户数据使用此方法。此方法可以安全，但有明显的缺点。如果签名 URL 生成方法是自定义的、动态的且可注入的，仍可能发生代码注入，并且任何人只要获得 URL 就可以匿名访问资源。开发人员还必须考虑签名 URL 是否以及何时过期，这增加了方法的复杂性。
+
+|                    优点                   |                    缺点                   |
 |:-----------------------------------------:|:-----------------------------------------:|
-|        Access to only one resource        |              Anonymous Access             |
-| Minimal user visibility to object storage |         Anyone can access with URL        |
-|           Efficient file transfer         | Possibility of injection with custom code |
+|        仅访问一个资源                    |              匿名访问                     |
+| 对象存储对用户可见性最小                 |         任何人都可以通过 URL 访问         |
+|           高效文件传输                   | 自定义代码可能存在注入可能性              |
 
-#### Public Object Storage
+#### 公共对象存储
 
-**This is not an advisable method for resource storage and distribution**, and should only be used for public, non-sensitive, generic resources. This storage approach will provide threat actors additional reconnaissance into a cloud environment, and any data which is stored in this configuration for any period of time must be considered publicly accessed (leaked to the public).
+**这不是资源存储和分发的推荐方法**，应仅用于公共、非敏感、通用资源。此存储方法将为威胁行为者提供对云环境的额外侦察，任何在此配置中存储的数据在任何时间段内都必须被视为公开访问（泄露给公众）。
 
-|                 Pros                |                 Cons                 |
+|                 优点                |                 缺点                 |
 |:-----------------------------------:|:------------------------------------:|
-| Efficient access to many resources  |     Anyone can access/No privacy     |
-|       Simple public file share      |  Unauthenticated access to objects   |
-|                                     |  Visibility into full file system    |
-|                                     |     Accidently leak stored info      |
+| 高效访问多个资源                    |     任何人都可以访问/无隐私          |
+|       简单的公共文件共享            |  未经身份验证的对象访问              |
+|                                     |  可见完整文件系统                    |
+|                                     |     意外泄露存储信息                 |
 
-### VPCs and Subnets
+### VPC 和子网
 
-Virtual Private Clouds (VPC) and public/private network subnets allow an application and its network to be segmented into distinct chunks, adding layers of security within a cloud system. Unlike other private vs public trade-offs, an application will likely incorporate most or all of these components in a mature architecture. Each is explained below.
+虚拟私有云（VPC）和公有/私有网络子网允许应用程序及其网络被分割成不同的部分，在云系统中增加安全层。与其他公有与私有的权衡不同，成熟的架构可能会整合这些组件中的大部分。下面将详细解释每个组件。
 
-#### VPCs
+#### VPC
 
-VPC's are used to create network boundaries within an application, where-in components can talk to each other, much like a physical network in a data center. The VPC will be made up of some number of subnets, both public and private. VPCs can be used to:
+VPC 用于在应用程序内创建网络边界，使组件可以相互通信，类似于数据中心的物理网络。VPC 将由若干公有和私有子网组成。VPC 可用于：
 
-- Separate entire applications within the same cloud account.
-- Separate large components of application into distinct VPCs with isolated networks.
-- Create separations between duplicate applications used for different customers or data sets.
+- 在同一云账户中分隔整个应用程序。
+- 将应用程序的大型组件分隔到具有隔离网络的不同 VPC 中。
+- 在用于不同客户或数据集的重复应用程序之间创建分隔。
 
-#### Public Subnets
+#### 公有子网
 
-Public subnets house components which will have an internet facing presence. The subnet will contain network routing elements to allow components within the subnet to connect directly to the internet. Some use cases include:
+公有子网包含具有面向互联网存在的组件。子网将包含网络路由元素，允许子网内的组件直接连接到互联网。一些用例包括：
 
-- Public facing resources, like front-end web applications.
-- Initial touch points for applications, like load balancers and routers.
-- Developer access points, like [bastions](https://aws-quickstart.github.io/quickstart-linux-bastion/) (note, these can be very insecure if engineered/deployed incorrectly).
+- 面向公众的资源，如前端 Web 应用程序。
+- 应用程序的初始接触点，如负载均衡器和路由器。
+- 开发者访问点，如[堡垒主机](https://aws-quickstart.github.io/quickstart-linux-bastion/)（注意，如果设计/部署不正确，这些可能非常不安全）。
 
-#### Private Subnets
+#### 私有子网
 
-Private subnets house components which should not have direct internet access. The subnet will likely contain network routing to connect it to public subnets, to receive internet traffic in a structured and protected way. Private subnets are great for:
+私有子网包含不应直接访问互联网的组件。子网可能包含网络路由，将其连接到公有子网，以结构化和受保护的方式接收互联网流量。私有子网非常适合：
 
-- Databases and data stores.
-- Backend servers and associated file systems.
-- Anything deemed too sensitive for direct internet access.
+- 数据库和数据存储。
+- 后端服务器和相关文件系统。
+- 任何被认为对直接互联网访问过于敏感的内容。
 
-#### Simple Architecture Example
+#### 简单架构示例
 
-Consider the simple architecture diagram below. A VPC will house all of the components for the application, but elements will be in a specific subnet depending on its role within the system. The normal flow for interacting with this application might look like:
+考虑下面的简单架构图。一个 VPC 将包含应用程序的所有组件，但元素将根据其在系统中的角色位于特定子网中。与此应用程序交互的正常流程可能如下：
 
-1. Accessing the application through some sort of internet gateway, API gateway or other internet facing component.
-2. This gateway connects to a load balancer or a web server in a public subnet. Both components provide public facing functions and are secured accordingly.
-3. These components then interact with their appropriate backend counterparts, a database or backend server, contained in a private VPC. This connections are more limited, preventing extraneous access to the possibly "soft" backend systems.
+1. 通过某种互联网网关、API 网关或其他面向互联网的组件访问应用程序。
+2. 此网关连接到公有子网中的负载均衡器或 Web 服务器。两个组件提供面向公众的功能并相应地进行安全保护。
+3. 这些组件随后与其适当的后端对应组件交互，即位于私有 VPC 中的数据库或后端服务器。这些连接更加受限，防止对可能"脆弱"的后端系统的额外访问。
 
-![VPC Diagram](../assets/Secure_Cloud_Architecture_VPC.png)
+![VPC 图](../assets/Secure_Cloud_Architecture_VPC.png)
 
-*Note: This diagram intentionally skips routing and IAM elements for subnet interfacing, for simplicity and to be service provider agnostic.*
+*注意：此图intentionally省略了子网接口的路由和 IAM 元素，以简化并保持服务提供商无关性。*
 
-This architecture prevents less hardened backend components or higher risk services like databases from being exposed to the internet directly. It also provides common, public functionality access to the internet to avoid additional routing overhead. This architecture can be secured more easily by focusing on security at the entry points and separating functionality, putting non-public or sensitive information inside a private subnet where it will be harder to access by external parties.
+此架构防止较不强化的后端组件或高风险服务（如数据库）直接暴露在互联网上。它还提供公共功能访问互联网，以避免额外的路由开销。通过专注于入口点的安全性和分离功能，可以更轻松地保护此架构，将非公开或敏感信息放置在私有子网中，使外部方更难访问。
 
-## Trust Boundaries
+# 信任边界
 
-Trust boundaries are connections between components within a system where a trust decision has to be made by the components. Another way to phrase it, this boundary is a point where two components with potentially different trust levels meet. These boundaries can range in scale, from the degrees of trust given to users interacting with an application, to trusting or verifying specific claims between code functions or components within a cloud architecture. Generally speaking however, trusting each component to perform its function correctly and securely, suffices. Therefore, trust boundaries likely will occur in the connections between cloud components, and between the application and third party elements, like end users and other vendors.
+信任边界是系统内组件之间的连接，在这些连接处组件必须做出信任决策。换句话说，这个边界是具有潜在不同信任级别的两个组件相遇的点。这些边界的规模可以从用户与应用程序交互的信任程度，到云架构中代码函数或组件之间验证特定声明的信任。
 
-As an example, consider the architecture below. An API gateway connects to a compute instance (ephemeral or persistent), which then accesses a persistent storage resource. Separately, there exists a server which can verify the authentication, authorization and/or identity of the caller. This is a generic representation of an OAuth, IAM or directory system, which controls access to these resources. Additionally, there exists an Ephemeral IAM server which controls access for the stored resources (using an approach like the [IAM Access](#iam-access) section above). As shown by the dotted lines, trust boundaries exist between each compute component, the API gateway and the auth/identity server, even though many or all of the elements could be in the same application.
+然而，一般来说，信任每个组件正确且安全地执行其功能就足够了。因此，信任边界可能发生在云组件之间的连接，以及应用程序和第三方元素（如最终用户和其他供应商）之间。
 
-![Trust Boundaries](../assets/Secure_Cloud_Architecture_Trust_Boundaries_1.png)
+例如，考虑下面的架构。API 网关连接到计算实例（临时或持久），然后访问持久存储资源。另外，存在一个可以验证调用者的身份验证、授权和/或身份的服务器。这是 OAuth、IAM 或目录系统的通用表示，用于控制对这些资源的访问。此外，还有一个临时 IAM 服务器控制存储资源的访问（使用类似[IAM 访问](#iam-访问)部分的方法）。如图中的虚线所示，即使许多或所有元素可能在同一应用程序中，信任边界也存在于每个计算组件、API 网关和认证/身份服务器之间。
 
-### Exploring Different Levels of Trust
+![信任边界](../assets/Secure_Cloud_Architecture_Trust_Boundaries_1.png)
 
-Architects have to select a trust configuration between components, using quantative factors like risk score/tolerance, velocity of project, as well as subjective security goals. Each example below details trust boundary relationships to better explain the implications of trusting a certain resource. The threat level of a specific resource as a color from green (safe) to red (dangerous) will outline which resources shouldn't be trusted.
+## 探索不同的信任级别
 
-#### 1. No trust example
+架构师必须使用定量因素（如风险评分/容忍度、项目速度）以及主观安全目标，在组件之间选择信任配置。下面的每个示例详细说明了信任边界关系，以更好地解释信任特定资源的影响。使用从绿色（安全）到红色（危险）的颜色来标出不应信任的资源的威胁级别。
 
-As shown in the diagram below, this example outlines a model where no component trusts any other component, regardless of criticality or threat level. This type of trust configuration would likely be used for incredibly high risk applications, where either very personal data or important business data is contained, or where the application as a whole has an extremely high business criticality.
+### 1. 无信任示例
 
-Notice that both the API gateway and compute components call out to the auth/identity server. This implies that no data passing between these components, even when right next to each other "inside" the application, is considered trusted. The compute instance must then assume an ephemeral identity to access the storage, as the compute instance isn't trusted to a specific resource even if the user is trusted to the instance.
+如下图所示，此示例概述了一个模型，其中无论关键性或威胁级别，没有组件信任任何其他组件。这种信任配置可能用于极高风险的应用程序，其中包含非常个人的数据或重要的业务数据，或整个应用程序具有极高的业务关键性。
 
-Also note the lack of trust between the auth/identity server and ephemeral IAM server and each component. While not displayed in the diagram, this would have additional impacts, like more rigorous checks before authentication, and possibly more overhead dedicated to cryptographic operations.
+请注意，API 网关和计算组件都调用认证/身份服务器。这意味着即使在应用程序"内部"彼此相邻，组件之间传递的任何数据也被视为不可信。然后，计算实例必须假定一个临时身份来访问存储，因为即使用户被信任，计算实例也不被信任访问特定资源。
 
-![No Trust Across Boundaries](../assets/Secure_Cloud_Architecture_Trust_Boundaries_2.png)
+还要注意认证/身份服务器、临时 IAM 服务器和每个组件之间缺乏信任。虽然未在图中显示，但这将产生额外影响，如更严格的身份验证前检查，以及可能更多专用于加密操作的开销。
 
-This could be a necessary approach for applications found in financial, military or critical infrastructure systems. However, security must be careful when advocating for this model, as it will have significant performance and maintenance drawbacks.
+![跨边界无信任](../assets/Secure_Cloud_Architecture_Trust_Boundaries_2.png)
 
-|              Pros                |         Cons          |
-|:--------------------------------:|:---------------------:|
-| High assurance of data integrity | Slow and inefficient  |
-|         Defense in depth         |      Complicated      |
-|                                  | Likely more expensive |
+这可能是金融、军事或关键基础设施系统中应用程序所需的方法。然而，在倡导这种模型时，安全性必须谨慎，因为它将带来显著的性能和维护缺点。
 
-#### 2. High trust example
+|              优点               |         缺点          |
+|:-------------------------------:|:---------------------:|
+| 高度保证数据完整性              | 缓慢且低效            |
+|         深度防御                |      复杂             |
+|                                 | 可能成本更高          |
 
-Next, consider the an opposite approach, where everything is trusted. In this instance, the "dangerous" user input is trusted and essentially handed directly to a high criticality business component. The auth/identity resource is not used at all. In this instance, there is higher likelihood of a successful attack against the system, because there are no controls in place to prevent it. Additionally, this setup could be considered wasteful, as both the auth/identity and ephemeral IAM servers are not necessarily performing their intended function. *(These could be shared corporate resources that aren't being used to their full potential).*
+### 2. 高信任示例
 
-![Complete Trust Across Boundaries](../assets/Secure_Cloud_Architecture_Trust_Boundaries_3.png)
+接下来，考虑一种完全相反的方法，即信任一切。在这种情况下，"危险"的用户输入被直接信任并传递给高关键性的业务组件。根本不使用认证/身份资源。在这种情况下，系统遭受成功攻击的可能性更高，因为没有防范措施。此外，这种设置可能被认为是浪费的，因为认证/身份和临时 IAM 服务器并未执行其预期功能。
 
-This is an unlikely architecture for all but the simplest and lowest risk applications. **Do not use this trust boundary configuration** unless there is no sensitive content to protect or efficiency is the only metric for success. Trusting user input is never recommended, even in low risk applications.
+![跨边界完全信任](../assets/Secure_Cloud_Architecture_Trust_Boundaries_3.png)
 
-| Pros      | Cons                    |
+除了最简单和最低风险的应用程序外，这种架构不太可能存在。**除非没有需要保护的敏感内容，或效率是成功的唯一指标，否则不要使用此信任边界配置**。即使在低风险应用程序中，也绝不建议信任用户输入。
+
+| 优点      | 缺点                    |
 |:---------:|:-----------------------:|
-| Efficient |        Insecure         |
-|  Simple   |   Potentially Wasteful  |
-|           | High risk of compromise |
+| 高效      |        不安全           |
+| 简单      |   潜在地浪费            |
+|           | 高风险被入侵            |
 
-#### 3. Some trust example
+### 3. 部分信任示例
 
-Most applications will use a trust boundary configuration like this. Using knowledge from a risk and attack surface analysis, security can reasonably assign trust to low risk components or processes, and verify only when necessary. This prevents wasting valuable security resources, but also limits the complexity and efficiency loss due to additional security overhead.
+大多数应用程序将使用如下所示的信任边界配置。利用风险和攻击面分析的知识，安全性可以合理地为低风险组件或流程分配信任，并仅在必要时进行验证。这既防止了浪费宝贵的安全资源，又限制了由于额外安全开销而导致的复杂性和效率损失。
 
-Notice in this example, that the API gateway checks the auth/identity of a user, then immediately passes the request on to the compute instance. The instance doesn't need to re-verify, and performs it's operation. However, as the compute instance is working with untrusted user inputs (designated yellow for some trust), it is still necessary to assume an ephemeral identity to access the storage system.
+注意在此示例中，API 网关检查用户的认证/身份，然后立即将请求传递给计算实例。实例不需要重新验证，并执行其操作。然而，由于计算实例正在处理不可信的用户输入（指定为黄色表示部分信任），仍然需要假定一个临时身份来访问存储系统。
 
-![Some Trust Across Boundaries](../assets/Secure_Cloud_Architecture_Trust_Boundaries_4.png)
+![跨边界部分信任](../assets/Secure_Cloud_Architecture_Trust_Boundaries_4.png)
 
-By nature, this approach limits the pros and cons of both previous examples. This model will likely be used for most applications, unless the benefits of the above examples are necessary to meet business requirements.
+从本质上讲，这种方法限制了前两个示例的优缺点。除非前面示例的优势对于满足业务需求是必要的，否则这个模型可能适用于大多数应用程序。
 
-|                   Pros                   |          Cons          |
+|                   优点                   |          缺点          |
 |:----------------------------------------:|:----------------------:|
-|           Secured based on risk          | Known gaps in security |
-| Cost/Efficiency derived from criticality |                        |
+|           基于风险的安全性              | 安全性存在已知漏洞     |
+| 根据关键性衡量成本/效率                 |                        |
 
-*Note: This trust methodology diverges from Zero Trust. For a more in depth look at that topic, check out [CISA's Zero Trust Maturity Model](https://www.cisa.gov/sites/default/files/2023-04/zero_trust_maturity_model_v2_508.pdf)*.
+*注意：这种信任方法与零信任不同。关于这个主题的更深入探讨，请查看 [CISA 的零信任成熟度模型](https://www.cisa.gov/sites/default/files/2023-04/zero_trust_maturity_model_v2_508.pdf)*。
 
-## Security Tooling
+### 基础设施即服务（IaaS）
 
-### Web Application Firewall
+在 IaaS 模型中，基础设施由云服务提供商（CSP）维护，而其他所有内容由开发者维护。这包括：
 
-Web Application Firewalls (WAF) are used to monitor or block common attack payloads (like [XSS](https://owasp.org/www-community/attacks/xss/) and [SQLi](https://owasp.org/www-community/attacks/SQL_Injection)), or allow only specific request types and patterns. Applications should use them as a first line of defense, attaching them to entry points like load balancers or API gateways, to handle potentially malicious content before it reaches application code. Cloud service providers curate base rule sets which will block or monitor common malicious payloads:
+- 身份验证和授权
+- 数据存储、访问和管理
+- 某些网络任务（端口、网络访问控制列表等）
+- 应用软件
 
-- [AWS Managed Rules](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html)
-- [GCP WAF Rules](https://cloud.google.com/armor/docs/waf-rules)
-- [Azure Core Rule Sets](https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules?tabs=owasp32)
+此模型有利于开发者的可配置性和灵活性，但比其他服务模型更复杂且成本更高。它最接近正在逐渐被大公司放弃的本地部署模型。因此，将某些应用程序迁移到云 IaaS 可能比重新设计更具云原生的架构更容易。
 
-By design these rule sets are generic and will not cover every attack type an application will face. Consider creating custom rules which will fit the application's specific security needs, like:
-
-- Filtering routes to acceptable endpoints (block web scraping)
-- Adding specific protections for chosen technologies and key application endpoints
-- Rate limiting sensitive APIs
-
-### Logging & Monitoring
-
-Logging and monitoring is required for a truly secure application. Developers should know exactly what is going on in their environment, making use of alerting mechanisms to warn engineers when systems are not working as expected. Additionally, in the event of a security incident, logging should be verbose enough to track a threat actor through an entire application, and provide enough knowledge for respondents to understand what actions were taken against what resources. Note that proper logging and monitoring can be expensive, and risk/cost trade-offs should be discussed when putting logging in place.
-
-#### Logging
-
-For proper logging, consider:
-
-- Logging all [layer 7](https://en.wikipedia.org/wiki/OSI_model) HTTP calls with headers, caller metadata, and responses
-    - Payloads may not be logged depending on where logging occurs (before TLS termination) and the sensitivity of data
-- Logging internal actions with actor and permission information
-- Sending trace IDs through the entire request lifecycle to track errors or malicious actions
-- Masking or removing sensitive data
-    - SSNs, sensitive health information, and other PII should not be stored in logs
-
-*Legal and compliance representatives should weigh in on log retention times for the specific application.*
-
-#### Monitoring
-
-For proper monitoring consider adding:
-
-- Anomaly alerts:
-    - HTTP 4xx and 5xx errors above a percent of normal
-    - Memory, storage or CPU usage above/below percent of normal
-    - Database writes/reads above/below percent of normal
-    - Serverless compute invocations above percent of normal
-- Alerting for failed health checks
-- Alerting for deployment errors or container on/off cycling
-- Alerts or cutoffs for cost limits
-
-Anomalies by count and type can vary wildly from app to app. A proper understanding of what qualifies as an anomaly requires an environment specific baseline. Therefore, the percentages mentioned above should be chosen based off that baseline, in addition to considerations like risk and team response capacity.
-
-WAFs can also have monitoring or alerting attached to them for counting malicious payloads or (in some cases) anomalous activity detection.
-
-### DDoS Protection
-
-Cloud service providers offer a range of DDoS protection products, from simple to advanced, depending on application needs. Simple DDoS protection can often be implemented using WAFs with rate limits and route blocking rules. More advanced protection may require specific managed tools offered by the cloud service provider. Examples include:
-
-- [AWS Shield](https://aws.amazon.com/shield/)
-- [GCP Cloud Armor Managed Protection](https://cloud.google.com/armor/docs/managed-protection-overview)
-- [Azure DDoS Protection](https://learn.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview)
-
-The decision to enable advanced DDoS protections for a specific application should be based off risk and business criticality of application, taking into account mitigating factors and cost (these services can be very inexpensive compared to large company budgets).
-
-## Shared Responsibility Model
-
-The Shared Responsibility Model is a framework for cloud service providers (CSPs) and those selling cloud based services to properly identify and segment the responsibilities of the developer and the provider. This is broken down into different levels of control, corresponding to different elements/layers of the technology stack. Generally, components like physical computing devices and data center space are the responsibility of the CSP. Depending on the level of [management](#self-managed-tooling), the developer could be responsible for the entire stack from operating system on up, or only for some ancillary functionality, code or administration.
-
-This responsiblitity model is often categorized into three levels of service called:
-
-- Infrastructure as a Service ([IaaS](#iaas))
-- Platform as a Service ([PaaS](#paas))
-- Software as a Service ([SaaS](#saas))
-
-*Many other service classifications exist, but aren't listed for simplicity and brevity.*
-
-As each name indicates, the level of responsibility the CSP assumes is the level of "service" they provide. Each level provides its own set of pros and cons, discussed below.
-
-### IaaS
-
-In the case of IaaS, the infrastructure is maintained by the CSP, while everything else is maintained by the developer. This includes:
-
-- Authentication and authorization
-- Data storage, access and management
-- Certain networking tasks (ports, NACLs, etc)
-- Application software
-
-This model favors developer configurability and flexibility, while being more complex and generally higher cost than other service models. It also most closely resembles on premise models which are waning in favor with large companies. Because of this, it may be easier to migrate certain applications to cloud IaaS, than to re-architect with a more cloud native architecture.
-
-|             Pros             |            Cons           |
+|             优点             |            缺点           |
 |:----------------------------:|:-------------------------:|
-| Control over most components |        Highest cost       |
-|   High level of flexilibity  | More required maintenance |
-| Easy transition from on-prem |  High level of complexity |
+| 对大多数组件的控制权         |        成本最高           |
+|   高度灵活性                 | 需要更多维护              |
+| 从本地部署轻松过渡           |  复杂性高                 |
 
-**Responsibility is held almost exclusively by the developer, and must be secured as such**. Everything, from network access control, operating system vulnerabilities, application vulnerabilities, data access, and authentication/authorization must be considered when developing an IaaS security strategy. Like described above, this offers a high level of control across almost everything in the technology stack, but can be very difficult to maintain without adequate resources going to tasks like version upgrades or end of life migrations. *([Self-managed security updates](#update-strategy-for-self-managed-services) are discussed in greater detail below.)*
+**责任几乎完全由开发者承担，必须相应地进行安全保护**。在开发 IaaS 安全策略时，必须考虑从网络访问控制、操作系统漏洞、应用程序漏洞、数据访问到身份验证/授权的所有内容。如上所述，这提供了对技术堆栈中几乎所有内容的高度控制，但如果没有充足资源用于版本升级或生命周期迁移等任务，可能非常难以维护。*（[自管理安全更新](#自管理服务的更新策略)将在下面详细讨论。）*
 
-### PaaS
+### 平台即服务（PaaS）
 
-Platform as a Service is in the middle between IaaS and SaaS. The developer controls:
+平台即服务（Platform as a Service）位于 IaaS 和 SaaS 之间。开发者控制：
 
-- Application authentication and authorization
-- Application software
-- External data storage
+- 应用程序身份验证和授权
+- 应用程序软件
+- 外部数据存储
 
-It provides neatly packaged code hosting and containerized options, which allow smaller development teams or less experienced developers a way to get started with their applications while ignoring more complex or superfluous computing tasks. It is generally less expensive than IaaS, while still retaining some control over elements that a SaaS system does not provide. However, developers could have problems with the specific limitations of the offering used, or issues with compatability, as the code must work with the correct container, framework or language version.
+它提供精简的代码托管和容器化选项，使小型开发团队或经验较少的开发者能够开始开发应用程序，同时忽略更复杂或多余的计算任务。它通常比 IaaS 更经济，同时仍保留 SaaS 系统未提供的某些控制权。然而，开发者可能会遇到所使用产品的特定限制，或兼容性问题，因为代码必须与正确的容器、框架或语言版本兼容。
 
-Also, while scalability is very dependent on provider and setup, PaaS usually provides higher scalability due to containerization options and common, repeatable base OS systems. Compared to IaaS, where scalability must be built by the developer, and SaaS, where the performance is very platform specific.
+此外，虽然可扩展性高度依赖于提供商和设置，但 PaaS 通常由于容器化选项和通用的、可重复的基础操作系统而提供更高的可扩展性。相比之下，IaaS 需要开发者自行构建可扩展性，而 SaaS 的性能非常依赖于特定平台。
 
-|              Pros              |              Cons              |
+|              优点              |              缺点              |
 |:------------------------------:|:------------------------------:|
-| Easier to onboard and maintain | Potential compatability issues |
-|       Better scalability       |  Offering specific limitations |
+| 更易于入门和维护               | 潜在的兼容性问题               |
+|       更好的可扩展性           |  提供商特定限制                |
 
-Manual security in PaaS solutions is similary less extensive (compared to IaaS). Application specific authentication and authorization must still be handled by the developer, along with any access to external data systems. However, the CSP is responsible for securing containerized instances, operating systems, ephemeral files systems, and certain networking controls.
+PaaS 解决方案中的手动安全性相对较少（与 IaaS 相比）。开发者仍然必须处理特定于应用程序的身份验证和授权，以及对外部数据系统的任何访问。然而，云服务提供商负责保护容器化实例、操作系统、临时文件系统和某些网络控制。
 
-### SaaS
+### 软件即服务（SaaS）
 
-The Software as a Service model is identified by a nearly complete product, where the end user only has to configure or customize small details in order to meet their needs. The user generally controls:
+软件即服务模型通常是一个几乎完整的产品，最终用户只需配置或自定义少量细节以满足其需求。用户通常控制：
 
-- Configuration, administration and/or code within the product's boundaries
-- Some user access, such as designating administrators
-- High level connections to other products, through permissions or integrations
+- 产品边界内的配置、管理和/或代码
+- 某些用户访问，如指定管理员
+- 通过权限或集成的高级连接
 
-The entire technology stack is controlled by the provider (cloud service or other software company), and the developer will only make relatively small tweaks to meet custom needs. This limits cost and maintenance, and problems can typically be solved with a provider's customer support, as opposed to needing technical knowledge to troubleshoot the whole tech stack.
+整个技术堆栈由提供商（云服务或其他软件公司）控制，开发者只能进行相对较小的调整以满足自定义需求。这限制了成本和维护，问题通常可以通过提供商的客户支持解决，而不需要技术知识来排除整个技术堆栈的故障。
 
-|               Pros               |                Cons                |
+|               优点               |                缺点                |
 |:--------------------------------:|:----------------------------------:|
-|          Low maintenance         | Restricted by provider constraints |
-|            Inexpensive           |           Minimal control          |
-| Customer support/troubleshooting |      Minimal insight/oversight     |
+|          维护成本低              | 受提供商约束                       |
+|            成本低廉              |           控制权minimal            |
+| 客户支持/故障排除                |      洞察力/监督minimal            |
 
-Security with SaaS is simultaneously the easiest and most difficult, due to the lack of control expressed above. A developer will only have to manage a small set of security functions, like some access controls, the data trust/sharing relationship with integrations, and any security implications of customizations. All other layers of security are controlled by the provider. This means that any security fixes will be out of the developer's hands, and therefore could be handled in a untimely manner, or not to a satisfactory level of security for an end user (depending on security needs). However, such fixes won't require end user involvement and resources, making them easier from the perspective of cost and maintenance burden.
+由于上述缺乏控制，SaaS 的安全性同时是最简单和最困难的。开发者只需管理少量安全功能，如某些访问控制、与集成的数据信任/共享关系，以及任何自定义的安全影响。所有其他安全层都由提供商控制。这意味着任何安全修复都将超出开发者的控制范围，因此可能以不及时的方式处理，或者对最终用户（取决于安全需求）来说安全级别不够满意。然而，这些修复不需要最终用户参与和资源，从成本和维护负担的角度来看更容易。
 
-*Note: When looking for SaaS solutions, consider asking for a company's attestation records and proof of compliance to standards like [ISO 27001](https://www.iso.org/standard/27001). Listed below are links to each of the major CSPs' attestation sites for additional understanding.*
+*注意：在寻找 SaaS 解决方案时，考虑询问公司的合规性证明和对 [ISO 27001](https://www.iso.org/standard/27001) 等标准的合规证明。下面列出了主要云服务提供商的合规性网站链接，以供进一步了解。*
 
 - [GCP](https://cloud.google.com/security/compliance/offerings)
 - [AWS](https://aws.amazon.com/compliance/programs/)
 - [Azure](https://servicetrust.microsoft.com/ViewPage/HomePageVNext)
 
-### Self-managed tooling
+### 自管理工具
 
-Another way to describe this shared responsibility model more generically is by categorizing cloud tooling on a spectrum of "management". Fully managed services leave very little for the end developer to handle besides some coding or administrative functionality (SaaS), while self-managed systems require much more overhead to maintain (IaaS).
+从更通用的角度描述这种共享责任模型的另一种方式是按"管理"光谱对云工具进行分类。完全托管的服务除了一些编码或管理功能（SaaS）外，几乎不需要最终开发者处理，而自管理系统需要更多开销来维护（IaaS）。
 
-AWS provides an excellent example of this difference in management, identifying where some of their different products fall onto different points in the spectrum.
+AWS 提供了管理差异的绝佳示例，标识了他们的不同产品落在管理光谱的不同点上。
 
-![Shared Responsibility Model](../assets/Secure_Cloud_Architecture_Shared_Responsibility_Model.png)
+![共享责任模型](../assets/Secure_Cloud_Architecture_Shared_Responsibility_Model.png)
 
-*Note: It is hard to indicate exactly which offerings are considered what type of service (Ex: IaaS vs PaaS). Developers should look to understand the model which applies to the specific tool they are using.*
+*注意：很难准确指出哪些产品被视为何种类型的服务（如 IaaS 与 PaaS）。开发者应该努力了解适用于他们正在使用的特定工具的模型。*
 
-#### Update Strategy for Self-managed Services
+#### 自管理服务的更新策略
 
-Self-managed tooling will require additional overhead by developers and support engineers. Depending on the tool, basic version updates, upgrades to images like [AMIs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) or [Compute Images](https://cloud.google.com/compute/docs/images), or other operating system level maintence will be required. Use automation to regularly update minor versions or [images](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-tutorial-update-patch-golden-ami.html), and schedule time in development cycles for refreshing stale resources.
+自管理工具将需要开发者和支持工程师额外的开销。根据工具的不同，可能需要基本版本更新、映像升级（如 [AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) 或 [Compute 映像](https://cloud.google.com/compute/docs/images)）或其他操作系统级维护。使用自动化定期更新次要版本或[映像](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-tutorial-update-patch-golden-ami.html)，并在开发周期中安排刷新过时资源的时间。
 
-#### Avoid Gaps in Managed Service Security
+#### 避免托管服务安全中的漏洞
 
-Managed services will offer some level of security, like updating and securing the underlying hardware which runs application code. However, the development team are still responsible for many aspects of security in the system. Ensure developers understand what security will be their responsibility based on tool selection. Likely the following will be partially or wholly the responsibility of the developer:
+托管服务将提供一定级别的安全性，如更新和保护运行应用程序代码的底层硬件。然而，开发团队仍然对系统中的许多安全方面负责。确保开发者根据工具选择了解哪些安全性将是他们的责任。可能以部分或全部方式由开发者负责的内容包括：
 
-- Authentication and authorization
-- Logging and monitoring
-- Code security ([OWASP Top 10](https://owasp.org/www-project-top-ten/))
-- Third-party library patching
+- 身份验证和授权
+- 日志记录和监控
+- 代码安全性（[OWASP 十大](https://owasp.org/www-project-top-ten/)）
+- 第三方库补丁
 
-Refer to the documentation provided by the cloud service provider to understand which aspects of security are the responsibility of each party, based on the selected service. For example, in the case of serverless functions:
+参考云服务提供商提供的文档，根据所选服务了解每一方的安全责任。例如，对于无服务器函数：
 
 - [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/lambda-security.html)
 - [GCP Cloud Functions](https://cloud.google.com/functions/docs/securing)
 - [Azure Functions](https://learn.microsoft.com/en-us/azure/architecture/serverless-quest/functions-app-security)
 
-## References
+## 参考资料
 
-- [Secure Product Design](https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html)
-- [CISA Security Technical Reference Architecture](https://www.cisa.gov/sites/default/files/publications/Cloud%20Security%20Technical%20Reference%20Architecture.pdf)
+- [安全产品设计](https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html)
+- [CISA 安全技术参考架构](https://www.cisa.gov/sites/default/files/publications/Cloud%20Security%20Technical%20Reference%20Architecture.pdf)
