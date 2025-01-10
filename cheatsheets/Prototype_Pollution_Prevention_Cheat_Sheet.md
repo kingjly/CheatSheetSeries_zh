@@ -1,16 +1,16 @@
-# Prototype Pollution Prevention Cheat Sheet
+# 原型污染预防备忘录
 
-## Explanation
+## 解释
 
-Prototype Pollution is a critical vulnerability that can allow attackers to manipulate an application's JavaScript objects and properties, leading to serious security issues such as unauthorized access to data, privilege escalation, and even remote code execution.
+原型污染是一个关键的漏洞，攻击者可以通过它操纵应用程序的 JavaScript 对象和属性，导致严重的安全问题，如未经授权访问数据、权限提升，甚至远程代码执行。
 
-For examples of why this is dangerous, see the links in the [Other resources](#other-resources) section below.
+关于为什么这是危险的具体示例，请参见下面[其他资源](#其他资源)部分的链接。
 
-## Suggested protection mechanisms
+## 建议的保护机制
 
-### Use "new Set()" or "new Map()"
+### 使用 "new Set()" 或 "new Map()"
 
-Developers should use `new Set()` or `new Map()` instead of using object literals:
+开发者应使用 `new Set()` 或 `new Map()` 而不是使用对象字面量：
 
 ```javascript
 let allowedTags = new Set();
@@ -24,35 +24,35 @@ options.set('spaces', 1);
 let spaces = options.get('spaces')
 ```
 
-### If objects or object literals are required
+### 如果需要对象或对象字面量
 
-If objects have to be used then they should be created using the `Object.create(null)` API to ensure they don't inherit from the Object prototype:
+如果必须使用对象，则应使用 `Object.create(null)` API 创建，以确保它们不继承自 Object 原型：
 
 ```javascript
 let obj = Object.create(null);
 ```
 
-If object literals are required then as a last resort you could use the `__proto__` property:
+如果需要对象字面量，作为最后的手段，可以使用 `__proto__` 属性：
 
 ```javascript
 let obj = {__proto__:null};
 ```
 
-### Use object "freeze" and "seal" mechanisms
+### 使用对象"冻结"和"密封"机制
 
-You can also use the `Object.freeze()` and `Object.seal()` APIs to prevent built-in prototypes from being modified however this can break the application if the libraries they use modify the built-in prototypes.
+您还可以使用 `Object.freeze()` 和 `Object.seal()` API 来防止修改内置原型，但如果使用的库修改了内置原型，这可能会破坏应用程序。
 
-### Node.js configuration flag
+### Node.js 配置标志
 
-Node.js also offers the ability to remove the `__proto__` property completely using the `--disable-proto=delete` flag. Note this is a defense in depth measure.
+Node.js 还提供了使用 `--disable-proto=delete` 标志完全删除 `__proto__` 属性的能力。请注意，这是深度防御措施。
 
-Prototype pollution is still possible using `constructor.prototype` properties but removing `__proto__` helps reduce attack surface and prevent certain attacks.
+使用 `constructor.prototype` 属性仍然可能发生原型污染，但删除 `__proto__` 有助于减少攻击面并防止某些攻击。
 
-### Other resources
+### 其他资源
 
-- [What is prototype pollution? (Portswigger Web Security Academy)](https://portswigger.net/web-security/prototype-pollution)
-- [Prototype pollution (Snyk Learn)](https://learn.snyk.io/lessons/prototype-pollution/javascript/)
+- [什么是原型污染？（Portswigger Web 安全学院）](https://portswigger.net/web-security/prototype-pollution)
+- [原型污染（Snyk 学习）](https://learn.snyk.io/lessons/prototype-pollution/javascript/)
 
-### Credits
+### 致谢
 
-Credit to [Gareth Hayes](https://garethheyes.co.uk/) for providing the original protection guidance [in this comment](https://github.com/OWASP/ASVS/issues/1563#issuecomment-1470027723).
+感谢 [Gareth Hayes](https://garethheyes.co.uk/) 在[此评论](https://github.com/OWASP/ASVS/issues/1563#issuecomment-1470027723)中提供原始的保护指导。
