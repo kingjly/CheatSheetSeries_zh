@@ -1,229 +1,229 @@
-# Virtual Patching Cheat Sheet
+# 虚拟补丁备忘录
 
-## Introduction
+## 引言
 
-The goal with this cheat Sheet is to present a concise virtual patching framework that organizations can follow to maximize the timely implementation of mitigation protections.
+本备忘录旨在提供一个简洁的虚拟补丁框架，组织可以遵循这个框架，以最大限度地及时实施缓解保护。
 
-## Definition: Virtual Patching
+## 定义：虚拟补丁
 
-**A security policy enforcement layer which prevents and reports the exploitation attempt of a known vulnerability.**
+**一种安全策略执行层，可以防止和报告已知漏洞的利用尝试。**
 
-The virtual patch works when the security enforcement layer analyzes transactions and intercepts attacks in transit, so malicious traffic never reaches the web application. The resulting impact of virtual patching is that, while the actual source code of the application itself has not been modified, the exploitation attempt does not succeed.
+虚拟补丁的工作原理是安全执行层分析事务并拦截传输中的攻击，使恶意流量永远无法到达 Web 应用程序。虚拟补丁的结果是，尽管应用程序的源代码本身未被修改，但利用尝试仍然无法成功。
 
-## Why Not Just Fix the Code
+## 为什么不直接修复代码
 
-From a purely technical perspective, the number one remediation strategy would be for an organization to correct the identified vulnerability within the source code of the web application. This concept is universally agreed upon by both web application security experts and system owners. Unfortunately, in real world business situations, there arise many scenarios where updating the source code of a web application is not easy such as:
+从纯技术角度来看，组织修正 Web 应用程序源代码中已识别的漏洞是最首要的补救策略。这一概念得到了 Web 应用程序安全专家和系统所有者的普遍认同。然而，在现实的商业环境中，存在许多更新 Web 应用程序源代码并不容易的场景，例如：
 
-- **Lack of resources** - Devs are already allocated to other projects.
-- **Third-party Software** - Code can not be modified by the user.
-- **Outsourced App Dev** - Changes would require a new project.
+- **资源不足** - 开发人员已分配到其他项目。
+- **第三方软件** - 用户无法修改代码。
+- **外包应用开发** - 更改将需要启动新项目。
 
-The important point is this - **Code level fixes and Virtual Patching are NOT mutually exclusive**. They are processes that are executed by different team (OWASP Builders/Devs vs. OWASP Defenders/OpSec) and can be run in tandem.
+重要的是 - **代码级修复和虚拟补丁并非互相排斥**。它们是由不同团队（OWASP 构建者/开发者 vs. OWASP 防御者/运营安全）执行的流程，可以同时进行。
 
-## Value of Virtual Patching
+## 虚拟补丁的价值
 
-The two main goals of Virtual Patching are:
+虚拟补丁的两个主要目标是：
 
-- **Minimize Time-to-Fix** - Fixing application source code takes time. The main purpose of a virtual patch is to implement a mitigation for the identified vulnerability as soon as possible. The urgency of this response may be different: for example if the vulnerability was identified in-house through code reviews or penetration testing vs. finding a vulnerability as part of live incident response.
-- **Attack Surface Reduction** - Focus on minimizing the attack vector. In some cases, such as missing positive security input validation, it is possible to achieve 100% attack surface reduction. In other cases, such with missing output encoding for XSS flaws, you may only be able to limit the exposures. Keep in mind - 50% reduction in 10 minutes is better than 100% reduction in 48 hrs.
+- **最小化修复时间** - 修复应用程序源代码需要时间。虚拟补丁的主要目的是尽快为已识别的漏洞实施缓解措施。这种响应的紧急程度可能不同：例如，通过代码审查或渗透测试在内部识别漏洞，还是作为实时事件响应的一部分发现漏洞。
+- **攻击面缩减** - 专注于最小化攻击向量。在某些情况下，如缺少正面安全输入验证，可以实现 100% 的攻击面缩减。在其他情况下，如针对 XSS 缺陷的缺失输出编码，您可能只能限制暴露。请记住 - 10 分钟内减少 50% 总是比 48 小时后减少 100% 要好。
 
-## Virtual Patching Tools
+## 虚拟补丁工具
 
-Notice that the definition above did not list any specific tool as there are a number of different options that may be used for virtual patching efforts such as:
+请注意，上述定义并未列出任何特定工具，因为可用于虚拟补丁工作的选项有多种，例如：
 
-- Intermediary devices such as a WAF or IPS appliance
-- Web server plugin such as ModSecurity
-- Application layer filter such as ESAPI WAF
+- 中间设备，如 WAF 或 IPS 设备
+- Web 服务器插件，如 ModSecurity
+- 应用层过滤器，如 ESAPI WAF
 
-For example purposes, we will show virtual patching examples using the open source [ModSecurity WAF tool](http://www.modsecurity.org).
+出于示例目的，我们将使用开源 [ModSecurity WAF 工具](http://www.modsecurity.org)展示虚拟补丁示例。
 
-## A Virtual Patching Methodology
+## 虚拟补丁方法论
 
-Virtual Patching, like most other security processes, is not something that should be approached haphazardly. Instead, a consistent, repeatable process should be followed that will provide the best chances of success. The following virtual patching workflow mimics the industry accepted practice for conducting IT Incident Response and consists of the following phases:
+虚拟补丁，与大多数其他安全流程一样，不应该随意进行。相反，应遵循一个一致且可重复的流程，以提供最佳成功机会。以下虚拟补丁工作流程模仿了业界公认的 IT 事件响应实践，包括以下阶段：
 
-1. Preparation.
-2. Identification.
-3. Analysis.
-4. Virtual Patch Creation.
-5. Implementation/Testing.
-6. Recovery/Follow Up.
+1. 准备。
+2. 识别。
+3. 分析。
+4. 虚拟补丁创建。
+5. 实施/测试。
+6. 恢复/跟进。
 
-## Example Public Vulnerability
+## 公开漏洞示例
 
-Let's take the following [SQL Injection vulnerability](https://packetstormsecurity.com/files/119217/WordPress-Shopping-Cart-8.1.14-Shell-Upload-SQL-Injection.html) as our example for the remainder of this article:
+让我们以以下 [SQL 注入漏洞](https://packetstormsecurity.com/files/119217/WordPress-Shopping-Cart-8.1.14-Shell-Upload-SQL-Injection.html)作为本文的后续示例：
 
 ```text
-WordPress Shopping Cart Plugin for WordPress
+WordPress 购物车插件
 /wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php
-reqID Parameter prone to SQL Injection.
+reqID 参数容易受到 SQL 注入攻击。
 ```
 
-**Description**:
+**描述**：
 
-WordPress Shopping Cart Plugin for WordPress contains a flaw that may allow an attacker to carry out an SQL injection attack.
+WordPress 购物车插件包含一个可能允许攻击者执行 SQL 注入攻击的缺陷。
 
-The issue is due to the `/wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php` script not properly sanitizing user-supplied input to the `reqID` parameter.
+问题源于 `/wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php` 脚本未正确清理 `reqID` 参数的用户提供的输入。
 
-This may allow an attacker to inject or manipulate SQL queries in the back-end database, allowing for the manipulation or disclosure of arbitrary data.
+这可能允许攻击者在后端数据库中注入或操纵 SQL 查询，从而允许操纵或泄露任意数据。
 
-## Preparation Phase
+## 准备阶段
 
-The importance of properly utilizing the preparation phase with regards to virtual patching cannot be overstated. You need to do a number of things to setup the virtual patching processes and framework **prior** to actually having to deal with an identified vulnerability, or worse yet, react to a live web application intrusion. The point is that during a live compromise is not the ideal time to be proposing installation of a web application firewall and the concept of a virtual patch. Tension is high during real incidents and time is of the essence, so lay the foundation of virtual patching when the waters are calm and get everything in place and ready to go when an incident does occur.
+关于虚拟补丁，正确利用准备阶段的重要性不言而喻。在实际处理已识别的漏洞或更糟的是对实时 Web 应用程序入侵做出反应之前，您需要做许多事情来建立虚拟补丁流程和框架。关键是在实时入侵期间不是安装 Web 应用程序防火墙和虚拟补丁概念的理想时机。事件期间紧张情绪高涨，时间紧迫，所以在水平静稳时为虚拟补丁奠定基础，并在发生事件时做好准备。
 
-Here are a few critical items that should be addressed during the preparation phase:
+以下是准备阶段应解决的几个关键项目：
 
-- **Public/Vendor Vulnerability Monitoring** - Ensure that you are signed up for all vendor alert mail-lists for commercial software that you are using. This will ensure that you will be notified in the event that the vendor releases vulnerability information and patching data.
-- **Virtual Patching Pre-Authorization** – Virtual Patches need to be implemented quickly so the normal governance processes and authorizations steps for standard software patches need to be expedited. Since virtual patches are not actually modifying source code, they do not require the same amount of regression testing as normal software patches. Categorizing virtual patches in the same group as Anti-Virus updates or Network IDS signatures helps to speed up the authorization process and minimize extended testing phases.
-- **Deploy Virtual Patching Tool In Advance** - As time is critical during incident response, it would be a poor time to have to get approvals to install new software. For instance, you can install ModSecurity WAF in embedded mode on your Apache servers, or an Apache reverse proxy server. The advantage with this deployment is that you can create fixes for non-Apache back-end servers. Even if you do not use ModSecurity under normal circumstances, it is best to have it "on deck" ready to be enabled if need be.
-- **Increase HTTP Audit Logging** – The standard Common Log Format (CLF) utilized by most web servers does not provide adequate data for conducting proper incident response. You need to have access to the following HTTP data:
-    - Request URI (including QUERY_STRING)
-    - Full Request Headers (including Cookies)
-    - Full Request Body (POST payload)
-    - Full Response Headers
-    - Full Response Body
+- **公开/供应商漏洞监控** - 确保已注册所有正在使用的商业软件的供应商警报邮件列表。这将确保在供应商发布漏洞信息和补丁数据时得到通知。
+- **虚拟补丁预授权** – 虚拟补丁需要快速实施，因此标准软件补丁的正常治理流程和授权步骤需要加快。由于虚拟补丁实际上并未修改源代码，它们不需要像普通软件补丁那样进行大量回归测试。将虚拟补丁归类为与防病毒更新或网络 IDS 签名相同的组别，有助于加快授权过程并最大限度地缩短扩展测试阶段。
+- **提前部署虚拟补丁工具** - 在事件响应期间，时间至关重要，此时获取安装新软件的批准将是不明智的。例如，您可以在 Apache 服务器上以嵌入模式安装 ModSecurity WAF，或者在 Apache 反向代理服务器上安装。这种部署的优势在于，即使对于非 Apache 后端服务器，您也可以创建修复。即使在正常情况下不使用 ModSecurity，最好将其"待命"，随时准备在需要时启用。
+- **增加 HTTP 审计日志记录** – 大多数 Web 服务器使用的标准通用日志格式（CLF）无法提供进行适当事件响应所需的充分数据。您需要访问以下 HTTP 数据：
+    - 请求 URI（包括 QUERY_STRING）
+    - 完整请求头（包括 Cookies）
+    - 完整请求正文（POST 负载）
+    - 完整响应头
+    - 完整响应正文
 
-## Identification Phase
+## 识别阶段
 
-The Identification Phase occurs when an organization becomes aware of a vulnerability within their web application. There are generally two different methods of identifying vulnerabilities: `Proactive` and `Reactive`.
+当组织意识到其 Web 应用程序中存在漏洞时，识别阶段就开始了。通常有两种识别漏洞的方法：`主动`和`被动`。
 
-### Proactive Identification
+### 主动识别
 
-This occurs when an organization takes it upon themselves to assess their web security posture and conducts the following tasks:
+当组织主动评估其 Web 安全状况并执行以下任务时，主动识别就发生了：
 
-- **Dynamic Application Assessments** - Ethical attackers conduct penetration tests or automated web assessment tools are run against the live web application to identify flaws.
-- **Source code reviews** - Ethical attackers use manual/automated means to analyze the source code of the web application to identify flaws.
+- **动态应用程序评估** - 道德黑客进行渗透测试，或对实时 Web 应用程序运行自动化 Web 评估工具以识别缺陷。
+- **源代码审查** - 道德黑客使用手动/自动方式分析 Web 应用程序的源代码以识别缺陷。
 
-Due to the fact that custom coded web applications are unique, these proactive identification tasks are extremely important as you are not able to rely upon third-party vulnerability notifications.
+由于自定义编码的 Web 应用程序是独特的，这些主动识别任务极其重要，因为您无法依赖第三方漏洞通知。
 
-### Reactive Identification
+### 被动识别
 
-There are three main reactive methods for identifying vulnerabilities:
+有三种主要的被动识别方法：
 
-- **Vendor contact (e.g. pre-warning)** - Occurs when a vendor discloses a vulnerability for commercial web application software that you are using. Example is Microsoft's [Active Protections Program (MAPP)](https://www.microsoft.com/en-us/msrc/mapp)
-- **Public disclosure** - Public vulnerability disclosure for commercial/open source web application software that you are using. The threat level for public disclosure is increased as more people know about the vulnerability.
-- **Security incident** – This is the most urgent situation as the attack is active. In these situations, remediation must be immediate.
+- **供应商联系（例如预警）** - 当供应商披露您正在使用的商业 Web 应用程序软件的漏洞时发生。例如微软的[主动保护计划（MAPP）](https://www.microsoft.com/en-us/msrc/mapp)
+- **公开披露** - 针对您正在使用的商业/开源 Web 应用程序软件的公开漏洞披露。公开披露的威胁级别随着了解漏洞的人数增加而提高。
+- **安全事件** – 这是最紧急的情况，攻击正在进行中。在这种情况下，补救必须立即进行。
 
-## Analysis Phase
+## 分析阶段
 
-Here are the recommended steps to start the analysis phase:
+以下是开始分析阶段的推荐步骤：
 
-1. **Determine Virtual Patching Applicability** - Virtual patching is ideally suited for injection-type flaws but may not provide an adequate level of attack surface reduction for other attack types or categories. Thorough analysis of the underlying flaw should be conducted to determine if the virtual patching tool has adequate detection logic capabilities.
-2. **Utilize Bug Tracking/Ticketing System** - Enter the vulnerability information into a bug tracking system for tracking purposes and metrics. Recommend you use ticketing systems you already use such as Jira or you may use a specialized tool such as [ThreadFix](https://threadfix.it/).
-3. **Verify the name of the vulnerability** - This means that you need to have the proper public vulnerability identifier (such as CVE name/number) specified by the vulnerability announcement, vulnerability scan, etc. If the vulnerability is identified proactively rather than through public announcements, then you should assign your own unique identifier to each vulnerability.
-4. **Designate the impact level** - It is always important to understand the level of criticality involved with a web vulnerability. Information leakages may not be treated in the same manner as an SQL Injection issue.
-5. **Specify which versions of software are impacted** - You need to identify what versions of software are listed so that you can determine if the version(s) you have installed are affected.
-6. **List what configuration is required to trigger the problem** - Some vulnerabilities may only manifest themselves under certain configuration settings.
-7. **List Proof of Concept (PoC) exploit code or payloads used during attacks/testing** - Many vulnerability announcements have accompanying exploit code that shows how to demonstrate the vulnerability. If this data is available, make sure to download it for analysis. This will be useful later on when both developing and testing the virtual patch.
+1. **确定虚拟补丁适用性** - 虚拟补丁最适合注入类型缺陷，但对于其他攻击类型或类别可能无法提供足够的攻击面缩减。应对底层缺陷进行彻底分析，以确定虚拟补丁工具是否具有足够的检测逻辑能力。
+2. **使用缺陷跟踪/工单系统** - 将漏洞信息输入缺陷跟踪系统以进行跟踪和度量。建议使用您已有的工单系统，如 Jira，或使用专门的工具，如 [ThreadFix](https://threadfix.it/)。
+3. **验证漏洞名称** - 这意味着您需要指定漏洞公告、漏洞扫描等提供的正确的公开漏洞标识符（如 CVE 名称/编号）。如果漏洞是主动识别而非通过公开公告发现的，则应为每个漏洞分配唯一标识符。
+4. **指定影响级别** - 始终重要的是要了解 Web 漏洞所涉及的关键程度。信息泄露可能不会像 SQL 注入问题那样处理。
+5. **指定受影响的软件版本** - 您需要识别列出的软件版本，以确定您安装的版本是否受影响。
+6. **列出触发问题所需的配置** - 某些漏洞可能仅在特定配置设置下才会显现。
+7. **列出攻击/测试期间使用的概念验证（PoC）利用代码或有效载荷** - 许多漏洞公告都附带展示如何演示漏洞的利用代码。如果有这些数据，请确保下载以进行分析。这将在开发和测试虚拟补丁时非常有用。
 
-## Virtual Patch Creation Phase
+## 虚拟补丁创建阶段
 
-The process of creating an accurate virtual patch is bound by two main tenants:
+创建准确虚拟补丁的过程受两个主要原则约束：
 
-1. **No false positives** - Do not ever block legitimate traffic under any circumstances.
-2. **No false negatives** - Do not ever miss attacks, even when the attacker intentionally tries to evade detection.
+1. **无误报** - 在任何情况下都不要阻止合法流量。
+2. **无漏报** - 即使攻击者故意尝试规避检测，也绝不能遗漏攻击。
 
-Care should be taken to attempt to minimize either of these two rules. It may not be possible to adhere 100% to each of these goals but remember that virtual patching is about **Risk Reduction**. It should be understood by business owners that while you are gaining the advantage of shortening the Time-to-Fix metric, you may not be implementing a complete fix for the flaw.
+应谨慎地尝试最小化这两个规则。可能无法 100% 遵守每个目标，但请记住，虚拟补丁是关于**风险降低**。业务所有者应该理解，虽然您缩短了修复时间指标，但可能并未对缺陷实施完整修复。
 
-### Manual Virtual Patch Creation
+### 手动虚拟补丁创建
 
-#### Positive Security (Allow List) Virtual Patches (**Recommended Solution**)
+#### 正面安全（允许列表）虚拟补丁（**推荐解决方案**）
 
-Positive security model (allowlist) is a comprehensive security mechanism that provides an independent input validation envelope to an application. The model specifies the characteristics of valid input (character set, length, etc…) and denies anything that does not conform. By defining rules for every parameter in every page in the application the application is protected by an additional security envelop independent from its code.
+正面安全模型（允许列表）是一种全面的安全机制，为应用程序提供独立的输入验证封装。该模型指定有效输入的特征（字符集、长度等），并拒绝不符合要求的任何内容。通过为应用程序中每个页面的每个参数定义规则，应用程序将获得独立于其代码的额外安全封装。
 
-##### Example Allow List ModSecurity Virtual Patch
+##### 允许列表 ModSecurity 虚拟补丁示例
 
-In order to create an allow-list virtual patch, you must be able to verify what the normal, expected input values are. If you have implemented proper audit logging as part of the Preparation Phase, then you should be able to review audit logs to identify the format of expected input types. In this case, the `reqID` parameter is supposed to only hold integer characters so we can use this virtual patch:
+要创建允许列表虚拟补丁，您必须能够验证正常的、预期的输入值。如果您在准备阶段已实施适当的审计日志记录，则应能够审查审计日志以识别预期输入类型的格式。在这种情况下，`reqID` 参数应仅包含整数字符，因此我们可以使用此虚拟补丁：
 
 ```text
 ##
-## Verify we only receive 1 parameter called "reqID"
+## 验证我们只接收一个名为"reqID"的参数
 ##
-SecRule REQUEST_URI "@contains /wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php" "chain,id:1,phase:2,t:none,t:Utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,t:lowercase,block,msg:'Input Validation Error for \'reqID\' parameter - Duplicate Parameters Names Seen.',logdata:'%{matched_var}'"
+SecRule REQUEST_URI "@contains /wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php" "chain,id:1,phase:2,t:none,t:Utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,t:lowercase,block,msg:'输入验证错误 \'reqID\' 参数 - 检测到重复参数名称。',logdata:'%{matched_var}'"
   SecRule &ARGS:/reqID/ "!@eq 1"
 
 ##
-## Verify reqID's payload only contains integers
+## 验证 reqID 的有效载荷仅包含整数
 ##
-SecRule REQUEST_URI "@contains /wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php" "chain,id:2,phase:2,t:none,t:Utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,t:lowercase,block,msg:'Input Validation Error for \'reqID\' parameter.',logdata:'%{args.reqid}'"
+SecRule REQUEST_URI "@contains /wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php" "chain,id:2,phase:2,t:none,t:Utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,t:lowercase,block,msg:'输入验证错误 \'reqID\' 参数。',logdata:'%{args.reqid}'"
   SecRule ARGS:/reqID/ "!@rx ^[0-9]+$"
 ```
 
-This virtual patch will inspect the `reqID` parameter value on the specified page and prevent any characters other than integers as input.
+此虚拟补丁将检查指定页面上的 `reqID` 参数值，并阻止除整数以外的任何字符作为输入。
 
-- **Note** - You should make sure to assign rule IDs properly and track them in the bug tracking system.
-- **Caution**: There are numerous evasion vectors when creating virtual patches. Please consult the [OWASP Best Practices: Virtual Patching document](https://owasp.org/www-community/Virtual_Patching_Best_Practices) for a more thorough discussion on countering evasion methods.
+- **注意** - 您应确保正确分配规则 ID 并在缺陷跟踪系统中跟踪它们。
+- **警告**：在创建虚拟补丁时存在众多规避向量。请查阅 [OWASP 最佳实践：虚拟补丁文档](https://owasp.org/www-community/Virtual_Patching_Best_Practices)，以更全面地讨论对抗规避方法。
 
-#### Negative Security (Block List) Virtual Patches
+#### 负面安全（黑名单）虚拟补丁
 
-A negative security model (denylist) is based on a set of rules that detect specific known attacks rather than allow only valid traffic.
+负面安全模型（黑名单）基于一组检测特定已知攻击的规则，而不是仅允许有效流量。
 
-##### Example Block List ModSecurity Virtual Patch
+##### 黑名单 ModSecurity 虚拟补丁示例
 
-Here is the example [PoC code](https://packetstormsecurity.com/files/119217/WordPress-Shopping-Cart-8.1.14-Shell-Upload-SQL-Injection.html) that was supplied by the public advisory:
+以下是公开通告提供的[概念验证（PoC）代码](https://packetstormsecurity.com/files/119217/WordPress-Shopping-Cart-8.1.14-Shell-Upload-SQL-Injection.html)：
 
 ```text
 http://localhost/wordpress/wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php?reqID=1' or 1='1
 ```
 
-Looking at the payload, we can see that the attacker is inserting a single quote character and then adding additional SQL query logic to the end. Based on this data, we could disallow the single quote character like this:
+查看有效载荷，我们可以看到攻击者插入了单引号字符，然后在末尾添加了额外的 SQL 查询逻辑。基于这些数据，我们可以像这样禁止单引号字符：
 
 ```text
-SecRule REQUEST_URI "@contains /wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php" "chain,id:1,phase:2,t:none,t:Utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,t:lowercase,block,msg:'Input Validation Error for \'reqID\' parameter.',logdata:'%{args.reqid}'"
+SecRule REQUEST_URI "@contains /wp-content/plugins/levelfourstorefront/scripts/administration/exportsubscribers.php" "chain,id:1,phase:2,t:none,t:Utf8toUnicode,t:urlDecodeUni,t:normalizePathWin,t:lowercase,block,msg:'输入验证错误 \'reqID\' 参数。',logdata:'%{args.reqid}'"
   SecRule ARGS:/reqID/ "@pm '"
 ```
 
-#### Which Method is Better for Virtual Patching – Positive or Negative Security
+#### 哪种方法更适合虚拟补丁 - 正面还是负面安全
 
-A virtual patch may employ either a positive or negative security model. Which one you decide to use depends on the situation and a few different considerations. For example, negative security rules can usually be implemented more quickly, however the possible evasions are more likely.
+虚拟补丁可以采用正面或负面安全模型。您决定使用哪种方法取决于具体情况和几个不同的考虑因素。例如，负面安全规则通常可以更快地实施，但可能的规避方法更多。
 
-Positive security rules, only the other hand, provides better protection however it is often a manual process and thus is not scalable and difficult to maintain for large/dynamic sites. While manual positive security rules for an entire site may not be feasible, a positive security model can be selectively employed when a vulnerability alert identifies a specific location with a problem.
+另一方面，正面安全规则提供更好的保护，但通常是手动过程，因此对于大型/动态站点不可扩展且难以维护。虽然整个站点的手动正面安全规则可能不可行，但当漏洞警报识别出特定位置存在问题时，可以有选择地采用正面安全模型。
 
-#### Beware of Exploit-Specific Virtual Patches
+#### 警惕针对特定利用的虚拟补丁
 
-You want to resist the urge to take the easy road and quickly create an **exploit-specific virtual patch**.
+您要抵制轻易地快速创建**针对特定利用的虚拟补丁**的诱惑。
 
-For instance, if an authorized penetration test identified an XSS vulnerability on a page and used the following attack payload in the report:
+例如，如果授权渗透测试在页面上识别出 XSS 漏洞，并在报告中使用以下攻击有效载荷：
 
 ```html
 <script>
-  alert('XSS Test')
+  alert('XSS 测试')
 </script>
 ```
 
-It would not be wise to implement a virtual patch that simply blocks that exact payload. While it may provide some immediate protection, its long term value is significantly decreased.
+仅仅实施阻止该确切有效载荷的虚拟补丁是不明智的。虽然它可能提供一些即时保护，但其长期价值会大大降低。
 
-### Automated Virtual Patch Creation
+### 自动虚拟补丁创建
 
-Manual patch creation may become unfeasible as the number of vulnerabilities grow and automated means may become necessary. If the vulnerabilities were identified using automated tools and an XML report is available, it is possible to leverage automated processes to auto-convert this vulnerability data into virtual patches for protection systems.
+随着漏洞数量增长，手动补丁创建可能变得不可行，因此可能需要自动化方法。如果使用自动化工具识别漏洞并且有 XML 报告可用，则可以利用自动化流程将此漏洞数据转换为安全系统的虚拟补丁。
 
-Three examples include:
+三个示例包括：
 
-- **OWASP ModSecurity Core Rule Set (CRS) Scripts** - The OWASP CRS includes scripts to auto-convert XML output from tools such as [OWASP ZAP into ModSecurity Virtual Patches]. Reference [here](https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/modsecurity-advanced-topic-of-the-week-automated-virtual-patching-using-owasp-zed-attack-proxy).
-- **ThreadFix Virtual Patching** - ThreadFix also includes automated processes of converting imported vulnerability XML data into virtual patches for security tools such as ModSecurity. Reference [here](https://github.com/denimgroup/threadfix/wiki/Waf-Types#mod_security).
-- **Direct Importing to WAF Device** - Many commercial WAF products have the capability to import DAST tool XML report data and automatically adjust their protection profiles.
+- **OWASP ModSecurity 核心规则集（CRS）脚本** - OWASP CRS 包括脚本，可以自动将 [OWASP ZAP 等工具的 XML 输出转换为 ModSecurity 虚拟补丁]。参考[此处](https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/modsecurity-advanced-topic-of-the-week-automated-virtual-patching-using-owasp-zed-attack-proxy)。
+- **ThreadFix 虚拟补丁** - ThreadFix 还包括将导入的漏洞 XML 数据转换为 ModSecurity 等安全工具虚拟补丁的自动化流程。参考[此处](https://github.com/denimgroup/threadfix/wiki/Waf-Types#mod_security)。
+- **直接导入到 WAF 设备** - 许多商业 WAF 产品能够导入 DAST 工具 XML 报告数据并自动调整其保护配置文件。
 
-## Implementation/Testing Phase
+## 实施/测试阶段
 
-In order to accurately test out the newly created virtual patches, it may be necessary to use an application other than a web browser. Some useful tools are:
+为了准确测试新创建的虚拟补丁，可能需要使用 Web 浏览器以外的应用程序。一些有用的工具包括：
 
-- Web browser.
-- Command-line web clients such as Curl and Wget.
-- Local Proxy Servers such as [OWASP ZAP](https://www.zaproxy.org/).
-- [ModSecurity AuditViewer](https://web.archive.org/web/20181011065823/http://www.jwall.org/web/audit/viewer.jsp) – which allows you to load a ModSecurity audit log file, manipulate it and then re-inject the data back into any web server.
+- Web 浏览器
+- 命令行 Web 客户端，如 Curl 和 Wget
+- 本地代理服务器，如 [OWASP ZAP](https://www.zaproxy.org/)
+- [ModSecurity 审计查看器](https://web.archive.org/web/20181011065823/http://www.jwall.org/web/audit/viewer.jsp) – 允许您加载 ModSecurity 审计日志文件，操作它，然后将数据重新注入任何 Web 服务器
 
-### Testing Steps
+### 测试步骤
 
-- Implement virtual patches initially in a "Log Only" configuration to ensure that you do not block any normal user traffic (false positives).
-- If the vulnerability was identified by a specific tool or assessment team - request a retest.
-- If retesting fails due to evasions, then you must go back to the Analysis phase to identify how to better fix the issue.
+- 最初以"仅记录"配置实施虚拟补丁，确保不会阻止任何正常用户流量（误报）
+- 如果漏洞是由特定工具或评估团队识别的 - 请求重新测试
+- 如果重新测试因规避失败，则必须返回分析阶段，识别如何更好地修复问题
 
-## Recovery/Follow-Up Phase
+## 恢复/跟进阶段
 
-- **Update Data in Ticket System** - Although you may need to expedite the implementation of virtual patches, you should still track them in your normal Patch Management processes. This means that you should create proper change request tickets, etc… so that their existence and functionality is documented. Updating the ticket system also helps to identify "time-to-fix" metrics for different vulnerability types. Make sure to properly log the virtual patch rule ID values.
-- **Periodic Re-assessments** - You should also have periodic re-assessments to verify if/when you can remove previous virtual patches if the web application code has been updated with the real source code fix. I have found that many people opt to keep virtual patches in place due to better identification/logging vs. application or db capabilities.
-- **Running Virtual Patch Alert Reports** - Run reports to identify if/when any of your virtual patches have triggered. This will show value for virtual patching in relation to windows of exposure for source code time-to-fix.
+- **更新工单系统中的数据** - 尽管您可能需要加快虚拟补丁的实施，但仍应在正常的补丁管理流程中跟踪它们。这意味着您应创建适当的变更请求工单等，以记录其存在和功能。更新工单系统还有助于识别不同漏洞类型的"修复时间"指标。确保正确记录虚拟补丁规则 ID 值。
+- **定期重新评估** - 您还应进行定期重新评估，验证是否/何时可以移除先前的虚拟补丁，如果 Web 应用程序代码已使用真正的源代码修复。我发现许多人选择保留虚拟补丁，因为其识别/日志记录功能优于应用程序或数据库功能。
+- **运行虚拟补丁警报报告** - 运行报告以识别您的虚拟补丁是否/何时触发。这将显示虚拟补丁在源代码修复时间窗口方面的价值。
 
-## References
+## 参考文献
 
-- [OWASP Virtual Patching Best Practices](https://owasp.org/www-community/Virtual_Patching_Best_Practices).
-- [OWASP Securing WebGoat with ModSecurity](https://wiki.owasp.org/index.php/Category:OWASP_Securing_WebGoat_using_ModSecurity_Project).
+- [OWASP 虚拟补丁最佳实践](https://owasp.org/www-community/Virtual_Patching_Best_Practices)
+- [OWASP 使用 ModSecurity 保护 WebGoat](https://wiki.owasp.org/index.php/Category:OWASP_Securing_WebGoat_using_ModSecurity_Project)
