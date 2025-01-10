@@ -1,70 +1,77 @@
-# OAuth 2.0 Protocol Cheatsheet
+# OAuth 2.0 协议安全备忘录
 
-This cheatsheet describes the best current security practices [1] for OAuth 2.0 as derived from its RFC [2][3]. OAuth became the standard for API protection and the basis for federated login using OpenID Connect. OpenID Connect 1.0 is a simple identity layer on top of the OAuth 2.0 protocol. It enables clients to verify the identity of the end user based on the authentication performed by an authorization server, as well as to obtain basic profile information about the end user in an interoperable and REST-like manner.
+本备忘录描述了基于 RFC 文档的 OAuth 2.0 最佳当前安全实践。OAuth 已成为 API 保护的标准，并成为使用 OpenID Connect 的联合登录基础。OpenID Connect 1.0 是构建在 OAuth 2.0 协议之上的简单身份层。
 
-## Terminology
+## 术语
 
-- Access tokens = provide an abstraction, replacing different authorization constructs (e.g., username and password, assertion) for a single token understood by the resource server. This abstraction enables issuing access tokens valid for a short period, as well as removing the resource server's need to understand a wide range of authentication schemes.
-- Refresh tokens = are credentials used to obtain access tokens. These are issued to the client by the authorization server and are used to obtain a new access token when the current access token becomes invalid or expires or to obtain additional access tokens with identical or narrower scope (access tokens may have a shorter lifetime and fewer permissions than authorized by the resource owner).
-- Client = generally refers to an application making protected resource requests on behalf of the resource owner and with its authorization. The term "client" does not imply any particular implementation characteristics (e.g., whether the application executes on a server, a desktop, or other devices).
-- Authorization Server (AS) = refers to the server issuing access tokens to the client after successfully authenticating the resource owner and obtaining authorization.
-- Resource Owner (RO) = refers to an entity capable of granting access to a protected resource. When the resource owner is a person, it is referred to as an end user.
-- Resource Server (RS) = refers to the server hosting the protected resources, capable of accepting and responding to protected resource requests using access tokens.
+- **访问令牌**：提供抽象，用单一令牌替代不同的授权构造（如用户名和密码、断言），资源服务器可理解此令牌。这种抽象使得可以发出短期有效的访问令牌，并且资源服务器无需理解各种身份验证方案。
 
-## OAuth 2.0 Essential Basics
+- **刷新令牌**：用于获取访问令牌的凭据。由授权服务器颁发给客户端，用于在当前访问令牌失效、过期时获取新的访问令牌，或获取具有相同或更窄范围的额外访问令牌。
 
-1. Clients and Authorization Server must not expose URLs that forward the user's browser to arbitrary URIs obtained from a query parameter ("open redirectors") which can enable exfiltration of authorization codes and access tokens.
-2. Clients have ensured that the Authorization Server supports PKCE may rely on the CSRF protection provided by PKCE. In OpenID Connect flows, the "nonce" parameter provides CSRF protection. Otherwise, one-time user CSRF tokens carried in the "state" parameter that are securely bound to the user agent must be used for CSRF protection.
-3. When an OAuth Client can interact with more than one Authorization Server, Clients should use the issuer "iss" parameter as a countermeasure, or based on an "iss" value in the authorization response (such as the "iss" Claim in the ID Token in OpenID)
-4. When the other countermeasure options for OAuth clients interacting with more than one Authorization Servers are absent, Clients may instead use distinct redirect URIs to identify authorization endpoints and token endpoints.
-5. An Authorization Server avoids forwarding or redirecting a request potentially containing user credentials accidentally.
+- **客户端**：代表资源所有者发出受保护资源请求并获得授权的应用程序。"客户端"一词不暗示任何特定的实现特征。
 
-## PKCE - Proof Key for Code Exchange Mechanism
+- **授权服务器（AS）**：成功验证资源所有者身份并获得授权后向客户端颁发访问令牌的服务器。
 
-OAuth 2.0 public clients utilizing the Authorization Code Grant are susceptible to the authorization code interception attack. Proof Key for Code Exchange (PKCE, pronounced "pixy") is the technique used to mitigate against the threat of authorization code interception attack.
+- **资源所有者（RO）**：能够授予受保护资源访问权限的实体。当资源所有者是人时，称为最终用户。
 
-Originally, PKCE is intended to be used solely focused on securing native apps, but then it became a deployed OAuth feature. It does not only protect against authorization code injection attacks but also protects authorization codes created for public clients as PKCE ensures that the attacker cannot redeem a stolen authorization code at the token endpoint of the authorization server without knowledge of the code_verifier.
+- **资源服务器（RS）**：托管受保护资源的服务器，能够使用访问令牌接受和响应受保护资源请求。
 
-6. Clients are preventing injection (replay) of authorization codes into the authorization response by using PKCE flow. Additionally, clients may use the OpenID Connect "nonce" parameter and the respective Claim in the ID Token instead. The PKCE challenge or OpenID Connect "nonce" must be transaction-specific and securely bound to the client and the user agent in which the transaction was started.
-7. When using PKCE, Clients should use PKCE code challenge methods that do not expose the PKCE verifier in the authorization request. Otherwise, attackers who can read the authorization request can break the security provided by the PKCE. Authorization servers must support PKCE.
-8. If a Client sends a valid PKCE "code_challenge" parameter in the authorization request, the authorization server enforces the correct usage of "code_verifier" at the token endpoint.
-9. Authorization Servers are mitigating PKCE Downgrade Attacks by ensuring a token request containing a "code_verifier" parameter is accepted only if a "code_challenge" parameter is present in the authorization request.
+## OAuth 2.0 基本安全要点
 
-## Implicit Grant
+### 基础安全实践
 
-The implicit grant is a simplified authorization code flow optimized for clients implemented in a browser using a scripting language such as JavaScript. In the implicit flow, instead of issuing the client an authorization code, the client is issued an access token directly (as the result of the resource owner authorization). The grant type is implicit, as no intermediate credentials (such as an authorization code) are issued (and later used to obtain an access token).
+1. 客户端和授权服务器不得暴露可将用户浏览器转发到查询参数中获取的任意 URI 的 URL（"开放重定向器"），这可能导致授权码和访问令牌泄露。
 
-10. Clients are using the response type "code" (aka authorization code grant type) or any other response type that causes the authorization server to issue access tokens in the token response, such as the "code id_token" response type. This allows the Authorization Server to detect replay attempts by attackers and generally reduces the attack surface since access tokens are not exposed in the URLs. It also allows the Authorization Server to sender-constrain the issued tokens.
+2. 客户端必须确保授权服务器支持 PKCE，并依赖 PKCE 提供的 CSRF 保护。在 OpenID Connect 流程中，"nonce"参数提供 CSRF 保护。否则，必须使用安全绑定到用户代理的一次性用户 CSRF 令牌（携带在"state"参数中）。
 
-## Token Replay Prevention
+3. 当 OAuth 客户端可以与多个授权服务器交互时，客户端应使用颁发者"iss"参数作为对策，或基于授权响应中的"iss"值（如 OpenID 中 ID 令牌中的"iss"声明）。
 
-11. The Authorization and Resource Servers are using mechanisms for sender-constraining access tokens to prevent token replays, such as Mutual TLS for OAuth 2.0 or OAuth Demonstration of Proof of Possession (DPoP).
-12. Refresh tokens are sender-constrained or use refresh token rotation.
+4. 当与多个授权服务器交互的 OAuth 客户端缺少其他对策选项时，客户端可以使用不同的重定向 URI 来标识授权端点和令牌端点。
 
-## Access Token Privilege Restriction
+5. 授权服务器避免转发或重定向可能意外包含用户凭据的请求。
 
-13. The privileges associated with an access token should be restricted to the minimum required for the particular application or use case. This prevents clients from exceeding the privileges authorized by the Resource Owner. It also prevents users from exceeding their privileges authorized by the respective security policy. Privilege restrictions also help to reduce the impact of access token leakage.
-14. Access tokens are restricted to certain Resource Servers (audience restriction), preferably to a single Resource Server. The Authorization Server should associate the access token with certain Resource Servers and every Resource Server is obliged to verify, for every request, whether the access token sent with that request was meant to be used for that particular Resource Server. If not, the Resource Server must refuse to serve the respective request. Clients and Authorization Servers may utilize the parameters "scope" and "resource", respectively to determine the Resource Server they want to access.
-15. Access tokens are restricted to certain resources and actions on Resource Servers or resources. The Authorization Server should associate the access token with the respective resource and actions and every Resource Server is obliged to verify, for every request, whether the access token sent with that request was meant to be used for that particular action on the particular resource. If not, the Resource Server must refuse to serve the respective request. Clients and Authorization Servers may utilize the parameters "scope" and "authorization_details" to determine those resources and/or actions.
+### PKCE（代码交换证明密钥）机制
 
-## Resource Owner Password Credentials Grant
+PKCE 旨在缓解授权码拦截攻击，最初用于保护原生应用，现已成为广泛部署的 OAuth 特性。
 
-16. The Resource Owner password credentials grant is not used. This grant type insecurely exposes the credentials of the Resource Owner to the client, increasing the attack surface of the application.
+6. 客户端通过使用 PKCE 流程防止授权码注入（重放）。客户端还可以使用 OpenID Connect "nonce"参数。PKCE 挑战或 OpenID Connect "nonce"必须特定于事务，并安全地绑定到启动事务的客户端和用户代理。
 
-## Client Authentication
+7. 使用 PKCE 时，客户端应使用不在授权请求中暴露 PKCE 验证器的代码挑战方法。授权服务器必须支持 PKCE。
 
-17. Authorization Servers are using client authentication if possible. It is recommended to use asymmetric (public-key based) methods for client authentication such as mTLS or "private_key_jwt" (OpenID Connect). When asymmetric methods for client authentication are used, Authorization Servers do not need to store sensitive symmetric keys, making these methods more robust against several attacks.
+8. 如果客户端在授权请求中发送有效的 PKCE "code_challenge" 参数，授权服务器必须在令牌端点强制正确使用 "code_verifier"。
 
-## Other Recommendations
+9. 授权服务器通过确保仅在授权请求中存在 "code_challenge" 参数时才接受包含 "code_verifier" 参数的令牌请求，从而缓解 PKCE 降级攻击。
 
-18. Authorization Servers do not allow clients to influence their "client_id" or "sub" value or any other Claim that can be confused with a genuine Resource Owner. It is recommended to use end-to-end TLS.
-19. Authorization responses are not transmitted over unencrypted network connections. Authorization Servers must not allow redirect URIs that use the "http" scheme except for native clients that use Loopback Interface Redirection.
+### 隐式授权
 
-References:
+10. 客户端使用响应类型 "code"（授权码授权类型）或导致授权服务器在令牌响应中颁发访问令牌的其他响应类型。这允许授权服务器检测攻击者的重放尝试，并减少攻击面，因为访问令牌不会暴露在 URL 中。
+
+### 令牌重放预防
+
+11. 授权和资源服务器使用发送者约束访问令牌的机制，如 OAuth 2.0 的相互 TLS 或 OAuth 拥有证明（DPoP）。
+
+12. 刷新令牌被发送者约束或使用刷新令牌轮换。
+
+### 访问令牌权限限制
+
+13. 访问令牌的权限应限制为特定应用或用例所需的最小权限，防止客户端超出资源所有者授权的权限。
+
+14. 访问令牌限制为特定资源服务器（受众限制），最好限制为单个资源服务器。
+
+15. 访问令牌限制为资源服务器上的特定资源和操作。
+
+### 其他建议
+
+16. 不使用资源所有者密码凭据授权，因为这会不安全地将资源所有者凭据暴露给客户端。
+
+17. 授权服务器尽可能使用客户端身份验证，推荐使用非对称（基于公钥）的身份验证方法。
+
+18. 授权服务器不允许客户端影响其 "client_id" 或 "sub" 值。建议使用端到端 TLS。
+
+19. 授权响应不通过未加密的网络连接传输。授权服务器不得允许使用 "http" 方案的重定向 URI，本地环回接口重定向除外。
+
+## 参考文献
 
 - [RFC 6750](https://www.rfc-editor.org/info/rfc6750)
 - [RFC 6749](https://www.rfc-editor.org/info/rfc6749)
-- [OAuth 2.0 Best Practices](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-best-practices)
-- [Mix-up attacks](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-18#mix_up)
-- [RFC9207](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-18#section-2.1-4)
-- [Other Countermeasures for Mix-up attacks](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-18#section-2.1-6)
+- [OAuth 2.0 最佳实践](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-best-practices)
