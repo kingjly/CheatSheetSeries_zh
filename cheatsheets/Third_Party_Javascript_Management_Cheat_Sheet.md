@@ -1,307 +1,290 @@
-# Third Party JavaScript Management Cheat Sheet
+# 第三方 JavaScript 管理备忘录
 
-## Introduction
+## 引言
 
-Tags, aka marketing tags, analytics tags etc. are small bits of JavaScript on a web page. They can also be HTML image elements when JavaScript is disabled. The reason for them is to collect data on the web user actions and browsing context for use by the web page owner in marketing.
+标签（又称营销标签、分析标签等）是网页上的小段 JavaScript 代码。当 JavaScript 被禁用时，它们也可能是 HTML 图像元素。这些标签的目的是收集网页用户的行为和浏览上下文数据，供网页所有者用于营销。
 
-Third party vendor JavaScript tags (hereinafter, **tags**) can be divided into two types:
+第三方供应商 JavaScript 标签（以下简称**标签**）可分为两类：
 
-- User interface tags.
-- Analytic tags.
+- 用户界面标签
+- 分析标签
 
-User interface tags have to execute on the client because they change the DOM; displaying a dialog or image or changing text etc.
+用户界面标签必须在客户端执行，因为它们会改变 DOM；例如显示对话框、图像或更改文本等。
 
-Analytics tags send information back to a marketing information database; information like what user action was just taken, browser metadata, location information, page metadata etc. The rationale for analytics tags is to provide data from the user's browser DOM to the vendor for some form of marketing analysis. This data can be anything available in the DOM. The data is used for user navigation and clickstream analysis, identification of the user to determine further content to display etc., and various marketing analysis functions.
+分析标签会将信息发送回营销信息数据库；这些信息包括用户刚刚执行的操作、浏览器元数据、位置信息、页面元数据等。分析标签的基本原理是将用户浏览器 DOM 中的数据提供给供应商，用于某种形式的营销分析。这些数据可以是 DOM 中的任何可用信息。数据用于用户导航和点击流分析、识别用户以确定要显示的进一步内容等，以及各种营销分析功能。
 
-The term **host** refers to the original site the user goes to, such as a shopping or news site, that contains or retrieves and executes third party JavaScript tag for marketing analysis of the user actions.
+术语**宿主**指用户访问的原始站点，如购物或新闻网站，该站点包含或检索并执行第三方 JavaScript 标签以分析用户行为。
 
-## Major risks
+## 主要风险
 
-The single greatest risk is a compromise of the third party JavaScript server, and the injection of malicious JavaScript into the original tag JavaScript. This has happened in 2018 and likely earlier.
+最大的风险是第三方 JavaScript 服务器被入侵，并将恶意 JavaScript 注入原始标签 JavaScript 中。这种情况在 2018 年已经发生，并且可能更早。
 
-The invocation of third-party JS code in a web application requires consideration for 3 risks in particular:
+在 Web 应用程序中调用第三方 JS 代码需要特别考虑 3 个风险：
 
-1. The loss of control over changes to the client application,
-2. The execution of arbitrary code on client systems,
-3. The disclosure or leakage of sensitive information to 3rd parties.
+1. 失去对客户端应用程序的控制
+2. 在客户端系统上执行任意代码
+3. 向第三方泄露或泄漏敏感信息
 
-### Risk 1: Loss of control over changes to the client application
+### 风险 1：失去对客户端应用程序的控制
 
-This risk arises from the fact that there is usually no guarantee that the code hosted at the third-party will remain the same as seen from the developers and testers: new features may be pushed in the third-party code at any time, thus potentially breaking the interface or data-flows and exposing the availability of your application to its users/customers.
+这种风险源于通常无法保证第三方托管的代码将保持开发者和测试者看到的原样：第三方代码随时可能推送新功能，从而可能破坏接口或数据流，并影响应用程序对用户/客户的可用性。
 
-Typical defenses include, but are not restricted to: in-house script mirroring (to prevent alterations by 3rd parties), sub-resource integrity (to enable browser-level interception) and secure transmission of the third-party code (to prevent modifications while in-transit). See below for more details.
+典型的防御措施包括但不限于：内部脚本镜像（防止第三方更改）、子资源完整性（启用浏览器级拦截）和安全传输第三方代码（防止传输过程中被修改）。下文将详细介绍。
 
-### Risk 2: Execution of arbitrary code on client systems
+### 风险 2：在客户端系统上执行任意代码
 
-This risk arises from the fact that third-party JavaScript code is rarely reviewed by the invoking party prior to its integration into a website/application. As the client reaches the hosting website/application, this third-party code gets executed, thus granting the third-party the exact same privileges that were granted to the user (similar to [XSS attacks](https://owasp.org/www-community/attacks/xss/)).
+这种风险源于第三方 JavaScript 代码很少在集成到网站/应用程序之前被调用方审查。当客户端访问托管网站/应用程序时，这段第三方代码会被执行，从而授予第三方与用户相同的权限（类似于 [XSS 攻击](https://owasp.org/www-community/attacks/xss/)）。
 
-Any testing performed prior to entering production loses some of its validity, including `AST testing` ([IAST](https://www.veracode.com/security/interactive-application-security-testing-iast), [RAST](https://www.veracode.com/sites/default/files/pdf/resources/whitepapers/what-is-rasp.pdf), [SAST](https://www.sqreen.com/web-application-security/what-is-sast), [DAST](https://www.sqreen.com/web-application-security/what-is-dast), etc.).
+任何在进入生产环境之前进行的测试都会失去部分有效性，包括 `AST 测试`（[IAST](https://www.veracode.com/security/interactive-application-security-testing-iast)、[RAST](https://www.veracode.com/sites/default/files/pdf/resources/whitepapers/what-is-rasp.pdf)、[SAST](https://www.sqreen.com/web-application-security/what-is-sast)、[DAST](https://www.sqreen.com/web-application-security/what-is-dast) 等）。
 
-While it is widely accepted that the probability of having rogue code intentionally injected by the third-party is low, there are still cases of malicious injections in third-party code after the organization's servers were compromised (ex: Yahoo, January 2014).
+尽管普遍认为第三方故意注入恶意代码的可能性很低，但仍有第三方服务器被入侵后在第三方代码中注入恶意代码的案例（例如：Yahoo，2014 年 1 月）。
 
-This risk should therefore still be evaluated, in particular when the third-party does not show any documentation that it is enforcing better security measures than the invoking organization itself, or at least equivalent. Another example is that the domain hosting the third-party JavaScript code expires because the company maintaining it is bankrupt or the developers have abandoned the project. A malicious actor can then re-register the domain and publish malicious code.
+因此，仍然需要评估这种风险，特别是当第三方没有任何文档表明其正在执行比调用组织本身更好或至少同等的安全措施时。另一个例子是托管第三方 JavaScript 代码的域名到期，因为维护它的公司破产或开发者已经放弃该项目。恶意行为者随后可以重新注册域名并发布恶意代码。
 
-Typical defenses include, but are not restricted to:
+典型的防御措施包括但不限于：
 
-- In-house script mirroring (to prevent alterations by 3rd parties),
-- [Sub-resource integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity) (to enable browser-level interception),
-- Secure transmission of the third-party code (to prevent modifications while in-transit) and various types of sandboxing. See below for more details.
+- 内部脚本镜像（防止第三方更改）
+- [子资源完整性](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)（启用浏览器级拦截）
+- 安全传输第三方代码（防止传输过程中被修改）和各种类型的沙盒。下文将详细介绍。
 - ...
 
-### Risk 3: Disclosure of sensitive information to 3rd parties
+### 风险 3：向第三方泄露敏感信息
 
-When a third-party script is invoked in a website/application, the browser directly contacts the third-party servers. By default, the request includes all regular HTTP headers. In addition to the originating IP address of the browser, the third-party also obtains other data such as the referrer (in non-https requests) and any cookies previously set by the 3rd party, for example when visiting another organization's website that also invokes the third-party script.
+当在网站/应用程序中调用第三方脚本时，浏览器直接联系第三方服务器。默认情况下，请求包括所有常规 HTTP 标头。除了浏览器的原始 IP 地址外，第三方还获取其他数据，如引用者（在非 HTTPS 请求中）以及之前由第三方设置的任何 Cookie，例如在访问另一个也调用该第三方脚本的组织的网站时。
 
-In many cases, this grants the third-party primary access to information on the organization's users / customers / clients. Additionally, if the third-party is sharing the script with other entities, it also collects secondary data from all the other entities, thus knowing who the organization's visitors are but also what other organizations they interact with.
+在许多情况下，这授予第三方对组织用户/客户的主要访问权限。此外，如果第三方与其他实体共享脚本，它还会从所有其他实体收集次要数据，从而了解组织的访问者是谁，以及他们与哪些其他组织进行交互。
 
-A typical case is the current situation with major news/press sites that invoke third-party code (typically for ad engines, statistics and JavaScript APIs): any user visiting any of these websites also informs the 3rd parties of the visit. In many cases, the third-party also gets to know what news articles each individual user is clicking specifically (leakage occurs through the HTTP referrer field) and thus can establish deeper personality profiles.
+一个典型的案例是当前主要新闻/新闻网站调用第三方代码（通常用于广告引擎、统计和 JavaScript API）的情况：任何访问这些网站的用户都会通知第三方访问情况。在许多情况下，第三方还能知道每个用户具体点击了哪些新闻文章（通过 HTTP 引用者字段泄露），从而建立更深入的个性化档案。
 
-Typical defenses include, but are not restricted to: in-house script mirroring (to prevent leakage of HTTP requests to 3rd parties). Users can reduce their profiling by random clicking links on leaking websites/applications (such as press/news websites) to reduce profiling. See below for more details.
+典型的防御措施包括但不限于：内部脚本镜像（防止向第三方泄露 HTTP 请求）。用户可以通过在泄露的网站/应用程序（如新闻网站）上随机点击链接来减少个人资料分析。下文将详细介绍。
 
-## Third-party JavaScript Deployment Architectures
+## 第三方 JavaScript 部署架构
 
-There are three basic deployment mechanisms for **tags**. These mechanisms can be combined with each other.
+**标签**有三种基本部署机制。这些机制可以相互组合。
 
-### Vendor JavaScript on page
+### 页面上的供应商 JavaScript
 
-This is where the vendor provides the host with the JavaScript and the host puts it on the host page. To be secure the host company must review the code for any vulnerabilities like [XSS attacks](https://owasp.org/www-community/attacks/xss/) or malicious actions such as sending sensitive data from the DOM to a malicious site. This is often difficult because the JavaScript is commonly obfuscated.
+这是供应商向宿主提供 JavaScript，而宿主将其放置在宿主页面上。为了安全，宿主公司必须审查代码是否存在 [XSS 攻击](https://owasp.org/www-community/attacks/xss/)或恶意操作，如将 DOM 中的敏感数据发送到恶意站点。这通常很困难，因为 JavaScript 通常是混淆的。
 
 ```html
-<!-- Some host, e.g. foobar.com, HTML code here -->
+<!-- 某个宿主，例如 foobar.com 的 HTML 代码 -->
 <html>
 <head></head>
     <body>
         ...
-        <script type="text/javascript">/* 3rd party vendor javascript here */</script>
+        <script type="text/javascript">/* 第三方供应商 javascript 在此 */</script>
     </body>
 </html>
 ```
 
-### JavaScript Request to Vendor
+### 向供应商发出 JavaScript 请求
 
-This is where one or a few lines of code on the host page each request a JavaScript file or URL directly from the vendor site. When the host page is being created, the developer includes the lines of code provided by the vendor that will request the vendor JavaScript. Each time the page is accessed the requests are made to the vendor site for the javascript, which then executes on the user browser.
+这是宿主页面上的一行或几行代码直接从供应商站点请求 JavaScript 文件或 URL。在创建宿主页面时，开发者包含供应商提供的代码行，这些代码行将请求供应商 JavaScript。每次访问页面时，都会向供应商站点发出请求以获取 JavaScript，然后在用户浏览器上执行。
 
 ```html
-<!-- Some host, e.g. foobar.com, HTML code here -->`
+<!-- 某个宿主，例如 foobar.com 的 HTML 代码 -->
 <html>
     <head></head>
     <body>
         ...
-        <!-- 3rd party vendor javascript -->
-        <script src="https://analytics.vendor.com/v1.1/script.js"></script>
-        <!-- /3rd party vendor javascript -->
+        <!-- 第三方供应商 javascript -->
+        <script src="https://analytics.vendor.com/v1.1/script.js"></script>
+        <!-- /第三方供应商 javascript -->
     </body>
 </html>
 ```
 
-### Indirect request to Vendor through Tag Manager
+### 通过标签管理器间接请求供应商
 
-This is where one or a few lines of code on the host page each request a JavaScript file or URL from a tag aggregator or **tag manager** site; not from the JavaScript vendor site. The tag aggregator or tag manager site returns whatever third party JavaScript files that the host company has configured to be returned. Each file or URL request to the tag manager site can return lots of other JavaScript files from multiple vendors.
+这是宿主页面上的一行或几行代码向标签聚合器或**标签管理器**站点（而非 JavaScript 供应商站点）请求 JavaScript 文件或 URL。标签聚合器或标签管理器站点返回宿主公司配置的第三方 JavaScript 文件。对标签管理器站点的每个文件或 URL 请求都可以返回来自多个供应商的大量其他 JavaScript 文件。
 
-The actual content that is returned from the aggregator or manager (i.e. the specific JavaScript files as well as exactly what they do) can be dynamically changed by host site employees using a graphical user interface for development, hosted on the tag manager site that non-technical users can work with, such as the marketing part of the business.
+聚合器或管理器返回的实际内容（即特定的 JavaScript 文件以及它们的具体功能）可以由宿主站点员工使用托管在标签管理器站点上的图形用户界面动态更改，非技术用户（如业务营销部门）可以使用该界面。
 
-The changes can be either:
+更改可以是：
 
-1. Get a different JavaScript file from the third-party vendor for the same request.
-2. Change what DOM object data is read, and when, to send to the vendor.
+1. 为同一请求从第三方供应商获取不同的 JavaScript 文件。
+2. 更改读取 DOM 对象数据的方式和时间，以发送给供应商。
 
-The tag manager developer user interface will generate code that does what the marketing functionality requires, basically determining what data to get from the browser DOM and when to get it. The tag manager always returns a **container** JavaScript file to the browser which is basically a set of JavaScript functions that are used by the code generated by the user interface to implement the required functionality.
+标签管理器开发者用户界面将生成满足营销功能要求的代码，基本上确定从浏览器 DOM 获取哪些数据以及何时获取。标签管理器始终向浏览器返回一个**容器** JavaScript 文件，该文件基本上是一组 JavaScript 函数，由用户界面生成的代码使用，以实现所需的功能。
 
-Similar to java frameworks that provide functions and global data to the developer, the container JavaScript executes on the browser and lets the business user use the tag manager developer user interface to specify high level functionality without needing to know JavaScript.
+类似于提供函数和全局数据给开发者的 Java 框架，容器 JavaScript 在浏览器上执行，让业务用户能够使用标签管理器开发者用户界面指定高级功能，而无需了解 JavaScript。
 
-```html
-<!-- Some host, e.g. foobar.com, HTML code here -->
- <html>
-   <head></head>
-     <body>
-       ...
-       <!-- Tag Manager -->
-       <script>(function(w, d, s, l, i){
-         w[l] = w[l] || [];
-         w[l].push({'tm.start':new Date().getTime(), event:'tm.js'});
-         var f = d.getElementsByTagName(s)[0],
-         j = d.createElement(s),
-         dl = l != 'dataLayer' ? '&l=' + l : '';
-         j.async=true;
-         j.src='https://tagmanager.com/tm.js?id=' + i + dl;
-         f.parentNode.insertBefore(j, f);
-       })(window, document, 'script', 'dataLayer', 'TM-FOOBARID');</script>
-       <!-- /Tag Manager -->
-   </body>
-</html>`
-```
 
-#### Security Problems with requesting Tags
+#### 请求标签的安全问题
 
-The previously described mechanisms are difficult to make secure because you can only see the code if you proxy the requests or if you get access to the GUI and see what is configured. The JavaScript is generally obfuscated so even seeing it is usually not useful. It is also instantly deployable because each new page request from a browser executes the requests to the aggregator which gets the JavaScript from the third party vendor. So as soon as any JavaScript files are changed on the vendor, or modified on the aggregator, the next call for them from any browser will get the changed JavaScript. One way to manage this risk is with the *Subresource Integrity* standard described below.
+之前描述的机制很难确保安全，因为只有在代理请求或获得 GUI 访问权并查看配置时才能看到代码。JavaScript 通常是混淆的，即使看到它通常也没有用。它是即时可部署的，因为每个浏览器的新页面请求都会执行对聚合器的请求，聚合器从第三方供应商获取 JavaScript。因此，只要供应商上的任何 JavaScript 文件发生变化，或在聚合器上被修改，下一次从任何浏览器调用它们时都会获取已更改的 JavaScript。管理这种风险的一种方法是使用下面描述的*子资源完整性*标准。
 
-### Server Direct Data Layer
+### 服务器直接数据层
 
-The tag manager developer user interface can be used to create JavaScript that can get data from anywhere in the browser DOM and store it anywhere on the page. This can allow vulnerabilities because the interface can be used to generate code to get unvalidated data from the DOM (e.g. URL parameters) and store it in some page location that would execute JavaScript.
+标签管理器开发者用户界面可用于创建 JavaScript，该 JavaScript 可以从浏览器 DOM 的任何位置获取数据并将其存储在页面的任何位置。这可能导致漏洞，因为该界面可用于生成代码，从 DOM（例如 URL 参数）获取未验证的数据，并将其存储在会执行 JavaScript 的某个页面位置。
 
-The best way to make the generated code secure is to confine it to getting DOM data from a host defined data layer.
+使生成的代码安全的最佳方法是将其限制为仅从宿主定义的数据层获取 DOM 数据。
 
-The data layer is either:
+数据层可以是：
 
-1. a DIV object with attribute values that have the marketing or user behavior data that the third-party wants
-2. a set of JSON objects with the same data. Each variable or attribute contains the value of some DOM element or the description of a user action. The data layer is the complete set of values that all vendors need for that page. The data layer is created by the host developers.
+1. 具有营销或用户行为数据属性值的 DIV 对象，这些数据是第三方想要的
+2. 具有相同数据的 JSON 对象集。每个变量或属性包含某个 DOM 元素的值或用户操作的描述。数据层是该页面所有供应商需要的完整值集。数据层由宿主开发者创建。
 
-When specific events happen that the business has defined, a JavaScript handler for that event sends values from the data layer directly to the tag manager server. The tag manager server then sends the data to whatever third party or parties is supposed to get it. The event handler code is created by the host developers using the tag manager developer user interface. The event handler code is loaded from the tag manager servers on every page load.
+当发生业务定义的特定事件时，该事件的 JavaScript 处理程序直接将数据层中的值发送到标签管理器服务器。然后，标签管理器服务器将数据发送给应该接收它的任何第三方。事件处理程序代码由宿主开发者使用标签管理器开发者用户界面创建。事件处理程序代码在每次页面加载时从标签管理器服务器加载。
 
-**This is a secure technique** because only your JavaScript executes on your users browser, and only the data you decide on is sent to the vendor.
+**这是一种安全的技术**，因为只有您的 JavaScript 在用户浏览器上执行，并且只发送您决定的数据给供应商。
 
-This requires cooperation between the host, the aggregator or tag manager and the vendors.
+这需要宿主、聚合器或标签管理器以及供应商之间的合作。
 
-The host developers have to work with the vendor in order to know what type of data the vendor needs to do their analysis. Then the host programmer determines what DOM element will have that data.
+宿主开发者必须与供应商合作，以了解供应商进行分析需要什么类型的数据。然后，宿主程序员确定哪个 DOM 元素将包含该数据。
 
-The host developers have to work with the tag manager or aggregator to agree on the protocol to send the data to the aggregator: what URL, parameters, format etc.
+宿主开发者必须与标签管理器或聚合器合作，就向聚合器发送数据的协议达成一致：使用什么 URL、参数、格式等。
 
-The tag manager or aggregator has to work with the vendor to agree on the protocol to send the data to the vendor: what URL, parameters, format etc. Does the vendor have an API?
+标签管理器或聚合器必须与供应商合作，就向供应商发送数据的协议达成一致：使用什么 URL、参数、格式等。供应商是否有 API？
 
-## Security Defense Considerations
+## 安全防御考虑
 
-### Server Direct Data Layer
+### 服务器直接数据层
 
-The server direct mechanism is a good security standard for third party JavaScript management, deployment and execution. A good practice for the host page is to create a data layer of DOM objects.
+服务器直接机制是第三方 JavaScript 管理、部署和执行的良好安全标准。宿主页面的良好实践是创建 DOM 对象的数据层。
 
-The data layer can perform any validation of the values, especially values from DOM objects exposed to the user like URL parameters and input fields, if these are required for the marketing analysis.
+数据层可以对值进行任何验证，特别是来自暴露给用户的 DOM 对象的值，如 URL 参数和输入字段（如果这些是营销分析所需的）。
 
-An example statement for a corporate standard document is 'The tag JavaScript can only access values in the host data layer. The tag JavaScript can never access a URL parameter.
+企业标准文档中的示例陈述是"标签 JavaScript 只能访问宿主数据层中的值。标签 JavaScript 绝不能访问 URL 参数。"
 
-You the host page developer have to agree with the third-party vendors or the tag manager what attribute in the data layer will have what value so they can create the JavaScript to read that value.
+作为宿主页面开发者，您必须与第三方供应商或标签管理器就数据层中的哪个属性将具有什么值达成一致，以便他们可以创建读取该值的 JavaScript。
 
-User interface tags cannot be made secure using the data layer architecture because their function (or one of their functions) is to change the user interface on the client, not to send data about the user actions.
+用户界面标签无法使用数据层架构来确保安全，因为它们的功能（或其功能之一）是在客户端更改用户界面，而不是发送关于用户操作的数据。
 
-Analytics tags can be made secure using the data layer architecture because the only action needed is to send data from the data layer to the third party. Only first party code is executed; first to populate the data layer (generally on page load); then event handler JavaScript sends whatever data is needed from that page to the third party database or tag manager.
+分析标签可以使用数据层架构来确保安全，因为唯一需要的操作是将数据层中的数据发送到第三方。只执行第一方代码；首先填充数据层（通常在页面加载时）；然后事件处理程序 JavaScript 将该页面所需的任何数据发送到第三方数据库或标签管理器。
 
-This is also a very scalable solution. Large ecommerce sites can easily have hundreds of thousands of URL and parameter combinations, with different sets of URLs and parameters being included in different marketing analysis campaigns. The marketing logic could have 30 or 40 different vendor tags on a single page.
+这也是一个非常可扩展的解决方案。大型电子商务网站可以轻松拥有数十万个 URL 和参数组合，不同的 URL 和参数集包含在不同的营销分析活动中。营销逻辑可能在单个页面上有 30 或 40 个不同的供应商标签。
 
-For example user actions in pages about specified cities, from specified locations on specified days should send data layer elements 1, 2 and 3. User actions in pages about other cities should send data layer elements 2 and 3 only. Since the event handler code to send data layer data on each page is controlled by the host developers or marketing technologists using the tag manager developer interface, the business logic about when and what data layer elements are sent to the tag manager server, can be changed and deployed in minutes. No interaction is needed with the third parties; they continue getting the data they expect but now it comes from different contexts that the host marketing technologists have chosen.
+例如，关于特定城市、特定位置、特定日期的页面上的用户操作应发送数据层元素 1、2 和 3。关于其他城市的页面上的用户操作应仅发送数据层元素 2 和 3。由于在每个页面上发送数据层数据的事件处理程序代码由宿主开发者或使用标签管理器开发者界面的营销技术人员控制，因此关于何时以及向标签管理器服务器发送哪些数据层元素的业务逻辑可以在几分钟内更改和部署。不需要与第三方交互；他们继续获得预期的数据，但现在数据来自宿主营销技术人员选择的不同上下文。
 
-Changing third party vendors just means changing the data dissemination rules at the tag manager server, no changes are needed in the host code. The data also goes directly only to the tag manager so the execution is fast. The event handler JavaScript does not have to connect to multiple third party sites.
+更改第三方供应商只意味着更改标签管理器服务器上的数据传播规则，宿主代码不需要任何更改。数据也直接仅发送到标签管理器，因此执行速度很快。事件处理程序 JavaScript 不必连接到多个第三方站点。
 
-### Indirect Requests
+### 间接请求
 
-For indirect requests to tag manager/aggregator sites that offer the GUI to configure the javascript, they may also implement:
+对于向提供配置 JavaScript 的 GUI 的标签管理器/聚合器站点的间接请求，他们可能还会实施：
 
-- Technical controls such as only allowing the JavaScript to access the data layer values, no other DOM element
-- Restricting the tag types deployed on a host site, e.g. disabling of custom HTML tags and JavaScript code
+- 技术控制，如仅允许 JavaScript 访问数据层值，不访问其他 DOM 元素
+- 限制在宿主站点上部署的标签类型，例如禁用自定义 HTML 标签和 JavaScript 代码
 
-The host company should also verify the security practices of the tag manager site such as access controls to the tag configuration for the host company. It also can be two-factor authentication.
+宿主公司还应验证标签管理器站点的安全实践，如对宿主公司的标签配置的访问控制。它还可以是双因素身份验证。
 
-Letting the marketing folks decide where to get the data they want can result in XSS because they may get it from a URL parameter and put it into a variable that is in a scriptable location on the page.
+让营销人员决定他们想要获取数据的位置可能导致 XSS，因为他们可能从 URL 参数获取数据并将其放入页面上可脚本化位置的变量中。
 
-### Sandboxing Content
+### 沙盒内容
 
-Both of these tools be used by sites to sandbox/clean DOM data.
+这两个工具可以由站点用于沙盒/清理 DOM 数据。
 
-- [DOMPurify](https://github.com/cure53/DOMPurify) is a fast, tolerant XSS sanitizer for HTML, MathML and SVG. DOMPurify works with a secure default, but offers a lot of configurability and hooks.
-- [MentalJS](https://github.com/hackvertor/MentalJS) is a JavaScript parser and sandbox. It allow-lists JavaScript code by adding a "$" suffix to variables and accessors.
+- [DOMPurify](https://github.com/cure53/DOMPurify) 是一个快速、宽容的 HTML、MathML 和 SVG 的 XSS 清理器。DOMPurify 使用安全默认值，但提供大量可配置性和钩子。
+- [MentalJS](https://github.com/hackvertor/MentalJS) 是一个 JavaScript 解析器和沙盒。它通过在变量和访问器添加"$"后缀来允许列出 JavaScript 代码。
 
-### Subresource Integrity
+### 子资源完整性
 
-[Subresource Integrity](https://www.w3.org/TR/SRI/) will ensure that only the code that has been reviewed is executed. The developer generates integrity metadata for the vendor javascript, and adds it to the script element like this:
+[子资源完整性](https://www.w3.org/TR/SRI/)将确保只执行已审查的代码。开发者为供应商 JavaScript 生成完整性元数据，并将其添加到脚本元素中，如下所示：
 
 ```javascript
-<script src="https://analytics.vendor.com/v1.1/script.js"
-   integrity="sha384-MBO5IDfYaE6c6Aao94oZrIOiC7CGiSNE64QUbHNPhzk8Xhm0djE6QqTpL0HzTUxk"
-   crossorigin="anonymous">
+<script src="https://analytics.vendor.com/v1.1/script.js"
+   integrity="sha384-MBO5IDfYaE6c6Aao94oZrIOiC7CGiSNE64QUbHNPhzk8Xhm0djE6QqTpL0HzTUxk"
+   crossorigin="anonymous">
 </script>
 ```
 
-It is important to know that in order for SRI to work, the vendor host needs [CORS](https://www.w3.org/TR/cors/) enabled. Also it is good idea to monitor vendor JavaScript for changes in regular way. Because sometimes you can get **secure** but **not working** third-party code when the vendor decides to update it.
+重要的是要知道，为了使 SRI 工作，供应商主机需要启用 [CORS](https://www.w3.org/TR/cors/)。定期监控供应商 JavaScript 的变化也是个好主意。因为有时当供应商决定更新时，你可能会得到**安全**但**不工作**的第三方代码。
 
-### Keeping JavaScript libraries updated
+### 保持 JavaScript 库更新
 
-[OWASP Top 10 2013 A9](https://wiki.owasp.org/index.php/Top_10_2013-A9-Using_Components_with_Known_Vulnerabilities) describes the problem of using components with known vulnerabilities. This includes JavaScript libraries. JavaScript libraries must be kept up to date, as previous version can have known vulnerabilities which can lead to the site typically being vulnerable to [Cross Site Scripting](https://owasp.org/www-community/attacks/xss/). There are several tools out there that can help identify such libraries. One such tool is the free open source tool [RetireJS](https://retirejs.github.io)
+[OWASP Top 10 2013 A9](https://wiki.owasp.org/index.php/Top_10_2013-A9-Using_Components_with_Known_Vulnerabilities) 描述了使用具有已知漏洞的组件的问题。这包括 JavaScript 库。必须保持 JavaScript 库最新，因为早期版本可能存在已知漏洞，这可能导致站点通常容易受到[跨站脚本](https://owasp.org/www-community/attacks/xss/)攻击。有几种工具可以帮助识别此类库。其中一个工具是免费的开源工具 [RetireJS](https://retirejs.github.io)
 
-### Sandboxing with iframe
+### 使用 iframe 进行沙盒
 
-You can also put vendor JavaScript into an iframe from different domain (e.g. static data host). It will work as a "jail" and vendor JavaScript will not have direct access to the host page DOM and cookies.
+您还可以将供应商 JavaScript 放入来自不同域（例如静态数据主机）的 iframe 中。它将作为一个"监狱"，供应商 JavaScript 将无法直接访问宿主页面 DOM 和 Cookie。
 
-The host main page and sandbox iframe can communicate between each other via the [postMessage mechanism](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage).
+宿主主页和沙盒 iframe 可以通过 [postMessage 机制](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)相互通信。
 
-Also, iframes can be secured with the iframe [sandbox attribute](http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/).
+此外，iframe 可以使用 iframe [sandbox 属性](http://www.html5rocks.com/en/tutorials/security/sandboxed-iframes/)进行保护。
 
-For high risk applications, consider the use of [Content Security Policy (CSP)](https://www.w3.org/TR/CSP2/) in addition to iframe sandboxing. CSP makes hardening against XSS even stronger.
+对于高风险应用程序，除了 iframe 沙盒之外，还要考虑使用[内容安全策略（CSP）](https://www.w3.org/TR/CSP2/)。CSP 使针对 XSS 的强化更加强大。
 
 ```html
-<!-- Some host, e.g. somehost.com, HTML code here -->
- <html>
-   <head></head>
-     <body>
-       ...
-       <!-- Include iframe with 3rd party vendor javascript -->
-       <iframe
+<!-- 某个宿主，例如 somehost.com 的 HTML 代码 -->
+ <html>
+   <head></head>
+     <body>
+       ...
+       <!-- 包含带有第三方供应商 JavaScript 的 iframe -->
+       <iframe
        src="https://somehost-static.net/analytics.html"
-       sandbox="allow-same-origin allow-scripts">
+       sandbox="allow-same-origin allow-scripts">
        </iframe>
-   </body>
- </html>
+   </body>
+ </html>
 
-<!-- somehost-static.net/analytics.html -->
- <html>
-   <head></head>
-     <body>
-       ...
-       <script>
-       window.addEventListener("message", receiveMessage, false);
-       function receiveMessage(event) {
-         if (event.origin !== "https://somehost.com:443") {
-           return;
-         } else {
-         // Make some DOM here and initialize other
-        //data required for 3rd party code
-         }
-       }
-       </script>
-       <!-- 3rd party vendor javascript -->
-       <script src="https://analytics.vendor.com/v1.1/script.js"></script>
-       <!-- /3rd party vendor javascript -->
-   </body>
- </html>
+<!-- somehost-static.net/analytics.html -->
+ <html>
+   <head></head>
+     <body>
+       ...
+       <script>
+       window.addEventListener("message", receiveMessage, false);
+       function receiveMessage(event) {
+         if (event.origin !== "https://somehost.com:443") {
+           return;
+         } else {
+         // 在这里创建一些 DOM 并初始化其他
+        //第三方代码所需的数据
+         }
+       }
+       </script>
+       <!-- 第三方供应商 JavaScript -->
+       <script src="https://analytics.vendor.com/v1.1/script.js"></script>
+       <!-- /第三方供应商 JavaScript -->
+   </body>
+ </html>
 ```
 
-### Virtual iframe Containment
+### 虚拟 iframe 隔离
 
-This technique creates iFrames that run asynchronously in relation to the main page. It also provides its own containment JavaScript that automates the dynamic implementation of the protected iFrames based on the marketing tag requirements.
+这种技术创建了相对于主页异步运行的 iFrame。它还提供了自己的隔离 JavaScript，可根据营销标签要求自动动态实现受保护的 iFrame。
 
-### Vendor Agreements
+### 供应商协议
 
-You can have the agreement or request for proposal with the 3rd parties require evidence that they have implemented secure coding and general corporate server access security. But in particular you need to determine the monitoring and control of their source code in order to prevent and detect malicious changes to that JavaScript.
+您可以要求与第三方的协议或建议书提供证据，证明他们已实施安全编码和总体企业服务器访问安全。但特别是，您需要确定他们对源代码的监控和控制，以防止和检测对该 JavaScript 的恶意更改。
 
 ## MarTechSec
 
-Marketing Technology Security
+营销技术安全
 
-This refers to all aspects of reducing the risk from marketing JavaScript. Controls include
+这指的是减少来自营销 JavaScript 的风险的所有方面。控制包括：
 
-1. Contractual controls for risk reduction; the contracts with any MarTech company should include a requirement to show evidence of code security and code integrity monitoring.
-2. Contractual controls for risk transference: the contracts with any MarTech company could include a penalty for serving malicious JavaScript
-3. Technical controls for malicious JavaScript execution prevention; Virtual Iframes,
-4. Technical controls for malicious JavaScript identification; [Subresource Integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity).
-5. Technical controls including client side JavaScript malicious behavior in penetration testing requirements.
+1. 风险降低的合同控制；与任何 MarTech 公司的合同应包括提供代码安全性和代码完整性监控证据的要求。
+2. 风险转移的合同控制：与任何 MarTech 公司的合同可能包括提供恶意 JavaScript 的惩罚。
+3. 防止恶意 JavaScript 执行的技术控制；虚拟 iFrame。
+4. 识别恶意 JavaScript 的技术控制；[子资源完整性](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)。
+5. 包括渗透测试要求中的客户端 JavaScript 恶意行为的技术控制。
 
 ## MarSecOps
 
-Marketing Security Operations
+营销安全运营
 
-This refers to the operational requirements to maintain some of the technical controls. This involves possible cooperation and information exchange between the marketing team, the martech provider and the run or operations team to update the information in the page controls (SRI hash change, changes in pages with SRI), the policies in the Virtual iFrames, tag manager configuration, data layer changes etc.
+这指的是维护某些技术控制的操作要求。这涉及营销团队、MarTech 提供商和运行或运营团队之间可能的合作和信息交换，以更新页面控件中的信息（SRI 哈希更改、带有 SRI 的页面更改）、虚拟 iFrame 中的策略、标签管理器配置、数据层更改等。
 
-The most complete and preventive controls for any site containing non-trivial marketing tags are -
+对于包含非平凡营销标签的任何站点，最完整和最具预防性的控制是：
 
-1. A data layer that calls the marketing server or tag manager APIs , so that only your code executes on your page (inversion of control).
+1. 调用营销服务器或标签管理器 API 的数据层，以便只有您的代码在您的页面上执行（控制反转）。
 
-2. [Subresource Integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity).
+2. [子资源完整性](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)。
 
-3. Virtual frame Containment.
+3. 虚拟框架隔离。
 
-The MarSecOps requirements to implement technical controls at the speed of change that marketing wants or without a significant number of dedicated resources, can make data layer and Subresource Integrity controls impractical.
+为了以营销希望的变更速度实施技术控制，或者在没有大量专门资源的情况下，MarSecOps 要求可能使数据层和子资源完整性控制变得不切实际。
 
-## References
+## 参考资料
 
-- [Widespread XSS Vulnerabilities in Ad Network Code Affecting Top Tier Publishers, Retailers](https://randywestergren.com/widespread-xss-vulnerabilities-ad-network-code-affecting-top-tier-publishers-retailers/).
-- [Inside and Beyond Ticketmaster: The Many Breaches of Magecart](https://www.riskiq.com/blog/labs/magecart-ticketmaster-breach/).
-- [Magecart – a malicious infrastructure for stealing payment details from online shops](https://www.clearskysec.com/magecart/).
-- [Compromised E-commerce Sites Lead to "Magecart"](https://www.riskiq.com/blog/labs/magecart-keylogger-injection/)
-- [Inbenta, blamed for Ticketmaster breach, admits it was hacked](https://www.zdnet.com/article/inbenta-blamed-for-ticketmaster-breach-says-other-sites-not-affected/).
+- [影响顶级发布商和零售商的广告网络代码中的广泛 XSS 漏洞](https://randywestergren.com/widespread-xss-vulnerabilities-ad-network-code-affecting-top-tier-publishers-retailers/)
+
+- [深入了解 Ticketmaster：Magecart 的多重入侵](https://www.riskiq.com/blog/labs/magecart-ticketmaster-breach/)
+
+- [Magecart - 用于从在线商店窃取支付详细信息的恶意基础设施](https://www.clearskysec.com/magecart/)
+
+- [被入侵的电子商务网站导向"Magecart"](https://www.riskiq.com/blog/labs/magecart-keylogger-injection/)
+
+- [Inbenta 承认被黑客入侵，为 Ticketmaster 数据泄露负责](https://www.zdnet.com/article/inbenta-blamed-for-ticketmaster-breach-says-other-sites-not-affected/)
