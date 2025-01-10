@@ -1,148 +1,149 @@
-# SAML Security Cheat Sheet
 
-## Introduction
+# SAML 安全备忘录
 
-The **S**ecurity **A**ssertion **M**arkup **L**anguage ([SAML](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)) is an open standard for exchanging authorization and authentication information. The *Web Browser SAML/SSO Profile with Redirect/POST bindings* is one of the most common SSO implementation. This cheatsheet will focus primarily on that profile.
+## 引言
 
-## Validate Message Confidentiality and Integrity
+**安全断言标记语言**（[SAML](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)）是一个用于交换授权和认证信息的开放标准。*基于重定向/POST绑定的Web浏览器SAML/SSO配置文件*是最常见的SSO实现之一。本备忘录将主要关注这种配置文件。
 
-[TLS 1.2](Transport_Layer_Security_Cheat_Sheet.md) is the most common solution to guarantee message confidentiality and integrity at the transport layer. Refer to [SAML Security (section 4.2.1)](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf) for additional information. This step will help counter the following attacks:
+## 验证消息的机密性和完整性
 
-- Eavesdropping 7.1.1.1
-- Theft of User Authentication Information 7.1.1.2
-- Theft of the Bearer Token 7.1.1.3
-- Message Deletion 7.1.1.6
-- Message Modification 7.1.1.7
-- Man-in-the-middle 7.1.1.8
+[TLS 1.2](Transport_Layer_Security_Cheat_Sheet.md)是在传输层保证消息机密性和完整性的最常见解决方案。有关更多信息，请参考[SAML安全性（第4.2.1节）](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf)。这一步将有助于应对以下攻击：
 
-A digitally signed message with a certified key is the most common solution to guarantee message integrity and authentication. Refer to [SAML Security (section 4.3)](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf) for additional information. This step will help counter the following attacks:
+- 窃听 7.1.1.1
+- 用户认证信息盗取 7.1.1.2
+- 持有者令牌盗取 7.1.1.3
+- 消息删除 7.1.1.6
+- 消息篡改 7.1.1.7
+- 中间人攻击 7.1.1.8
 
-- Man-in-the-middle 6.4.2
-- Forged Assertion 6.4.3
-- Message Modification 7.1.1.7
+使用经过认证的密钥进行数字签名是保证消息完整性和认证的最常见解决方案。有关更多信息，请参考[SAML安全性（第4.3节）](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf)。这一步将有助于应对以下攻击：
 
-Assertions may be encrypted via XMLEnc to prevent disclosure of sensitive attributes post transportation. Refer to [SAML Security (section 4.2.2)](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf) for additional information. This step will help counter the following attacks:
+- 中间人攻击 6.4.2
+- 伪造断言 6.4.3
+- 消息篡改 7.1.1.7
 
-- Theft of User Authentication Information 7.1.1.2
+可以使用XMLEnc对断言进行加密，以防止传输后敏感属性被泄露。有关更多信息，请参考[SAML安全性（第4.2.2节）](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf)。这一步将有助于应对以下攻击：
 
-## Validate Protocol Usage
+- 用户认证信息盗取 7.1.1.2
 
-This is a common area for security gaps - see [Google SSO vulnerability](https://www.kb.cert.org/vuls/id/612636/) for a real life example. Their SSO profile was vulnerable to a Man-in-the-middle attack from a malicious SP (Service Provider).
+## 验证协议使用
 
-The SSO Web Browser Profile is most susceptible to attacks from trusted partners. This particular security flaw was exposed because the SAML Response did not contain all of the required data elements necessary for a secure message exchange. Following the [SAML Profile](https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf) usage requirements for AuthnRequest (4.1.4.1) and Response (4.1.4.2) will help counter this attack.
+这是安全漏洞的常见区域 - 请参考[Google SSO漏洞](https://www.kb.cert.org/vuls/id/612636/)作为真实案例。他们的SSO配置文件容易遭受来自恶意SP（服务提供者）的中间人攻击。
 
-The *AVANTSSAR* team suggested the following data elements should be required:
+Web浏览器配置文件最容易受到来自可信合作伙伴的攻击。这个特定的安全缺陷是因为SAML响应未包含安全消息交换所需的所有必要数据元素。遵循[SAML配置文件](https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf)中关于AuthnRequest（4.1.4.1）和Response（4.1.4.2）的使用要求将有助于应对这种攻击。
 
-- **AuthnRequest(ID, SP):** An `AuthnRequest` must contain and `ID` and `SP`. Where `ID` is a string uniquely identifying the request and an `SP` identifies the `Service Provider` that initiated the request. Furthermore, the request `ID` attribute must be returned in the response (`InResponseTo="<requestId>"`). `InResponseTo` helps guarantee authenticity of the response from the trusted IdP. This was one of the missing attributes that left Google's SSO vulnerable.
-- **Response(ID, SP, IdP, {AA} K -1/IdP):** A Response must contain all these elements. Where `ID` is a string uniquely identifying the response. `SP` identifies the recipient of the response. `IdP` identifies the identity provider authorizing the response. `{AA} K -1/IdP` is the assertion digitally signed with the private key of the `IdP`.
-- **AuthAssert(ID, C, IdP, SP):** An authentication assertion must exist within the Response. It must contain an `ID`, a client `(C)`, an identity provider `(IdP)`, and a service provider `(SP)` identifier.
+*AVANTSSAR*团队建议以下数据元素应该是必需的：
 
-### Validate Signatures
+- **AuthnRequest(ID, SP)：** `AuthnRequest`必须包含`ID`和`SP`。其中`ID`是唯一标识请求的字符串，`SP`标识发起请求的`服务提供者`。此外，请求的`ID`属性必须在响应中返回（`InResponseTo="<requestId>"`）。`InResponseTo`有助于保证来自可信IdP的响应的真实性。这是导致Google SSO存在漏洞的缺失属性之一。
+- **Response(ID, SP, IdP, {AA} K -1/IdP)：** 响应必须包含所有这些元素。其中`ID`是唯一标识响应的字符串。`SP`标识响应的接收者。`IdP`标识授权响应的身份提供者。`{AA} K -1/IdP`是使用`IdP`的私钥进行数字签名的断言。
+- **AuthAssert(ID, C, IdP, SP)：** 响应中必须存在一个认证断言。它必须包含一个`ID`、一个客户端`(C)`、一个身份提供者`(IdP)`和一个服务提供者`(SP)`标识符。
 
-Vulnerabilities in SAML implementations due to XML Signature Wrapping attacks were described in 2012, [On Breaking SAML: Be Whoever You Want to Be](https://www.usenix.org/system/files/conference/usenixsecurity12/sec12-final91-8-23-12.pdf).
+### 验证签名
 
-The following recommendations were proposed in response ([Secure SAML validation to prevent XML signature wrapping attacks](https://arxiv.org/pdf/1401.7483v1.pdf)):
+2012年描述了SAML实现中由于XML签名包装攻击导致的漏洞，详见[论破解SAML：成为你想成为的任何人](https://www.usenix.org/system/files/conference/usenixsecurity12/sec12-final91-8-23-12.pdf)。
 
-- Always perform schema validation on the XML document prior to using it for any security-­related purposes:
-    - Always use local, trusted copies of schemas for validation.
-    - Never allow automatic download of schemas from third party locations.
-    - If possible, inspect schemas and perform schema hardening, to disable possible wildcard ­type or relaxed processing statements.
-- Securely validate the digital signature:
-    - If you expect only one signing key, use `StaticKeySelector`. Obtain the key directly from the identity provider, store it in local file and ignore any `KeyInfo` elements in the document.
-    - If you expect more than one signing key, use `X509KeySelector` (the JKS variant). Obtain these keys directly form the identity providers, store them in local JKS and ignore any `KeyInfo` elements in the document.
-    - If you expect a heterogeneous signed documents (many certificates from many identity providers, multi­level validation paths), implement full trust establishment model based on PKIX and trusted root certificates.
-- Avoid signature-wrapping attacks.
-    - Never use `getElementsByTagName` to select security related elements in an XML document without prior validation.
-    - Always use absolute XPath expressions to select elements, unless a hardened schema is used for validation.
+针对这一问题，提出了以下建议（[防止XML签名包装攻击的安全SAML验证](https://arxiv.org/pdf/1401.7483v1.pdf)）：
 
-## Validate Protocol Processing Rules
+- 在将XML文档用于任何安全相关目的之前，始终执行模式验证：
+    - 始终使用本地的、可信的模式副本进行验证。
+    - 绝不允许从第三方位置自动下载模式。
+    - 如果可能，检查模式并执行模式强化，以禁用可能的通配符类型或宽松的处理语句。
+- 安全地验证数字签名：
+    - 如果只期望一个签名密钥，使用`StaticKeySelector`。直接从身份提供者获取密钥，将其存储在本地文件中，并忽略文档中的任何`KeyInfo`元素。
+    - 如果期望多个签名密钥，使用`X509KeySelector`（JKS变体）。直接从身份提供者获取这些密钥，将其存储在本地JKS中，并忽略文档中的任何`KeyInfo`元素。
+    - 如果期望处理异构签名文档（来自多个身份提供者的多个证书，多级验证路径），则基于PKIX和可信根证书实现完整的信任建立模型。
+- 避免签名包装攻击。
+    - 在没有事先验证的情况下，切勿使用`getElementsByTagName`选择XML文档中的安全相关元素。
+    - 除非使用强化的模式进行验证，否则始终使用绝对XPath表达式选择元素。
 
-This is another common area for security gaps simply because of the vast number of steps to assert.
+## 验证协议处理规则
 
-Processing a SAML response is an expensive operation but all steps must be validated:
+由于需要断言的步骤众多，这是另一个常见的安全漏洞区域。
 
-- Validate AuthnRequest processing rules. Refer to [SAML Core](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf) (3.4.1.4) for all AuthnRequest processing rules. This step will help counter the following attacks:
-    - Man-in-the-middle (6.4.2)
-- Validate Response processing rules. Refer to [SAML Profiles](https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf) (4.1.4.3) for all Response processing rules. This step will help counter the following attacks:
-    - Stolen Assertion (6.4.1)
-    - Man-in-the-middle (6.4.2)
-    - Forged Assertion (6.4.3)
-    - Browser State Exposure (6.4.4)
+处理SAML响应是一个昂贵的操作，但所有步骤都必须经过验证：
 
-## Validate Binding Implementation
+- 验证AuthnRequest处理规则。参考[SAML核心](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf)（3.4.1.4）中的所有AuthnRequest处理规则。这一步将有助于应对以下攻击：
+    - 中间人攻击（6.4.2）
+- 验证Response处理规则。参考[SAML配置文件](https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf)（4.1.4.3）中的所有Response处理规则。这一步将有助于应对以下攻击：
+    - 断言被盗（6.4.1）
+    - 中间人攻击（6.4.2）
+    - 伪造断言（6.4.3）
+    - 浏览器状态暴露（6.4.4）
 
-- For an HTTP Redirect Binding refer to [SAML Binding](https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf) (3.4). To view an encoding example, you may want to reference RequestUtil.java found within [Google's reference implementation](https://developers.google.com/google-apps/sso/saml_reference_implementation_web).
-- For an HTTP POST Binding refer to [SAML Binding](https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf) (3.5). The caching considerations are also very important. If a SAML protocol message gets cached, it can subsequently be used as a Stolen Assertion (6.4.1) or Replay (6.4.5) attack.
+## 验证绑定实现
 
-## Validate Security Countermeasures
+- 对于HTTP重定向绑定，请参考[SAML绑定](https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf)（3.4）。要查看编码示例，您可以参考[Google的参考实现](https://developers.google.com/google-apps/sso/saml_reference_implementation_web)中的RequestUtil.java。
+- 对于HTTP POST绑定，请参考[SAML绑定](https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf)（3.5）。缓存注意事项也非常重要。如果SAML协议消息被缓存，它随后可能被用于断言被盗（6.4.1）或重放（6.4.5）攻击。
 
-Revisit each security threat that exists within the [SAML Security](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf) document and assert you have applied the appropriate countermeasures for threats that may exist for your particular implementation.
+## 验证安全对策
 
-Additional countermeasures considered should include:
+重新审视[SAML安全性](https://docs.oasis-open.org/security/saml/v2.0/saml-sec-consider-2.0-os.pdf)文档中存在的每个安全威胁，并确保为您特定的实现应用了适当的对策。
 
-- Prefer IP Filtering when appropriate. For example, this countermeasure could have prevented Google's initial security flaw if Google provided each trusted partner with a separate endpoint and setup an IP filter for each endpoint. This step will help counter the following attacks:
-    - Stolen Assertion (6.4.1)
-    - Man-in-the-middle (6.4.2)
-- Prefer short lifetimes on the SAML Response. This step will help counter the following attacks:
-    - Stolen Assertion (6.4.1)
-    - Browser State Exposure (6.4.4)
-- Prefer OneTimeUse on the SAML Response. This step will help counter the following attacks:
-    - Browser State Exposure (6.4.4)
-    - Replay (6.4.5)
+应考虑的额外对策包括：
 
-Need an architectural diagram? The [SAML technical overview](https://www.oasis-open.org/committees/download.php/11511/sstc-saml-tech-overview-2.0-draft-03.pdf) contains the most complete diagrams. For the Web Browser SSO Profile with Redirect/POST bindings refer to the section 4.1.3. In fact, of all the SAML documentation, the technical overview is the most valuable from a high-level perspective.
+- 在适当时使用IP过滤。例如，如果Google为每个可信合作伙伴提供单独的端点并为每个端点设置IP过滤，这种对策本可以防止Google最初的安全缺陷。这一步将有助于应对以下攻击：
+    - 断言被盗（6.4.1）
+    - 中间人攻击（6.4.2）
+- 使用短生命周期的SAML响应。这一步将有助于应对以下攻击：
+    - 断言被盗（6.4.1）
+    - 浏览器状态暴露（6.4.4）
+- 在SAML响应中使用一次性（OneTimeUse）。这一步将有助于应对以下攻击：
+    - 浏览器状态暴露（6.4.4）
+    - 重放攻击（6.4.5）
 
-## Unsolicited Response (ie. IdP Initiated SSO) Considerations for Service Providers
+需要架构图？[SAML技术概述](https://www.oasis-open.org/committees/download.php/11511/
 
-Unsolicited Response is inherently [less secure](https://www.identityserver.com/articles/the-dangers-of-saml-idp-initiated-sso) by design due to the lack of [CSRF](https://owasp.org/www-community/attacks/csrf) protection. However, it is supported by many due to the backwards compatibility feature of SAML 1.1. The general security recommendation is to not support this type of authentication, but if it must be enabled, the following steps (in additional to everything mentioned above) should help you secure this flow:
+## 未经请求的响应（即IdP发起的SSO）的服务提供者注意事项
 
-- Follow the validation process mentioned in [SAML Profiles (section 4.1.5)](https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf). This step will help counter the following attacks:
-    - Replay (6.1.2)
-    - Message Insertion (6.1.3)
-- If the contract of the `RelayState` parameter is a URL, make sure the URL is validated and explicitly on an allowlist. This step will help counter the following attack:
-    - [Open Redirect](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html)
-- Implement proper replay detection either at the response or assertion level. This will help counter the following attack:
-    - Replay (6.1.2)
+从设计上讲，未经请求的响应由于缺乏[跨站请求伪造（CSRF）](https://owasp.org/www-community/attacks/csrf)保护，本质上是[不安全的](https://www.identityserver.com/articles/the-dangers-of-saml-idp-initiated-sso)。然而，由于SAML 1.1的向后兼容性特性，许多系统仍然支持这种方式。一般的安全建议是不支持这种认证类型，但如果必须启用，除了前面提到的所有步骤外，还应采取以下步骤来保护此流程：
 
-## Identity Provider and Service Provider Considerations
+- 遵循[SAML配置文件（第4.1.5节）](https://docs.oasis-open.org/security/saml/v2.0/saml-profiles-2.0-os.pdf)中提到的验证流程。这一步将有助于应对以下攻击：
+    - 重放攻击（6.1.2）
+    - 消息插入（6.1.3）
+- 如果`RelayState`参数的约定是一个URL，确保验证该URL并将其明确列入白名单。这一步将有助于应对以下攻击：
+    - [开放重定向](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html)
+- 在响应或断言级别实施适当的重放检测。这将有助于应对以下攻击：
+    - 重放攻击（6.1.2）
 
-The SAML protocol is rarely the vector of choice, though it's important to have cheatsheets to make sure that this is robust. The various endpoints are more targeted, so how the SAML token is generated and how it is consumed are both important in practice.
+## 身份提供者和服务提供者注意事项
 
-### Identity Provider (IdP) Considerations
+SAML协议很少成为首选攻击向量，尽管制定安全备忘录以确保其健壮性很重要。各种端点更容易成为攻击目标，因此SAML令牌的生成方式和使用方式在实践中都非常重要。
 
-- Validate X.509 Certificate for algorithm compatibility, strength of encryption, export restrictions
-- Validate Strong Authentication options for generating the SAML token
-- IDP validation (which IDP mints the token)
-- Use/Trust Root CAs whenever possible
-- Synchronize to a common Internet timesource
-- Define levels of assurance for identity verification
-- Prefer asymmetric identifiers for identity assertions over personally identifiable information (e.g. SSNs, etc)
-- Sign each individual Assertion or the entire Response element
+### 身份提供者（IdP）注意事项
 
-### Service Provider (SP) Considerations
+- 验证X.509证书的算法兼容性、加密强度和导出限制
+- 验证生成SAML令牌的强认证选项
+- IdP验证（哪个IdP铸造令牌）
+- 尽可能使用/信任根CA
+- 同步到公共互联网时间源
+- 为身份验证定义保证级别
+- 相比个人可识别信息（如社保号等），更倾向使用非对称标识符进行身份断言
+- 对每个单独的断言或整个响应元素进行签名
 
-- Validating session state for user
-- Level of granularity in setting authorization context when consuming SAML token (do you use groups, roles, attributes)
-- Ensure each Assertion or the entire Response element is signed
-- [Validate Signatures](#validate-signatures)
-- Validate if signed by authorized IDP
-- Validate IDP certificates for expiration and revocation against CRL/OCSP
-- Validate NotBefore and NotOnorAfter
-- Validate Recipient attribute
-- Define criteria for SAML logout
-- Exchange assertions only over secure transports
-- Define criteria for session management
-- Verify user identities obtained from SAML ticket assertions whenever possible.
+### 服务提供者（SP）注意事项
 
-## Input Validation
+- 验证用户的会话状态
+- 在使用SAML令牌时，设置授权上下文的粒度级别（是使用组、角色还是属性）
+- 确保每个断言或整个响应元素都经过签名
+- [验证签名](#验证签名)
+- 验证是否由授权的IdP签名
+- 根据证书吊销列表（CRL）/在线证书状态协议（OCSP）验证IdP证书的到期和吊销情况
+- 验证`NotBefore`和`NotOnorAfter`
+- 验证接收者属性
+- 定义SAML注销的标准
+- 仅通过安全传输交换断言
+- 定义会话管理标准
+- 尽可能验证从SAML票据断言获得的用户身份
 
-Just because SAML is a security protocol does not mean that input validation goes away.
+## 输入验证
 
-- Ensure that all SAML providers/consumers do proper [input validation](Input_Validation_Cheat_Sheet.md).
+仅仅因为SAML是安全协议，并不意味着可以忽略输入验证。
 
-## Cryptography
+- 确保所有SAML提供者/消费者执行适当的[输入验证](Input_Validation_Cheat_Sheet.md)。
 
-Solutions relying cryptographic algorithms need to follow the latest developments in cryptoanalysis.
+## 密码学
 
-- Ensure all SAML elements in the chain use [strong encryption](Cryptographic_Storage_Cheat_Sheet.md#algorithms)
-- Consider deprecating support for [insecure XMLEnc algorithms](https://www.w3.org/TR/xmlenc-core1/#sec-RSA-1_5)
+依赖密码学算法的解决方案需要跟踪密码分析的最新进展。
+
+- 确保链中的所有SAML元素使用[强加密](Cryptographic_Storage_Cheat_Sheet.md#algorithms)
+- 考虑废弃对[不安全的XMLEnc算法](https://www.w3.org/TR/xmlenc-core1/#sec-RSA-1_5)的支持
