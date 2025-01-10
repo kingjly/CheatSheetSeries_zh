@@ -1,22 +1,22 @@
-# Query Parameterization Cheat Sheet
+# 查询参数化备忘录
 
-## Introduction
+## 介绍
 
-[SQL Injection](https://owasp.org/www-community/attacks/SQL_Injection) is one of the most dangerous web vulnerabilities. So much so that it was the #1 item in both the OWASP Top 10 [2013 version](https://wiki.owasp.org/index.php/Top_10_2013-A1-Injection), and [2017 version](https://owasp.org/www-project-top-ten/2017/A1_2017-Injection.html). As of 2021, it sits at #3 on the [OWASP Top 10](https://owasp.org/Top10/A03_2021-Injection/).
+[SQL 注入](https://owasp.org/www-community/attacks/SQL_Injection)是最危险的 Web 漏洞之一。它在 OWASP Top 10 的 [2013 版本](https://wiki.owasp.org/index.php/Top_10_2013-A1-Injection)和 [2017 版本](https://owasp.org/www-project-top-ten/2017/A1_2017-Injection.html)中都位居第一。截至 2021 年，它在 [OWASP Top 10](https://owasp.org/Top10/A03_2021-Injection/) 中排名第 3。
 
-It represents a serious threat because SQL Injection allows evil attacker code to change the structure of a web application's SQL statement in a way that can steal data, modify data, or potentially facilitate command injection to the underlying OS.
+它代表了一个严重的威胁，因为 SQL 注入允许恶意攻击者代码以可以窃取数据、修改数据，甚至可能便于对底层操作系统进行命令注入的方式更改 Web 应用程序的 SQL 语句结构。
 
-This cheat sheet is a derivative work of the [SQL Injection Prevention Cheat Sheet](SQL_Injection_Prevention_Cheat_Sheet.md).
+本备忘录是 [SQL 注入预防备忘录](SQL_Injection_Prevention_Cheat_Sheet.md) 的衍生作品。
 
-## Parameterized Query Examples
+## 参数化查询示例
 
-SQL Injection is best prevented through the use of [*parameterized queries*](SQL_Injection_Prevention_Cheat_Sheet.md). The following chart demonstrates, with real-world code samples, how to build parameterized queries in most of the common web languages. The purpose of these code samples is to demonstrate to the web developer how to avoid SQL Injection when building database queries within a web application.
+通过使用[*参数化查询*](SQL_Injection_Prevention_Cheat_Sheet.md)可以最好地防止 SQL 注入。下面的图表通过大多数常见 Web 语言的实际代码示例，展示了如何构建参数化查询。这些代码示例的目的是向 Web 开发者展示在 Web 应用程序中构建数据库查询时如何避免 SQL 注入。
 
-Please note, many client side frameworks and libraries offer client side query parameterization. These libraries often just build queries with string concatenation before sending raw queries to a server. Please ensure that query parameterization is done server-side!
+请注意，许多客户端框架和库提供客户端查询参数化。这些库通常在发送原始查询到服务器之前只是使用字符串拼接构建查询。请确保查询参数化在服务器端完成！
 
-### Prepared Statement Examples
+### 预处理语句示例
 
-#### Using Java built-in feature
+#### 使用 Java 内置特性
 
 ```java
 String custname = request.getParameter("customerName");
@@ -26,11 +26,11 @@ pstmt.setString( 1, custname);
 ResultSet results = pstmt.executeQuery( );
 ```
 
-#### Using Java with Hibernate
+#### 使用 Java 与 Hibernate
 
 ```java
 // HQL
-@Entity // declare as entity;
+@Entity // 声明为实体
 @NamedQuery(
  name="findByDescription",
  query="FROM Inventory i WHERE i.productDescription = :productDescription"
@@ -41,23 +41,23 @@ public class Inventory implements Serializable {
  private String productDescription;
 }
 
-// Use case
-// This should REALLY be validated too
+// 使用场景
+// 这里确实应该进行验证
 String userSuppliedParameter = request.getParameter("Product-Description");
-// Perform input validation to detect attacks
+// 执行输入验证以检测攻击
 List<Inventory> list =
  session.getNamedQuery("findByDescription")
  .setParameter("productDescription", userSuppliedParameter).list();
 
-// Criteria API
-// This should REALLY be validated too
+// 条件 API
+// 这里确实应该进行验证
 String userSuppliedParameter = request.getParameter("Product-Description");
-// Perform input validation to detect attacks
+// 执行输入验证以检测攻击
 Inventory inv = (Inventory) session.createCriteria(Inventory.class).add
 (Restrictions.eq("productDescription", userSuppliedParameter)).uniqueResult();
 ```
 
-#### Using .NET built-in feature
+#### 使用 .NET 内置特性
 
 ```csharp
 String query = "SELECT account_balance FROM user_data WHERE user_name = ?";
@@ -67,11 +67,11 @@ try {
    OleDbDataReader reader = command.ExecuteReader();
    // …
 } catch (OleDbException se) {
-   // error handling
+   // 错误处理
 }
 ```
 
-#### Using ASP .NET built-in feature
+#### 使用 ASP .NET 内置特性
 
 ```csharp
 string sql = "SELECT * FROM Customers WHERE CustomerId = @CustomerId";
@@ -80,29 +80,29 @@ command.Parameters.Add(new SqlParameter("@CustomerId", System.Data.SqlDbType.Int
 command.Parameters["@CustomerId"].Value = 1;
 ```
 
-#### Using Ruby with ActiveRecord
+#### 使用 Ruby 与 ActiveRecord
 
 ```ruby
-## Create
+## 创建
 Project.create!(:name => 'owasp')
-## Read
+## 读取
 Project.all(:conditions => "name = ?", name)
 Project.all(:conditions => { :name => name })
 Project.where("name = :name", :name => name)
-## Update
+## 更新
 project.update_attributes(:name => 'owasp')
-## Delete
+## 删除
 Project.delete(:name => 'name')
 ```
 
-#### Using Ruby built-in feature
+#### 使用 Ruby 内置特性
 
 ```ruby
 insert_new_user = db.prepare "INSERT INTO users (name, age, gender) VALUES (?, ? ,?)"
 insert_new_user.execute 'aizatto', '20', 'male'
 ```
 
-#### Using PHP with PHP Data Objects
+#### 使用 PHP 与 PHP 数据对象
 
 ```php
 $stmt = $dbh->prepare("INSERT INTO REGISTRY (name, value) VALUES (:name, :value)");
@@ -110,7 +110,7 @@ $stmt->bindParam(':name', $name);
 $stmt->bindParam(':value', $value);
 ```
 
-#### Using Cold Fusion built-in feature
+#### 使用 Cold Fusion 内置特性
 
 ```coldfusion
 <cfquery name = "getFirst" dataSource = "cfsnippets">
@@ -119,7 +119,7 @@ $stmt->bindParam(':value', $value);
 </cfquery>
 ```
 
-#### Using PERL with Database Independent Interface
+#### 使用 PERL 与数据库独立接口
 
 ```perl
 my $sql = "INSERT INTO foo (bar, baz) VALUES ( ?, ? )";
@@ -127,14 +127,14 @@ my $sth = $dbh->prepare( $sql );
 $sth->execute( $bar, $baz );
 ```
 
-#### Using Rust with SQLx
-<!-- contributed by GeekMasher -->
+#### 使用 Rust 与 SQLx
+<!-- 由 GeekMasher 贡献 -->
 
 ```rust
-// Input from CLI args but could be anything
+// 从 CLI 参数输入，但可以是任何内容
 let username = std::env::args().last().unwrap();
 
-// Using build-in macros (compile time checks)
+// 使用内置宏（编译时检查）
 let users = sqlx::query_as!(
         User,
         "SELECT * FROM users WHERE name = ?",
@@ -144,7 +144,7 @@ let users = sqlx::query_as!(
     .await 
     .unwrap();
 
-// Using built-in functions
+// 使用内置函数
 let users: Vec<User> = sqlx::query_as::<_, User>(
         "SELECT * FROM users WHERE name = ?"
     )
@@ -154,19 +154,19 @@ let users: Vec<User> = sqlx::query_as::<_, User>(
     .unwrap();
 ```
 
-### Stored Procedure Examples
+### 存储过程示例
 
-The SQL you write in your web application isn't the only place that SQL injection vulnerabilities can be introduced. If you are using Stored Procedures, and you are dynamically constructing SQL inside them, you can also introduce SQL injection vulnerabilities.
+在 Web 应用程序中编写的 SQL 并不是引入 SQL 注入漏洞的唯一位置。如果您使用存储过程，并且在其中动态构造 SQL，也可能引入 SQL 注入漏洞。
 
-Dynamic SQL can be parameterized using bind variables, to ensure the dynamically constructed SQL is secure.
+可以使用绑定变量对动态 SQL 进行参数化，以确保动态构造的 SQL 是安全的。
 
-Here are some examples of using bind variables in stored procedures in different databases.
+以下是不同数据库中使用绑定变量的存储过程示例。
 
-#### Oracle using PL/SQL
+#### Oracle 使用 PL/SQL
 
-##### Normal Stored Procedure
+##### 普通存储过程
 
-No dynamic SQL being created. Parameters passed in to stored procedures are naturally bound to their location within the query without anything special being required:
+没有创建动态 SQL。传递给存储过程的参数自然绑定到查询中的位置，无需特别处理：
 
 ```sql
 PROCEDURE SafeGetBalanceQuery(UserID varchar, Dept varchar) AS BEGIN
@@ -174,9 +174,9 @@ PROCEDURE SafeGetBalanceQuery(UserID varchar, Dept varchar) AS BEGIN
 END;
 ```
 
-##### Stored Procedure Using Bind Variables in SQL Run with EXECUTE
+##### 使用 EXECUTE 运行的存储过程中使用绑定变量
 
-Bind variables are used to tell the database that the inputs to this dynamic SQL are 'data' and not possibly code:
+使用绑定变量告诉数据库，这个动态 SQL 的输入是"数据"而不是可能的代码：
 
 ```sql
 PROCEDURE AnotherSafeGetBalanceQuery(UserID varchar, Dept varchar)
@@ -189,11 +189,11 @@ BEGIN
 END;
 ```
 
-#### SQL Server using Transact-SQL
+#### SQL Server 使用 Transact-SQL
 
-##### Normal Stored Procedure
+##### 普通存储过程
 
-No dynamic SQL being created. Parameters passed in to stored procedures are naturally bound to their location within the query without anything special being required:
+没有创建动态 SQL。传递给存储过程的参数自然绑定到查询中的位置，无需特别处理：
 
 ```sql
 PROCEDURE SafeGetBalanceQuery(@UserID varchar(20), @Dept varchar(10)) AS BEGIN
@@ -201,9 +201,9 @@ PROCEDURE SafeGetBalanceQuery(@UserID varchar(20), @Dept varchar(10)) AS BEGIN
 END
 ```
 
-##### Stored Procedure Using Bind Variables in SQL Run with EXEC
+##### 使用 EXEC 运行的存储过程中使用绑定变量
 
-Bind variables are used to tell the database that the inputs to this dynamic SQL are 'data' and not possibly code:
+使用绑定变量告诉数据库，这个动态 SQL 的输入是"数据"而不是可能的代码：
 
 ```sql
 PROCEDURE SafeGetBalanceQuery(@UserID varchar(20), @Dept varchar(10)) AS BEGIN
@@ -216,7 +216,7 @@ PROCEDURE SafeGetBalanceQuery(@UserID varchar(20), @Dept varchar(10)) AS BEGIN
 END
 ```
 
-## References
+## 参考文献
 
-- [The Bobby Tables site (inspired by the XKCD webcomic) has numerous examples in different languages of parameterized Prepared Statements and Stored Procedures](http://bobby-tables.com/)
-- OWASP [SQL Injection Prevention Cheat Sheet](SQL_Injection_Prevention_Cheat_Sheet.md)
+- [Bobby Tables 网站（受 XKCD 网络漫画启发）提供了不同语言中参数化预处理语句和存储过程的众多示例](http://bobby-tables.com/)
+- OWASP [SQL 注入预防备忘录](SQL_Injection_Prevention_Cheat_Sheet.md)
