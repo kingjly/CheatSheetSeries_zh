@@ -1,391 +1,415 @@
-# Session Management Cheat Sheet
+# 会话管理备忘录
 
-## Introduction
+## 引言
 
-**Web Authentication, Session Management, and Access Control**:
+**Web 身份验证、会话管理和访问控制**：
 
-A web session is a sequence of network HTTP request and response transactions associated with the same user. Modern and complex web applications require the retaining of information or status about each user for the duration of multiple requests. Therefore, sessions provide the ability to establish variables – such as access rights and localization settings – which will apply to each and every interaction a user has with the web application for the duration of the session.
+Web 会话是与同一用户关联的一系列网络 HTTP 请求和响应事务。现代复杂的 Web 应用程序需要在多个请求期间保留每个用户的信息或状态。因此，会话提供了建立变量（如访问权限和本地化设置）的能力，这些变量将在用户与 Web 应用程序交互的整个会话期间应用。
 
-Web applications can create sessions to keep track of anonymous users after the very first user request. An example would be maintaining the user language preference. Additionally, web applications will make use of sessions once the user has authenticated. This ensures the ability to identify the user on any subsequent requests as well as being able to apply security access controls, authorized access to the user private data, and to increase the usability of the application. Therefore, current web applications can provide session capabilities both pre and post authentication.
+Web 应用程序可以创建会话，以在第一次用户请求后跟踪匿名用户。例如，维护用户语言偏好。此外，一旦用户通过身份验证，Web 应用程序将使用会话。这确保了在后续请求中识别用户的能力，应用安全访问控制，授权访问用户私有数据，并提高应用程序的可用性。因此，当前的 Web 应用程序可以在身份验证前后提供会话功能。
 
-Once an authenticated session has been established, the session ID (or token) is temporarily equivalent to the strongest authentication method used by the application, such as username and password, passphrases, one-time passwords (OTP), client-based digital certificates, smartcards, or biometrics (such as fingerprint or eye retina). See the OWASP [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md).
+一旦建立了经过身份验证的会话，会话 ID（或令牌）暂时等同于应用程序使用的最强身份验证方法，如用户名和密码、通行短语、一次性密码（OTP）、基于客户端的数字证书、智能卡或生物识别技术（如指纹或眼网膜）。请参阅 OWASP [身份验证备忘录](Authentication_Cheat_Sheet.md)。
 
-HTTP is a stateless protocol ([RFC2616](https://www.ietf.org/rfc/rfc2616.txt) section 5), where each request and response pair is independent of other web interactions. Therefore, in order to introduce the concept of a session, it is required to implement session management capabilities that link both the authentication and access control (or authorization) modules commonly available in web applications:
+HTTP 是一种无状态协议（[RFC2616](https://www.ietf.org/rfc/rfc2616.txt) 第 5 节），每个请求和响应对都独立于其他 Web 交互。因此，为了引入会话概念，需要实施会话管理功能，链接 Web 应用程序中常见的身份验证和访问控制（或授权）模块：
 
-![SessionDiagram](../assets/Session_Management_Cheat_Sheet_Diagram.png)
+![会话图](../assets/Session_Management_Cheat_Sheet_Diagram.png)
 
-The session ID or token binds the user authentication credentials (in the form of a user session) to the user HTTP traffic and the appropriate access controls enforced by the web application. The complexity of these three components (authentication, session management, and access control) in modern web applications, plus the fact that its implementation and binding resides on the web developer's hands (as web development frameworks do not provide strict relationships between these modules), makes the implementation of a secure session management module very challenging.
+会话 ID 或令牌将用户身份验证凭据（以用户会话的形式）绑定到用户的 HTTP 流量和 Web 应用程序强制执行的适当访问控制。现代 Web 应用程序中这三个组件（身份验证、会话管理和访问控制）的复杂性，加上其实现和绑定取决于 Web 开发者（因为 Web 开发框架没有提供这些模块之间的严格关系），使得实现安全的会话管理模块变得非常具有挑战性。
 
-The disclosure, capture, prediction, brute force, or fixation of the session ID will lead to session hijacking (or sidejacking) attacks, where an attacker is able to fully impersonate a victim user in the web application. Attackers can perform two types of session hijacking attacks, targeted or generic. In a targeted attack, the attacker's goal is to impersonate a specific (or privileged) web application victim user. For generic attacks, the attacker's goal is to impersonate (or get access as) any valid or legitimate user in the web application.
+会话 ID 的泄露、捕获、预测、暴力破解或固定将导致会话劫持（或侧面劫持）攻击，攻击者能够完全冒充 Web 应用程序中的受害用户。攻击者可以执行两种类型的会话劫持攻击：针对性攻击或通用攻击。在针对性攻击中，攻击者的目标是冒充特定的（或特权）Web 应用程序受害用户。对于通用攻击，攻击者的目标是冒充（或获取访问权限）Web 应用程序中的任何有效或合法用户。
 
-## Session ID Properties
+## 会话 ID 属性
 
-In order to keep the authenticated state and track the users progress within the web application, applications provide users with a **session identifier** (session ID or token) that is assigned at session creation time, and is shared and exchanged by the user and the web application for the duration of the session (it is sent on every HTTP request). The session ID is a `name=value` pair.
+为了保持经过身份验证的状态并跟踪用户在 Web 应用程序中的进度，应用程序为用户提供在会话创建时分配的**会话标识符**（会话 ID 或令牌），并在会话期间由用户和 Web 应用程序共享和交换（在每个 HTTP 请求中发送）。会话 ID 是一个 `name=value` 对。
 
-With the goal of implementing secure session IDs, the generation of identifiers (IDs or tokens) must meet the following properties.
+为了实现安全的会话 ID，标识符（ID 或令牌）的生成必须满足以下属性。
 
-### Session ID Name Fingerprinting
+### 会话 ID 名称指纹
 
-The name used by the session ID should not be extremely descriptive nor offer unnecessary details about the purpose and meaning of the ID.
+会话 ID 的名称不应过于描述性，也不应提供关于 ID 目的和含义的不必要细节。
 
-The session ID names used by the most common web application development frameworks [can be easily fingerprinted](https://wiki.owasp.org/index.php/Category:OWASP_Cookies_Database), such as `PHPSESSID` (PHP), `JSESSIONID` (J2EE), `CFID` & `CFTOKEN` (ColdFusion), `ASP.NET_SessionId` (ASP .NET), etc. Therefore, the session ID name can disclose the technologies and programming languages used by the web application.
+最常见的 Web 应用程序开发框架使用的会话 ID 名称[可以很容易地被指纹识别](https://wiki.owasp.org/index.php/Category:OWASP_Cookies_Database)，如 `PHPSESSID`（PHP）、`JSESSIONID`（J2EE）、`CFID` 和 `CFTOKEN`（ColdFusion）、`ASP.NET_SessionId`（ASP .NET）等。因此，会话 ID 名称可能会泄露 Web 应用程序使用的技术和编程语言。
 
-It is recommended to change the default session ID name of the web development framework to a generic name, such as `id`.
+建议将 Web 开发框架的默认会话 ID 名称更改为通用名称，如 `id`。
 
-### Session ID Entropy
+### 会话 ID 熵
 
-Session identifiers must have at least `64 bits` of entropy to prevent brute-force session guessing attacks. Entropy refers to the amount of randomness or unpredictability in a value. Each “bit” of entropy doubles the number of possible outcomes, meaning a session ID with 64 bits of entropy can have `2^64` possible values.
+会话标识符必须至少具有 `64 位` 熵，以防止暴力破解会话猜测攻击。熵指的是值中的随机性或不可预测性。每一个"位"的熵都会使可能的结果数量加倍，这意味着具有 64 位熵的会话 ID 可以有 `2^64` 个可能的值。
 
-A strong [CSPRNG](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) (Cryptographically Secure Pseudorandom Number Generator) must be used to generate session IDs. This ensures the generated values are evenly distributed among all possible values. Otherwise, attackers may be able to use statistisical analysis techniques to identify patterns in how the session IDs are created, effectively reducing the entropy and allowing the attacker to guess or predict valid session IDs more easily.
+必须使用强大的 [CSPRNG](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)（密码学安全伪随机数生成器）来生成会话 ID。这确保生成的值在所有可能的值中均匀分布。否则，攻击者可能能够使用统计分析技术识别会话 ID 创建的模式，有效地降低熵，从而更容易猜测或预测有效的会话 ID。
 
-**NOTE**:
+**注意**：
 
-- The expected time for an attacker to brute-force a valid session ID depends on factors such as the number of bits of entropy, the number of active sessions, session expiration times, and the attacker's guessing rate.
-- If a web application generates session IDs with 64 bits of entropy, an attacker can expect to spend approximately 585 years to successfully guess a valid session ID, assuming the attacker can try 10,000 guesses per second with 100,000 valid simultaneous sessions available in the application.
-- Further analysis of the expected time for an attacker to brute-force session identifiers is available [here](https://owasp.org/www-community/vulnerabilities/Insufficient_Session-ID_Length#estimating-attack-time).
+- 攻击者暴力破解有效会话 ID 的预期时间取决于多个因素，如熵位数、活动会话数、会话过期时间和攻击者的猜测速率。
+- 如果 Web 应用程序生成 64 位熵的会话 ID，假设攻击者每秒可以尝试 10,000 次猜测，且应用程序中有 100,000 个有效的同时会话，攻击者预计需要花费约 585 年才能成功猜测有效的会话 ID。
+- 关于攻击者暴力破解会话标识符所需时间的进一步分析，请参见[此处](https://owasp.org/www-community/vulnerabilities/Insufficient_Session-ID_Length#estimating-attack-time)。
 
-### Session ID Length
+### 会话 ID 长度
 
-As mentioned in the previous *Session ID Entropy* section, a primary security requirement for session IDs is that they contain at least `64 bits` of entropy to prevent brute-force guessing attacks. Although session ID length matters, it's the entropy that ensures security. The session ID must be long enough to encode sufficient entropy, preventing brute force attacks where an attacker guesses valid session IDs.
+如前面的*会话 ID 熵*部分所述，会话 ID 的主要安全要求是包含至少 `64 位` 熵，以防止暴力破解猜测攻击。尽管会话 ID 长度很重要，但确保安全的是熵。会话 ID 必须足够长以编码足够的熵，防止攻击者猜测有效的会话 ID。
 
-Different encoding methods can result in different lengths for the same amount of entropy. Session IDs are often represented using hexadecimal encoding. When using hexadecimal encoding, a session ID must be at least 16 hexadecimal characters long to achieve the required 64 bits of entropy.  When using different encodings (e.g. Base64 or [Microsoft's encoding for ASP.NET session IDs](https://docs.microsoft.com/en-us/dotnet/api/system.web.sessionstate.sessionidmanager?redirectedfrom=MSDN&view=netframework-4.7.2)) a different number of characters may be required to represent the minimum 64 bits of entropy.
+不同的编码方法可能导致相同熵的长度不同。会话 ID 通常使用十六进制编码表示。使用十六进制编码时，会话 ID 必须至少为 16 个十六进制字符，以实现所需的 64 位熵。使用不同的编码（例如 Base64 或 [Microsoft 的 ASP.NET 会话 ID 编码](https://docs.microsoft.com/en-us/dotnet/api/system.web.sessionstate.sessionidmanager?redirectedfrom=MSDN&view=netframework-4.7.2)），可能需要不同数量的字符来表示最小 64 位熵。
 
-It’s important to note that if any part of the session ID is fixed or predictable, the effective entropy is reduced, and the length may need to be increased to compensate. For example, if half of a 16-character hexadecimal session ID is fixed, only the remaining 8 characters are random, providing just 32 bits of entropy — which is insufficient for strong security. To maintain security, ensure that the entire session ID is randomly generated and unpredictable, or increase the overall length if parts of the ID are not random.
+需要注意的是，如果会话 ID 的任何部分是固定的或可预测的，有效熵就会降低，可能需要增加长度以补偿。例如，如果 16 个十六进制字符的会话 ID 的一半是固定的，则只有剩余的 8 个字符是随机的，仅提供 32 位熵 — 这对于强安全性是不够的。为保持安全性，请确保整个会话 ID 是随机生成且不可预测的，或者如果 ID 的某些部分不是随机的，则增加总体长度。
 
-**NOTE**:
+**注意**：
 
-- More information about the relationship between Session ID Length and Session ID Entropy is available [here](https://owasp.org/www-community/vulnerabilities/Insufficient_Session-ID_Length#session-id-length-and-entropy-relationship).
+- 关于会话 ID 长度和会话 ID 熵关系的更多信息，请参见[此处](https://owasp.org/www-community/vulnerabilities/Insufficient_Session-ID_Length#session-id-length-and-entropy-relationship)。
 
-### Session ID Content (or Value)
+### 会话 ID 内容（或值）
 
-The session ID content (or value) must be meaningless to prevent information disclosure attacks, where an attacker is able to decode the contents of the ID and extract details of the user, the session, or the inner workings of the web application.
+会话 ID 内容（或值）必须毫无意义，以防止信息泄露攻击，攻击者可能解码 ID 的内容并提取用户、会话或 Web 应用程序内部工作的详细信息。
 
-The session ID must simply be an identifier on the client side, and its value must never include sensitive information or Personally Identifiable Information (PII). To read more about PII, refer to [Wikipedia](https://en.wikipedia.org/wiki/Personally_identifiable_information) or this [post](https://www.idshield.com/blog/identity-theft/what-pii-and-why-should-i-care/).
+会话 ID 在客户端上必须仅仅是一个标识符，其值绝不能包含敏感信息或个人可识别信息（PII）。要了解更多关于 PII 的信息，请参阅[维基百科](https://en.wikipedia.org/wiki/Personally_identifiable_information)或[这篇文章](https://www.idshield.com/blog/identity-theft/what-pii-and-why-should-i-care/)。
 
-The meaning and business or application logic associated with the session ID must be stored on the server side, and specifically, in session objects or in a session management database or repository.
+与会话 ID 相关的含义和业务或应用程序逻辑必须存储在服务器端，特别是在会话对象或会话管理数据库或存储库中。
 
-The stored information can include the client IP address, User-Agent, e-mail, username, user ID, role, privilege level, access rights, language preferences, account ID, current state, last login, session timeouts, and other internal session details. If the session objects and properties contain sensitive information, such as credit card numbers, it is required to duly encrypt and protect the session management repository.
+存储的信息可以包括客户端 IP 地址、用户代理、电子邮件、用户名、用户 ID、角色、权限级别、访问权限、语言偏好、账户 ID、当前状态、最后登录、会话超时以及其他内部会话详细信息。如果会话对象和属性包含敏感信息，如信用卡号，则需要适当加密和保护会话管理存储库。
 
-It is recommended to use the session ID created by your language or framework. If you need to create your own sessionID, use a cryptographically secure pseudorandom number generator (CSPRNG) with a size of at least 128 bits and ensure that each sessionID is unique.
+建议使用语言或框架创建的会话 ID。如果需要创建自己的会话 ID，请使用密码学安全的伪随机数生成器（CSPRNG），大小至少为 128 位，并确保每个会话 ID 都是唯一的。
 
-## Session Management Implementation
+## 会话管理实现
 
-The session management implementation defines the exchange mechanism that will be used between the user and the web application to share and continuously exchange the session ID. There are multiple mechanisms available in HTTP to maintain session state within web applications, such as cookies (standard HTTP header), URL parameters (URL rewriting – [RFC2396](https://www.ietf.org/rfc/rfc2396.txt)), URL arguments on GET requests, body arguments on POST requests, such as hidden form fields (HTML forms), or proprietary HTTP headers.
+会话管理实现定义了用户和 Web 应用程序之间用于共享和持续交换会话 ID 的交换机制。在 HTTP 中，有多种维护 Web 应用程序会话状态的机制，例如：
+- Cookies（标准 HTTP 标头）
+- URL 参数（URL 重写 – [RFC2396](https://www.ietf.org/rfc/rfc2396.txt)）
+- GET 请求的 URL 参数
+- POST 请求的正文参数（如隐藏的表单字段）
+- 专有的 HTTP 标头
 
-The preferred session ID exchange mechanism should allow defining advanced token properties, such as the token expiration date and time, or granular usage constraints. This is one of the reasons why cookies (RFCs [2109](https://www.ietf.org/rfc/rfc2109.txt) & [2965](https://www.ietf.org/rfc/rfc2965.txt) & [6265](https://www.ietf.org/rfc/rfc6265.txt)) are one of the most extensively used session ID exchange mechanisms, offering advanced capabilities not available in other methods.
+首选的会话 ID 交换机制应允许定义高级令牌属性，如令牌的到期日期和时间，或细粒度的使用约束。这是 Cookies（RFCs [2109](https://www.ietf.org/rfc/rfc2109.txt)、[2965](https://www.ietf.org/rfc/rfc2965.txt) 和 [6265](https://www.ietf.org/rfc/rfc6265.txt)）成为最广泛使用的会话 ID 交换机制之一的原因，因为它提供了其他方法中不可用的高级功能。
 
-The usage of specific session ID exchange mechanisms, such as those where the ID is included in the URL, might disclose the session ID (in web links and logs, web browser history and bookmarks, the Referer header or search engines), as well as facilitate other attacks, such as the manipulation of the ID or [session fixation attacks](http://www.acrossecurity.com/papers/session_fixation.pdf).
+使用特定的会话 ID 交换机制（如在 URL 中包含 ID）可能会导致会话 ID 泄露（在 Web 链接、日志、Web 浏览器历史记录和书签、Referer 标头或搜索引擎中），并可能便于其他攻击，如 ID 操纵或[会话固定攻击](http://www.acrossecurity.com/papers/session_fixation.pdf)。
 
-### Built-in Session Management Implementations
+### 内置会话管理实现
 
-Web development frameworks, such as J2EE, ASP .NET, PHP, and others, provide their own session management features and associated implementation. It is recommended to use these built-in frameworks versus building a home made one from scratch, as they are used worldwide on multiple web environments and have been tested by the web application security and development communities over time.
+Web 开发框架，如 J2EE、ASP .NET、PHP 等，提供了自己的会话管理功能和相关实现。建议使用这些内置框架，而不是从头开始构建自定义框架，因为它们在多个 Web 环境中被广泛使用，并且已经被 Web 应用程序安全和开发社区长期测试。
 
-However, be advised that these frameworks have also presented vulnerabilities and weaknesses in the past, so it is always recommended to use the latest version available, that potentially fixes all the well-known vulnerabilities, as well as review and change the default configuration to enhance its security by following the recommendations described along this document.
+但请注意，这些框架过去也出现过漏洞和弱点，因此始终建议使用最新可用的版本（可能修复了所有已知漏洞），并按照本文档中描述的建议审查和更改默认配置以增强其安全性。
 
-The storage capabilities or repository used by the session management mechanism to temporarily save the session IDs must be secure, protecting the session IDs against local or remote accidental disclosure or unauthorized access.
+会话管理机制用于临时保存会话 ID 的存储功能或存储库必须是安全的，以防止会话 ID 意外泄露或未经授权访问。
 
-### Used vs. Accepted Session ID Exchange Mechanisms
+### 已使用与接受的会话 ID 交换机制
 
-A web application should make use of cookies for session ID exchange management. If a user submits a session ID through a different exchange mechanism, such as a URL parameter, the web application should avoid accepting it as part of a defensive strategy to stop session fixation.
+Web 应用程序应使用 Cookies 进行会话 ID 交换管理。如果用户通过其他交换机制（如 URL 参数）提交会话 ID，Web 应用程序应避免接受它，作为防止会话固定的防御策略。
 
-**NOTE**:
+**注意**：
+- 即使 Web 应用程序默认使用 Cookies 作为会话 ID 交换机制，它可能也会接受其他交换机制。
+- 因此，需要通过彻底测试确认 Web 应用程序当前接受的所有不同机制，并将接受的会话 ID 跟踪机制限制为仅 Cookies。
+- 过去，一些 Web 应用程序使用 URL 参数，或者在满足某些条件时（例如，识别不支持 Cookies 或因用户隐私问题而不接受 Cookies 的 Web 客户端）从 Cookies 切换到 URL 参数。
 
-- Even if a web application makes use of cookies as its default session ID exchange mechanism, it might accept other exchange mechanisms too.
-- It is therefore required to confirm via thorough testing all the different mechanisms currently accepted by the web application when processing and managing session IDs, and limit the accepted session ID tracking mechanisms to just cookies.
-- In the past, some web applications used URL parameters, or even switched from cookies to URL parameters (via automatic URL rewriting), if certain conditions are met (for example, the identification of web clients without support for cookies or not accepting cookies due to user privacy concerns).
+### 传输层安全
 
-### Transport Layer Security
+为了保护会话 ID 交换免受网络流量中的主动窃听和被动泄露，必须对整个 Web 会话使用加密的 HTTPS（TLS）连接，而不仅仅是交换用户凭据的身份验证过程。对于支持的客户端，这可以通过 [HTTP 严格传输安全（HSTS）](HTTP_Strict_Transport_Security_Cheat_Sheet.md)来缓解。
 
-In order to protect the session ID exchange from active eavesdropping and passive disclosure in the network traffic, it is essential to use an encrypted HTTPS (TLS) connection for the entire web session, not only for the authentication process where the user credentials are exchanged. This may be mitigated by [HTTP Strict Transport Security (HSTS)](HTTP_Strict_Transport_Security_Cheat_Sheet.md) for a client that supports it.
+此外，必须使用 `Secure` [Cookie 属性](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies)以确保会话 ID 仅通过加密通道交换。使用加密通信通道还可以防止某些会话固定攻击，攻击者能够拦截和操纵 Web 流量以在受害者的 Web 浏览器上注入（或固定）会话 ID（参见[此处](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-Slides.pdf)和[此处](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-WP.pdf)）。
 
-Additionally, the `Secure` [cookie attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies) must be used to ensure the session ID is only exchanged through an encrypted channel. The usage of an encrypted communication channel also protects the session against some session fixation attacks where the attacker is able to intercept and manipulate the web traffic to inject (or fix) the session ID on the victim's web browser (see [here](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-Slides.pdf) and [here](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-WP.pdf)).
+以下最佳实践重点保护会话 ID（特别是使用 Cookies 时）并帮助在 Web 应用程序中集成 HTTPS：
 
-The following set of best practices are focused on protecting the session ID (specifically when cookies are used) and helping with the integration of HTTPS within the web application:
+- 不要将给定会话从 HTTP 切换到 HTTPS，反之亦然，因为这会通过网络以明文形式泄露会话 ID。
+    - 重定向到 HTTPS 时，确保在重定向发生**之后**设置或重新生成 Cookie。
+- 不要在同一页面或同一域中混合加密和未加密的内容（HTML 页面、图像、CSS、JavaScript 文件等）。
+- 尽可能避免从同一主机提供公共未加密内容和私有加密内容。如果需要不安全的内容，请考虑将其托管在单独的不安全域上。
+- 实施 [HTTP 严格传输安全（HSTS）](HTTP_Strict_Transport_Security_Cheat_Sheet.md)以强制执行 HTTPS 连接。
 
-- Do not switch a given session from HTTP to HTTPS, or vice-versa, as this will disclose the session ID in the clear through the network.
-    - When redirecting to HTTPS, ensure that the cookie is set or regenerated **after** the redirect has occurred.
-- Do not mix encrypted and unencrypted contents (HTML pages, images, CSS, JavaScript files, etc) in the same page, or from the same domain.
-- Where possible, avoid offering public unencrypted contents and private encrypted contents from the same host. Where insecure content is required, consider hosting this on a separate insecure domain.
-- Implement [HTTP Strict Transport Security (HSTS)](HTTP_Strict_Transport_Security_Cheat_Sheet.md) to enforce HTTPS connections.
+有关安全实施 TLS 的更多一般性指导，请参见 OWASP [传输层安全备忘录](Transport_Layer_Security_Cheat_Sheet.md)。
 
-See the OWASP [Transport Layer Security Cheat Sheet](Transport_Layer_Security_Cheat_Sheet.md) for more general guidance on implementing TLS securely.
-
-It is important to emphasize that TLS does not protect against session ID prediction, brute force, client-side tampering or fixation; however, it does provide effective protection against an attacker intercepting or stealing session IDs through a man in the middle attack.
+需要强调的是，TLS 不能防止会话 ID 预测、暴力破解、客户端篡改或固定；但它确实能有效防止攻击者通过中间人攻击拦截或窃取会话 ID。
 
 ## Cookies
 
-The session ID exchange mechanism based on cookies provides multiple security features in the form of cookie attributes that can be used to protect the exchange of the session ID:
+基于 Cookies 的会话 ID 交换机制通过 Cookie 属性提供多种安全功能，可用于保护会话 ID 的交换：
 
-### Secure Attribute
+### Secure 属性
 
-The `Secure` cookie attribute instructs web browsers to only send the cookie through an encrypted HTTPS (SSL/TLS) connection. This session protection mechanism is mandatory to prevent the disclosure of the session ID through MitM (Man-in-the-Middle) attacks. It ensures that an attacker cannot simply capture the session ID from web browser traffic.
+`Secure` Cookie 属性指示 Web 浏览器仅通过加密的 HTTPS（SSL/TLS）连接发送 Cookie。这种会话保护机制是强制性的，以防止通过中间人（MitM）攻击泄露会话 ID。它确保攻击者无法简单地从 Web 浏览器流量中捕获会话 ID。
 
-Forcing the web application to only use HTTPS for its communication (even when port TCP/80, HTTP, is closed in the web application host) does not protect against session ID disclosure if the `Secure` cookie has not been set - the web browser can be deceived to disclose the session ID over an unencrypted HTTP connection. The attacker can intercept and manipulate the victim user traffic and inject an HTTP unencrypted reference to the web application that will force the web browser to submit the session ID in the clear.
+即使强制 Web 应用程序仅使用 HTTPS 通信（即使 TCP/80 端口的 HTTP 已在 Web 应用程序主机上关闭），如果未设置 `Secure` Cookie，也无法防止会话 ID 泄露 - Web 浏览器可能会被诱导通过未加密的 HTTP 连接泄露会话 ID。攻击者可以拦截和操纵受害者用户流量，并注入指向 Web 应用程序的未加密 HTTP 引用，这将迫使 Web 浏览器以明文形式提交会话 ID。
 
-See also: [SecureFlag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies)
+另请参见：[SecureFlag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies)
 
-### HttpOnly Attribute
+### HttpOnly 属性
 
-The `HttpOnly` cookie attribute instructs web browsers not to allow scripts (e.g. JavaScript or VBscript) an ability to access the cookies via the DOM document.cookie object. This session ID protection is mandatory to prevent session ID stealing through XSS attacks. However, if an XSS attack is combined with a CSRF attack, the requests sent to the web application will include the session cookie, as the browser always includes the cookies when sending requests. The `HttpOnly` cookie only protects the confidentiality of the cookie; the attacker cannot use it offline, outside of the context of an XSS attack.
+`HttpOnly` Cookie 属性指示 Web 浏览器不允许脚本（如 JavaScript 或 VBScript）通过 DOM document.cookie 对象访问 Cookies。这种会话 ID 保护对于防止通过跨站脚本（XSS）攻击窃取会话 ID 是强制性的。但是，如果 XSS 攻击与跨站请求伪造（CSRF）攻击结合，发送到 Web 应用程序的请求将包含会话 Cookie，因为浏览器在发送请求时始终包含 Cookies。`HttpOnly` Cookie 仅保护 Cookie 的机密性；攻击者无法在 XSS 攻击上下文之外离线使用它。
 
-See the OWASP [XSS (Cross Site Scripting) Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md).
+请参见 OWASP [跨站脚本（XSS）防御备忘录](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)。
 
-See also: [HttpOnly](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies)
+另请参见：[HttpOnly](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies)
 
-### SameSite Attribute
+### SameSite 属性
 
-SameSite defines a cookie attribute preventing browsers from sending a SameSite flagged cookie with cross-site requests. The main goal is to mitigate the risk of cross-origin information leakage, and provides some protection against cross-site request forgery attacks.
+SameSite 定义了一个 Cookie 属性，防止浏览器在跨站请求中发送带有 SameSite 标志的 Cookie。其主要目标是减轻跨源信息泄露的风险，并为防止跨站请求伪造攻击提供一些保护。
 
-See also: [SameSite](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#SameSite_cookies)
+另请参见：[SameSite](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#SameSite_cookies)
 
-### Domain and Path Attributes
+### 域和路径属性
 
-The [`Domain` cookie attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Directives) instructs web browsers to only send the cookie to the specified domain and all subdomains. If the attribute is not set, by default the cookie will only be sent to the origin server. The [`Path` cookie attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Directives) instructs web browsers to only send the cookie to the specified directory or subdirectories (or paths or resources) within the web application. If the attribute is not set, by default the cookie will only be sent for the directory (or path) of the resource requested and setting the cookie.
+[`Domain` Cookie 属性](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Set-Cookie#指令)指示 Web 浏览器仅将 Cookie 发送到指定的域及其所有子域。如果未设置该属性，默认情况下 Cookie 只会发送到源服务器。[`Path` Cookie 属性](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Set-Cookie#指令)指示 Web 浏览器仅将 Cookie 发送到 Web 应用程序中指定的目录或子目录（或路径或资源）。如果未设置该属性，默认情况下 Cookie 只会发送到请求资源和设置 Cookie 的目录（或路径）。
 
-It is recommended to use a narrow or restricted scope for these two attributes. In this way, the `Domain` attribute should not be set (restricting the cookie just to the origin server) and the `Path` attribute should be set as restrictive as possible to the web application path that makes use of the session ID.
+建议对这两个属性使用较窄或受限的作用域。具体来说，`Domain` 属性不应被设置（将 Cookie 限制在源服务器），而 `Path` 属性应尽可能限制在使用会话 ID 的 Web 应用程序路径。
 
-Setting the `Domain` attribute to a too permissive value, such as `example.com` allows an attacker to launch attacks on the session IDs between different hosts and web applications belonging to the same domain, known as cross-subdomain cookies. For example, vulnerabilities in `www.example.com` might allow an attacker to get access to the session IDs from `secure.example.com`.
+将 `Domain` 属性设置为过于宽松的值（如 `example.com`）会允许攻击者在同一域的不同主机和 Web 应用程序之间发起跨子域 Cookie 攻击。例如，`www.example.com` 中的漏洞可能使攻击者获取 `secure.example.com` 的会话 ID。
 
-Additionally, it is recommended not to mix web applications of different security levels on the same domain. Vulnerabilities in one of the web applications would allow an attacker to set the session ID for a different web application on the same domain by using a permissive `Domain` attribute (such as `example.com`) which is a technique that can be used in [session fixation attacks](http://www.acrossecurity.com/papers/session_fixation.pdf).
+此外，建议不要在同一域上混合不同安全级别的 Web 应用程序。一个 Web 应用程序中的漏洞可能允许攻击者使用宽松的 `Domain` 属性（如 `example.com`）为另一个 Web 应用程序设置会话 ID，这是[会话固定攻击](http://www.acrossecurity.com/papers/session_fixation.pdf)可以使用的技术。
 
-Although the `Path` attribute allows the isolation of session IDs between different web applications using different paths on the same host, it is highly recommended not to run different web applications (especially from different security levels or scopes) on the same host. Other methods can be used by these applications to access the session IDs, such as the `document.cookie` object. Also, any web application can set cookies for any path on that host.
+尽管 `Path` 属性允许在同一主机上使用不同路径的 Web 应用程序之间隔离会话 ID，但强烈建议不要在同一主机上运行不同的 Web 应用程序（尤其是来自不同安全级别或范围的应用程序）。这些应用程序可以使用其他方法访问会话 ID，如 `document.cookie` 对象。另外，任何 Web 应用程序都可以为该主机上的任何路径设置 Cookie。
 
-Cookies are vulnerable to DNS spoofing/hijacking/poisoning attacks, where an attacker can manipulate the DNS resolution to force the web browser to disclose the session ID for a given host or domain.
+Cookie 容易受到 DNS 欺骗/劫持/污染攻击，攻击者可以操纵 DNS 解析，迫使 Web 浏览器泄露给定主机或域的会话 ID。
 
-### Expire and Max-Age Attributes
+### 过期和最大生存期属性
 
-Session management mechanisms based on cookies can make use of two types of cookies, non-persistent (or session) cookies, and persistent cookies. If a cookie presents the [`Max-Age`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Directives) (that has preference over `Expires`) or [`Expires`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Directives) attributes, it will be considered a persistent cookie and will be stored on disk by the web browser based until the expiration time.
+基于 Cookie 的会话管理机制可以使用两种类型的 Cookie：非持久性（或会话）Cookie 和持久性 Cookie。如果 Cookie 具有 [`Max-Age`](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Set-Cookie#指令)（优先于 `Expires`）或 [`Expires`](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Set-Cookie#指令) 属性，它将被视为持久性 Cookie，并由 Web 浏览器根据到期时间存储在磁盘上。
 
-Typically, session management capabilities to track users after authentication make use of non-persistent cookies. This forces the session to disappear from the client if the current web browser instance is closed. Therefore, it is highly recommended to use non-persistent cookies for session management purposes, so that the session ID does not remain on the web client cache for long periods of time, from where an attacker can obtain it.
+通常，身份验证后跟踪用户的会话管理功能使用非持久性 Cookie。这会在当前 Web 浏览器实例关闭时使会话消失。因此，强烈建议对会话管理使用非持久性 Cookie，这样会话 ID 就不会长时间保留在 Web 客户端缓存中，攻击者可能从中获取。
 
-- Ensure that sensitive information is not compromised by ensuring that it is not persistent, encrypting it, and storing it only for the duration of the need
-- Ensure that unauthorized activities cannot take place via cookie manipulation
-- Ensure secure flag is set to prevent accidental transmission over the wire in a non-secure manner
-- Determine if all state transitions in the application code properly check for the cookies and enforce their use
-- Ensure entire cookie should be encrypted if sensitive data is persisted in the cookie
-- Define all cookies being used by the application, their name and why they are needed
+- 确保通过不使其持久化、加密和仅在需要期间存储来防止敏感信息泄露
+- 确保无法通过 Cookie 操纵进行未经授权的活动
+- 确保设置安全标志以防止意外以非安全方式在网络上传输
+- 确定应用程序代码中的所有状态转换是否正确检查 Cookie 并强制使用
+- 如果在 Cookie 中持久化敏感数据，确保整个 Cookie 被加密
+- 定义应用程序使用的所有 Cookie、其名称和需要的原因
 
-## HTML5 Web Storage API
+## HTML5 Web 存储 API
 
-The Web Hypertext Application Technology Working Group (WHATWG) describes the HTML5 Web Storage APIs, `localStorage` and `sessionStorage`, as mechanisms for storing name-value pairs client-side.
-Unlike HTTP cookies, the contents of `localStorage` and `sessionStorage` are not automatically shared within requests or responses by the browser and are used for storing data client-side.
+Web 超文本应用技术工作组（WHATWG）描述 HTML5 Web 存储 API `localStorage` 和 `sessionStorage` 为在客户端存储名称-值对的机制。
+与 HTTP Cookie 不同，`localStorage` 和 `sessionStorage` 的内容不会被浏览器自动在请求或响应中共享，它们用于在客户端存储数据。
 
-### The localStorage API
+### localStorage API
 
-#### Scope
+#### 作用域
 
-Data stored using the `localStorage` API is accessible by pages which are loaded from the same origin, which is defined as the scheme (`https://`), host (`example.com`), port (`443`) and domain/realm (`example.com`).
-This provides similar access to this data as would be achieved by using the `secure` flag on a cookie, meaning that data stored from `https` could not be retrieved via `http`. Due to potential concurrent access from separate windows/threads, data stored using `localStorage` may be susceptible to shared access issues (such as race-conditions) and should be considered non-locking ([Web Storage API Spec](https://html.spec.whatwg.org/multipage/webstorage.html#the-localstorage-attribute)).
+使用 `localStorage` API 存储的数据可由从相同源加载的页面访问，源由方案（`https://`）、主机（`example.com`）、端口（`443`）和域/领域（`example.com`）定义。
+这提供了类似于在 Cookie 上使用 `secure` 标志的数据访问，意味着从 `https` 存储的数据无法通过 `http` 检索。由于可能来自不同窗口/线程的并发访问，使用 `localStorage` 存储的数据可能容易受到共享访问问题（如竞争条件），应被视为非锁定的（[Web 存储 API 规范](https://html.spec.whatwg.org/multipage/webstorage.html#the-localstorage-attribute)）。
 
-#### Duration
+#### 持续时间
 
-Data stored using the `localStorage` API is persisted across browsing sessions, extending the timeframe in which it may be accessible to other system users.
+使用 `localStorage` API 存储的数据会跨浏览器会话持久化，延长了其可访问的时间范围。
 
-#### Offline Access
+#### 离线访问
 
-The standards do not require `localStorage` data to be encrypted-at-rest, meaning it may be possible to directly access this data from disk.
+标准不要求 `localStorage` 数据在静态时加密，这意味着可能直接从磁盘访问此数据。
 
-#### Use Case
+#### 使用场景
 
-WHATWG suggests the use of `localStorage` for data that needs to be accessed across windows or tabs, across multiple sessions, and where large (multi-megabyte) volumes of data may need to be stored for performance reasons.
+WHATWG 建议对需要跨窗口或标签页访问、跨多个会话，以及可能需要存储大量（数兆字节）数据以提高性能的数据使用 `localStorage`。
 
-### The sessionStorage API
+### sessionStorage API
 
-#### Scope
+#### 作用域
 
-The `sessionStorage` API stores data within the window context from which it was called, meaning that Tab 1 cannot access data which was stored from Tab 2.
-Also, like the `localStorage` API, data stored using the `sessionStorage` API is accessible by pages which are loaded from the same origin, which is defined as the scheme (`https://`), host (`example.com`), port (`443`) and domain/realm (`example.com`).
-This provides similar access to this data as would be achieved by using the `secure` flag on a cookie, meaning that data stored from `https` could not be retrieved via `http`.
+`sessionStorage` API 在调用它的窗口上下文中存储数据，这意味着标签页 1 无法访问从标签页 2 存储的数据。
+同样，与 `localStorage` API 一样，使用 `sessionStorage` API 存储的数据可由从相同源加载的页面访问，源由方案（`https://`）、主机（`example.com`）、端口（`443`）和域/领域（`example.com`）定义。
+这提供了类似于在 Cookie 上使用 `secure` 标志的数据访问，意味着从 `https` 存储的数据无法通过 `http` 检索。
 
-#### Duration
+#### 持续时间
 
-The `sessionStorage` API only stores data for the duration of the current browsing session. Once the tab is closed, that data is no longer retrievable. This does not necessarily prevent access, should a browser tab be reused or left open. Data may also persist in memory until a garbage collection event.
+`sessionStorage` API 仅在当前浏览会话期间存储数据。一旦标签页关闭，该数据将不再可检索。这并不一定能防止访问，如果浏览器标签页被重用或保持打开。数据可能会保留在内存中，直到发生垃圾回收事件。
 
-#### Offline Access
+#### 离线访问
 
-The standards do not require `sessionStorage` data to be encrypted-at-rest, meaning it may be possible to directly access this data from disk.
+标准不要求 `sessionStorage` 数据在静态时加密，这意味着可能直接从磁盘访问此数据。
 
-#### Use Case
+#### 使用场景
 
-WHATWG suggests the use of `sessionStorage` for data that is relevant for one-instance of a workflow, such as details for a ticket booking, but where multiple workflows could be performed in other tabs concurrently. The window/tab bound nature will keep the data from leaking between workflows in separate tabs.
+WHATWG 建议对工作流程的单个实例相关的数据使用 `sessionStorage`，如机票预订详情，但可以在其他标签页中同时执行多个工作流程。窗口/标签页绑定的特性将防止数据在不同标签页的工作流程之间泄露。
 
-### References
+### 参考文献
 
-- [Web Storage APIs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API)
-- [LocalStorage API](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
-- [SessionStorage API](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage)
-- [WHATWG Web Storage Spec](https://html.spec.whatwg.org/multipage/webstorage.html#webstorage)
+- [Web 存储 API](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API)
+- [LocalStorage API](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/localStorage)
+- [SessionStorage API](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/sessionStorage)
+- [WHATWG Web 存储规范](https://html.spec.whatwg.org/multipage/webstorage.html#webstorage)
 
 ## Web Workers
 
-Web Workers run JavaScript code in a global context separate from the one of the current window. A communication channel with the main execution window exists, which is called `MessageChannel`.
+Web Workers 在与当前窗口全局上下文分离的环境中运行 JavaScript 代码。主执行窗口与 Web Worker 之间存在一个通信通道，称为 `MessageChannel`。
 
-### Use Case
+### 使用场景
 
-Web Workers are an alternative for browser storage of (session) secrets when storage persistence across page refresh is not a requirement. For Web Workers to provide secure browser storage, any code that requires the secret should exist within the Web Worker and the secret should never be transmitted to the main window context.
+Web Workers 是浏览器存储（会话）密钥的一种替代方案，适用于不需要跨页面刷新持久化存储的情况。要使 Web Workers 提供安全的浏览器存储，所有需要使用密钥的代码都应存在于 Web Worker 中，并且密钥永远不应传输到主窗口上下文。
 
-Storing secrets within the memory of a Web Worker offers the same security guarantees as an HttpOnly cookie: the confidentiality of the secret is protected. Still, an XSS attack can be used to send messages to the Web Worker to perform an operation that requires the secret. The Web Worker will return the result of the operation to the main execution thread.
+将密钥存储在 Web Worker 的内存中，提供了与 HttpOnly Cookie 相同的安全保证：密钥的机密性得到保护。尽管如此，攻击者仍可通过 XSS 攻击向 Web Worker 发送消息，以执行需要密钥的操作。Web Worker 将把操作结果返回给主执行线程。
 
-The advantage of a Web Worker implementation compared to an HttpOnly cookie is that a Web Worker allows for some isolated JavaScript code to access the secret; an HttpOnly cookie is not accessible to any JavaScript. If the frontend JavaScript code requires access to the secret, the Web Worker implementation is the only browser storage option that preserves the secret confidentiality.
+与 HttpOnly Cookie 相比，Web Worker 实现的优势在于它允许隔离的 JavaScript 代码访问密钥；而 HttpOnly Cookie 对任何 JavaScript 都是不可访问的。如果前端 JavaScript 代码需要访问密钥，Web Worker 实现是唯一能保护密钥机密性的浏览器存储选项。
 
-## Session ID Life Cycle
+## 会话 ID 生命周期
 
-### Session ID Generation and Verification: Permissive and Strict Session Management
+### 会话 ID 生成和验证：宽松和严格的会话管理
 
-There are two types of session management mechanisms for web applications, permissive and strict, related to session fixation vulnerabilities. The permissive mechanism allows the web application to initially accept any session ID value set by the user as valid, creating a new session for it, while the strict mechanism enforces that the web application will only accept session ID values that have been previously generated by the web application.
+对于 Web 应用程序，存在两种会话管理机制，与会话固定漏洞相关：宽松机制允许 Web 应用程序接受用户设置的任何会话 ID 值并为其创建新会话；而严格机制要求 Web 应用程序仅接受之前由应用程序本身生成的会话 ID 值。
 
-The session tokens should be handled by the web server if possible or generated via a cryptographically secure random number generator.
+会话令牌应尽可能由 Web 服务器处理，或通过密码学安全的随机数生成器生成。
 
-Although the most common mechanism in use today is the strict one (more secure), [PHP defaults to permissive](https://wiki.php.net/rfc/session-use-strict-mode). Developers must ensure that the web application does not use a permissive mechanism under certain circumstances. Web applications should never accept a session ID they have never generated, and in case of receiving one, they should generate and offer the user a new valid session ID. Additionally, this scenario should be detected as a suspicious activity and an alert should be generated.
+尽管当今最常用的是严格机制（更安全），但 [PHP 默认使用宽松机制](https://wiki.php.net/rfc/session-use-strict-mode)。开发者必须确保 Web 应用程序在特定情况下不使用宽松机制。Web 应用程序绝不应接受从未生成的会话 ID，如果收到这样的 ID，应生成并提供给用户一个新的有效会话 ID。此外，应将此场景检测为可疑活动并生成警报。
 
-### Manage Session ID as Any Other User Input
+### 像处理其他用户输入一样管理会话 ID
 
-Session IDs must be considered untrusted, as any other user input processed by the web application, and they must be thoroughly validated and verified. Depending on the session management mechanism used, the session ID will be received in a GET or POST parameter, in the URL or in an HTTP header (e.g. cookies). If web applications do not validate and filter out invalid session ID values before processing them, they can potentially be used to exploit other web vulnerabilities, such as SQL injection if the session IDs are stored on a relational database, or persistent XSS if the session IDs are stored and reflected back afterwards by the web application.
+会话 ID 必须被视为不可信的用户输入，需要经过彻底的验证和核实。根据使用的会话管理机制，会话 ID 可能通过 GET 或 POST 参数、URL 或 HTTP 头（如 Cookie）接收。如果 Web 应用程序在处理前未验证和过滤无效的会话 ID 值，可能会被利用来开发其他 Web 漏洞，例如：
+- 如果会话 ID 存储在关系数据库中，可能导致 SQL 注入
+- 如果会话 ID 被存储并在之后被 Web 应用程序反射，可能导致持久性 XSS
 
-### Renew the Session ID After Any Privilege Level Change
+### 在任何权限级别变更后更新会话 ID
 
-The session ID must be renewed or regenerated by the web application after any privilege level change within the associated user session. The most common scenario where the session ID regeneration is mandatory is during the authentication process, as the privilege level of the user changes from the unauthenticated (or anonymous) state to the authenticated state though in some cases still not yet the authorized state. Common scenarios to consider include; password changes, permission changes, or switching from a regular user role to an administrator role within the web application. For all sensitive pages of the web application, any previous session IDs must be ignored, only the current session ID must be assigned to every new request received for the protected resource, and the old or previous session ID must be destroyed.
+Web 应用程序必须在用户会话的任何权限级别变更后更新或重新生成会话 ID。最常见的必须重新生成会话 ID 的场景是在身份验证过程中，用户权限从未认证（或匿名）状态变更到已认证状态，尽管在某些情况下可能尚未达到授权状态。需要考虑的常见场景包括：
+- 密码更改
+- 权限变更
+- 在 Web 应用程序中从普通用户角色切换到管理员角色
 
-The most common web development frameworks provide session functions and methods to renew the session ID, such as `request.getSession(true)` & `HttpSession.invalidate()` (J2EE), `Session.Abandon()` & `Response.Cookies.Add(new...)` (ASP .NET), or `session_start()` & `session_regenerate_id(true)` (PHP).
+对于 Web 应用程序的所有敏感页面，必须忽略之前的所有会话 ID，每个接收到的受保护资源请求都必须分配当前会话 ID，并销毁旧的或先前的会话 ID。
 
-The session ID regeneration is mandatory to prevent [session fixation attacks](http://www.acrossecurity.com/papers/session_fixation.pdf), where an attacker sets the session ID on the victim user's web browser instead of gathering the victim's session ID, as in most of the other session-based attacks, and independently of using HTTP or HTTPS. This protection mitigates the impact of other web-based vulnerabilities that can also be used to launch session fixation attacks, such as HTTP response splitting or XSS (see [here](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-Slides.pdf) and [here](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-WP.pdf)).
+大多数 Web 开发框架都提供了更新会话 ID 的会话函数和方法，例如：
+- J2EE: `request.getSession(true)` 和 `HttpSession.invalidate()`
+- ASP .NET: `Session.Abandon()` 和 `Response.Cookies.Add(new...)`
+- PHP: `session_start()` 和 `session_regenerate_id(true)`
 
-A complementary recommendation is to use a different session ID or token name (or set of session IDs) pre and post authentication, so that the web application can keep track of anonymous users and authenticated users without the risk of exposing or binding the user session between both states.
+重新生成会话 ID 是防止[会话固定攻击](http://www.acrossecurity.com/papers/session_fixation.pdf)的强制性措施，在这类攻击中，攻击者在受害者的 Web 浏览器上设置会话 ID，而不是像大多数其他基于会话的攻击那样收集受害者的会话 ID，且无论是使用 HTTP 还是 HTTPS 都适用。这种保护可以减轻其他可用于发起会话固定攻击的 Web 漏洞的影响，如 HTTP 响应拆分或 XSS。
 
-### Considerations When Using Multiple Cookies
+一个补充建议是在认证前后使用不同的会话 ID 或令牌名称（或一组会话 ID），使 Web 应用程序能够跟踪匿名用户和已认证用户，而不会暴露或绑定两种状态之间的用户会话。
 
-If the web application uses cookies as the session ID exchange mechanism, and multiple cookies are set for a given session, the web application must verify all cookies (and enforce relationships between them) before allowing access to the user session.
+### 使用多个 Cookie 时的注意事项
 
-It is very common for web applications to set a user cookie pre-authentication over HTTP to keep track of unauthenticated (or anonymous) users. Once the user authenticates in the web application, a new post-authentication secure cookie is set over HTTPS, and a binding between both cookies and the user session is established. If the web application does not verify both cookies for authenticated sessions, an attacker can make use of the pre-authentication unprotected cookie to get access to the authenticated user session (see [here](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-Slides.pdf) and [here](https://media.blackhat.com/bh-eu-11/Raul_Siles/BlackHat_EU_2011_Siles_SAP_Session-WP.pdf)).
+如果 Web 应用程序使用 Cookie 作为会话 ID 交换机制，并为给定会话设置多个 Cookie，则必须在允许访问用户会话之前验证所有 Cookie（并强制执行它们之间的关系）。
 
-Web applications should try to avoid the same cookie name for different paths or domain scopes within the same web application, as this increases the complexity of the solution and potentially introduces scoping issues.
+Web 应用程序通常在认证前通过 HTTP 设置用户 Cookie 以跟踪未认证（或匿名）用户。用户认证后，通过 HTTPS 设置新的认证后安全 Cookie，并在用户会话中建立两个 Cookie 的绑定。如果 Web 应用程序未验证已认证会话的两个 Cookie，攻击者可以利用认证前的非受保护 Cookie 访问已认证用户会话。
 
-## Session Expiration
+Web 应用程序应尽量避免在同一 Web 应用程序的不同路径或域范围内使用相同的 Cookie 名称，因为这会增加解决方案的复杂性并可能引入作用域问题。
 
-In order to minimize the time period an attacker can launch attacks over active sessions and hijack them, it is mandatory to set expiration timeouts for every session, establishing the amount of time a session will remain active. Insufficient session expiration by the web application increases the exposure of other session-based attacks, as for the attacker to be able to reuse a valid session ID and hijack the associated session, it must still be active.
+## 会话过期
 
-The shorter the session interval is, the lesser the time an attacker has to use the valid session ID. The session expiration timeout values must be set accordingly with the purpose and nature of the web application, and balance security and usability, so that the user can comfortably complete the operations within the web application without his session frequently expiring.
+为了最大程度地缩短攻击者可以发起攻击和劫持活动会话的时间，必须为每个会话设置过期超时，确定会话将保持活动的时间。Web 应用程序的会话过期不充分会增加其他基于会话的攻击的暴露风险，因为攻击者要重用有效的会话 ID 并劫持相关会话，该会话必须仍然处于活动状态。
 
-Both the idle and absolute timeout values are highly dependent on how critical the web application and its data are. Common idle timeouts ranges are 2-5 minutes for high-value applications and 15-30 minutes for low risk applications. Absolute timeouts depend on how long a user usually uses the application. If the application is intended to be used by an office worker for a full day, an appropriate absolute timeout range could be between 4 and 8 hours.
+会话间隔越短，攻击者使用有效会话 ID 的时间就越少。会话过期超时值必须根据 Web 应用程序的目的和性质进行设置，在安全性和可用性之间取得平衡，使用户能够舒适地完成 Web 应用程序中的操作，而不会频繁地使会话过期。
 
-When a session expires, the web application must take active actions to invalidate the session on both sides, client and server. The latter is the most relevant and mandatory from a security perspective.
+空闲和绝对超时值高度依赖于 Web 应用程序及其数据的关键程度：
+- 常见的空闲超时范围：
+  - 高价值应用：2-5 分钟
+  - 低风险应用：15-30 分钟
+- 绝对超时取决于用户通常使用应用程序的时间。例如，如果应用程序供办公室工作者全天使用，适当的绝对超时范围可能在 4-8 小时之间。
 
-For most session exchange mechanisms, client side actions to invalidate the session ID are based on clearing out the token value. For example, to invalidate a cookie it is recommended to provide an empty (or invalid) value for the session ID, and set the `Expires` (or `Max-Age`) attribute to a date from the past (in case a persistent cookie is being used): `Set-Cookie: id=; Expires=Friday, 17-May-03 18:45:00 GMT`
+当会话过期时，Web 应用程序必须主动使会话在客户端和服务器端都失效，其中服务器端是最相关且强制性的。
 
-In order to close and invalidate the session on the server side, it is mandatory for the web application to take active actions when the session expires, or the user actively logs out, by using the functions and methods offered by the session management mechanisms, such as `HttpSession.invalidate()` (J2EE), `Session.Abandon()` (ASP .NET) or `session_destroy()/unset()` (PHP).
+对于大多数会话交换机制，客户端使会话 ID 失效的操作基于清除令牌值。例如，使 Cookie 失效，建议为会话 ID 提供空（或无效）值，并将 `Expires`（或 `Max-Age`）属性设置为过去的日期（如果使用持久性 Cookie）：
+```
+Set-Cookie: id=; Expires=Friday, 17-May-03 18:45:00 GMT
+```
 
-### Automatic Session Expiration
+为了在服务器端关闭和使会话失效，当会话过期或用户主动注销时，Web 应用程序必须采取主动操作，使用会话管理机制提供的函数和方法，如：
+- J2EE: `HttpSession.invalidate()`
+- ASP .NET: `Session.Abandon()`
+- PHP: `session_destroy()/unset()`
 
-#### Idle Timeout
+### 自动会话过期
 
-All sessions should implement an idle or inactivity timeout. This timeout defines the amount of time a session will remain active in case there is no activity in the session, closing and invalidating the session upon the defined idle period since the last HTTP request received by the web application for a given session ID.
+#### 空闲超时
 
-The idle timeout limits the chances an attacker has to guess and use a valid session ID from another user. However, if the attacker is able to hijack a given session, the idle timeout does not limit the attacker's actions, as they can generate activity on the session periodically to keep the session active for longer periods of time.
+所有会话都应实施空闲或非活动超时。此超时定义了会话在没有活动的情况下保持活跃的时间，在自最后一个 HTTP 请求接收后的定义空闲期间关闭并使会话失效。
 
-Session timeout management and expiration must be enforced server-side. If the client is used to enforce the session timeout, for example using the session token or other client parameters to track time references (e.g. number of minutes since login time), an attacker could manipulate these to extend the session duration.
+空闲超时限制了攻击者猜测和使用其他用户有效会话 ID 的机会。然而，如果攻击者能够劫持特定会话，空闲超时并不会限制攻击者的行为，因为他们可以定期生成会话活动，从而使会话在更长时间内保持活跃。
 
-#### Absolute Timeout
+会话超时管理和过期必须在服务器端强制执行。如果客户端用于执行会话超时，例如使用会话令牌或其他客户端参数来跟踪时间参考（如登录时间起的分钟数），攻击者可能会操纵这些参数以延长会话持续时间。
 
-All sessions should implement an absolute timeout, regardless of session activity. This timeout defines the maximum amount of time a session can be active, closing and invalidating the session upon the defined absolute period since the given session was initially created by the web application. After invalidating the session, the user is forced to (re)authenticate again in the web application and establish a new session.
+#### 绝对超时
 
-The absolute session limits the amount of time an attacker can use a hijacked session and impersonate the victim user.
+所有会话都应实施绝对超时，无论会话活动如何。此超时定义了会话可以保持活跃的最长时间，在会话最初由 Web 应用程序创建后的定义绝对期间关闭并使会话失效。使会话失效后，用户将被强制在 Web 应用程序中重新认证并建立新会话。
 
-#### Renewal Timeout
+绝对会话超时限制了攻击者可以使用被劫持会话冒充受害者用户的时间。
 
-Alternatively, the web application can implement an additional renewal timeout after which the session ID is automatically renewed, in the middle of the user session, and independently of the session activity and, therefore, of the idle timeout.
+#### 续期超时
 
-After a specific amount of time since the session was initially created, the web application can regenerate a new ID for the user session and try to set it, or renew it, on the client. The previous session ID value would still be valid for some time, accommodating a safety interval, before the client is aware of the new ID and starts using it. At that time, when the client switches to the new ID inside the current session, the application invalidates the previous ID.
+或者，Web 应用程序可以在用户会话中间实施额外的续期超时，独立于会话活动和空闲超时，自动续期会话 ID。
 
-This scenario minimizes the amount of time a given session ID value, potentially obtained by an attacker, can be reused to hijack the user session, even when the victim user session is still active. The user session remains alive and open on the legitimate client, although its associated session ID value is transparently renewed periodically during the session duration, every time the renewal timeout expires. Therefore, the renewal timeout complements the idle and absolute timeouts, specially when the absolute timeout value extends significantly over time (e.g. it is an application requirement to keep the user sessions open for long periods of time).
+在会话最初创建后的特定时间后，Web 应用程序可以为用户会话重新生成新的 ID 并尝试在客户端设置或续期。之前的会话 ID 值在一段安全间隔期间仍然有效，直到客户端意识到新 ID 并开始使用它。当客户端在当前会话中切换到新 ID 时，应用程序将使先前的 ID 失效。
 
-Depending on the implementation, potentially there could be a race condition where the attacker with a still valid previous session ID sends a request before the victim user, right after the renewal timeout has just expired, and obtains first the value for the renewed session ID. At least in this scenario, the victim user might be aware of the attack as her session will be suddenly terminated because her associated session ID is not valid anymore.
+这种场景最大程度地缩短了攻击者获取的给定会话 ID 值可被重用来劫持用户会话的时间，即使受害者用户会话仍处于活跃状态。用户会话保持存活和打开状态，尽管其关联的会话 ID 值在会话持续期间定期透明地续期，每次续期超时到期时都会更新。因此，续期超时补充了空闲和绝对超时，特别是当绝对超时值显著延长时（例如，应用程序要求长时间保持用户会话打开）。
 
-### Manual Session Expiration
+根据实现方式，可能存在一个竞争条件，攻击者持有仍然有效的先前会话 ID，在续期超时刚刚到期后，在受害者用户之前发送请求，并首先获取续期会话 ID 的值。至少在这种情况下，受害者用户可能会意识到攻击，因为她的会话将突然终止，因为她关联的会话 ID 不再有效。
 
-Web applications should provide mechanisms that allow security aware users to actively close their session once they have finished using the web application.
+### 手动会话过期
 
-#### Logout Button
+Web 应用程序应提供机制，允许安全意识强的用户在使用完 Web 应用程序后主动关闭其会话。
 
-Web applications must provide a visible and easily accessible logout (logoff, exit, or close session) button that is available on the web application header or menu and reachable from every web application resource and page, so that the user can manually close the session at any time. As described in *Session_Expiration* section, the web application must invalidate the session at least on server side.
+#### 注销按钮
 
-**NOTE**: Unfortunately, not all web applications facilitate users to close their current session. Thus, client-side enhancements allow conscientious users to protect their sessions by helping to close them diligently.
+Web 应用程序必须提供一个可见且易于访问的注销（登出、退出或关闭会话）按钮，该按钮位于 Web 应用程序的标题或菜单中，并且可从每个 Web 应用程序资源和页面访问，以便用户可以随时手动关闭会话。如*会话过期*部分所述，Web 应用程序必须至少在服务器端使会话失效。
 
-### Web Content Caching
+**注意**：遗憾的是，并非所有 Web 应用程序都方便用户关闭当前会话。因此，客户端增强功能允许有意识的用户通过帮助谨慎地关闭会话来保护其会话。
 
-Even after the session has been closed, it might be possible to access the private or sensitive data exchanged within the session through the web browser cache. Therefore, web applications must use restrictive cache directives for all the web traffic exchanged through HTTP and HTTPS, such as the [`Cache-Control`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control) and [`Pragma`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Pragma) HTTP headers, and/or equivalent META tags on all or (at least) sensitive web pages.
+### Web 内容缓存
 
-Independently of the cache policy defined by the web application, if caching web application contents is allowed, the session IDs must never be cached, so it is highly recommended to use the `Cache-Control: no-cache="Set-Cookie, Set-Cookie2"` directive, to allow web clients to cache everything except the session ID (see [here](https://stackoverflow.com/a/41352418)).
+即使会话已关闭，仍可能通过 Web 浏览器缓存访问会话期间交换的私密或敏感数据。因此，Web 应用程序必须对通过 HTTP 和 HTTPS 交换的所有 Web 流量使用严格的缓存指令，如 [`Cache-Control`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control) 和 [`Pragma`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Pragma) HTTP 标头，和/或所有或（至少）敏感网页上的等效 META 标签。
 
-## Additional Client-Side Defenses for Session Management
+无论 Web 应用程序定义的缓存策略如何，如果允许缓存 Web 应用程序内容，会话 ID 绝不能被缓存，因此强烈建议使用 `Cache-Control: no-cache="Set-Cookie, Set-Cookie2"` 指令，允许 Web 客户端缓存除会话 ID 之外的所有内容（参见[此处](https://stackoverflow.com/a/41352418)）。
 
-Web applications can complement the previously described session management defenses with additional countermeasures on the client side. Client-side protections, typically in the form of JavaScript checks and verifications, are not bullet proof and can easily be defeated by a skilled attacker, but can introduce another layer of defense that has to be bypassed by intruders.
+## 会话管理的额外客户端防御
 
-### Initial Login Timeout
+Web 应用程序可以通过客户端的额外对策来补充之前描述的会话管理防御。客户端保护，通常以 JavaScript 检查和验证的形式，并非绝对可靠，可以很容易地被熟练的攻击者绕过，但可以引入另一层需要入侵者突破的防御。
 
-Web applications can use JavaScript code in the login page to evaluate and measure the amount of time since the page was loaded and a session ID was granted. If a login attempt is tried after a specific amount of time, the client code can notify the user that the maximum amount of time to log in has passed and reload the login page, hence retrieving a new session ID.
+### 初始登录超时
 
-This extra protection mechanism tries to force the renewal of the session ID pre-authentication, avoiding scenarios where a previously used (or manually set) session ID is reused by the next victim using the same computer, for example, in session fixation attacks.
+Web 应用程序可以在登录页面使用 JavaScript 代码来评估和测量页面加载和授予会话 ID 后的时间。如果在特定时间后尝试登录，客户端代码可以通知用户登录的最大时间已过，并重新加载登录页面，从而检索新的会话 ID。
 
-### Force Session Logout On Web Browser Window Close Events
+这种额外的保护机制试图强制在身份验证前续期会话 ID，避免场景中先前使用（或手动设置）的会话 ID 被下一个受害者在同一台计算机上重用，例如在会话固定攻击中。
 
-Web applications can use JavaScript code to capture all the web browser tab or window close (or even back) events and take the appropriate actions to close the current session before closing the web browser, emulating that the user has manually closed the session via the logout button.
+### 在 Web 浏览器窗口关闭事件上强制会话注销
 
-### Disable Web Browser Cross-Tab Sessions
+Web 应用程序可以使用 JavaScript 代码捕获所有 Web 浏览器标签或窗口关闭（甚至后退）事件，并采取适当的操作，在关闭 Web 浏览器之前关闭当前会话，模仿用户通过注销按钮手动关闭会话。
 
-Web applications can use JavaScript code once the user has logged in and a session has been established to force the user to re-authenticate if a new web browser tab or window is opened against the same web application. The web application does not want to allow multiple web browser tabs or windows to share the same session. Therefore, the application tries to force the web browser to not share the same session ID simultaneously between them.
+### 禁用 Web 浏览器跨标签会话
 
-**NOTE**: This mechanism cannot be implemented if the session ID is exchanged through cookies, as cookies are shared by all web browser tabs/windows.
+Web 应用程序可以在用户登录并建立会话后使用 JavaScript 代码，在针对同一 Web 应用程序打开新的 Web 浏览器标签或窗口时强制用户重新认证。应用程序不希望允许多个 Web 浏览器标签或窗口同时共享同一会话。因此，应用程序尝试强制 Web 浏览器不在它们之间同时共享相同的会话 ID。
 
-### Automatic Client Logout
+**注意**：如果会话 ID 通过 Cookie 交换，则无法实现此机制，因为 Cookie 在所有 Web 浏览器标签/窗口之间共享。
 
-JavaScript code can be used by the web application in all (or critical) pages to automatically logout client sessions after the idle timeout expires, for example, by redirecting the user to the logout page (the same resource used by the logout button mentioned previously).
+### 自动客户端注销
 
-The benefit of enhancing the server-side idle timeout functionality with client-side code is that the user can see that the session has finished due to inactivity, or even can be notified in advance that the session is about to expire through a count down timer and warning messages. This user-friendly approach helps to avoid loss of work in web pages that require extensive input data due to server-side silently expired sessions.
+JavaScript 代码可以在所有（或关键）页面中由 Web 应用程序使用，在空闲超时到期后自动注销客户端会话，例如，通过将用户重定向到注销页面（与之前提到的注销按钮使用相同的资源）。
 
-## Session Attacks Detection
+增强服务器端空闲超时功能的客户端代码的好处是，用户可以看到由于非活动而会话已结束，甚至可以通过倒计时器和警告消息提前收到会话即将到期的通知。这种用户友好的方法有助于避免由于服务器端静默过期会话而导致的网页上需要大量输入数据的工作丢失。
 
-### Session ID Guessing and Brute Force Detection
+## 会话攻击检测
 
-If an attacker tries to guess or brute force a valid session ID, they need to launch multiple sequential requests against the target web application using different session IDs from a single (or set of) IP address(es). Additionally, if an attacker tries to analyze the predictability of the session ID (e.g. using statistical analysis), they need to launch multiple sequential requests from a single (or set of) IP address(es) against the target web application to gather new valid session IDs.
+### 会话 ID 猜测和暴力破解检测
 
-Web applications must be able to detect both scenarios based on the number of attempts to gather (or use) different session IDs and alert and/or block the offending IP address(es).
+如果攻击者尝试猜测或暴力破解有效的会话 ID，他们需要从单个（或一组）IP 地址对目标 Web 应用程序发起多个连续请求，使用不同的会话 ID。此外，如果攻击者尝试分析会话 ID 的可预测性（例如使用统计分析），他们需要从单个（或一组）IP 地址对目标 Web 应用程序发起多个连续请求以收集新的有效会话 ID。
 
-### Detecting Session ID Anomalies
+Web 应用程序必须能够基于收集（或使用）不同会话 ID 的尝试次数检测这两种场景，并对有问题的 IP 地址发出警报和/或阻止。
 
-Web applications should focus on detecting anomalies associated to the session ID, such as its manipulation. The OWASP [AppSensor Project](https://owasp.org/www-project-appsensor/) provides a framework and methodology to implement built-in intrusion detection capabilities within web applications focused on the detection of anomalies and unexpected behaviors, in the form of detection points and response actions. Instead of using external protection layers, sometimes the business logic details and advanced intelligence are only available from inside the web application, where it is possible to establish multiple session related detection points, such as when an existing cookie is modified or deleted, a new cookie is added, the session ID from another user is reused, or when the user location or User-Agent changes in the middle of a session.
+### 检测会话 ID 异常
 
-### Binding the Session ID to Other User Properties
+Web 应用程序应该关注检测与会话 ID 相关的异常情况，例如其被篡改。OWASP [AppSensor 项目](https://owasp.org/www-project-appsensor/) 提供了一个框架和方法论，用于在 Web 应用程序内部实现内置的入侵检测功能，这些功能专注于检测异常和意外行为，以检测点和响应操作的形式呈现。与使用外部保护层不同，有时业务逻辑细节和高级智能只能从 Web 应用程序内部获得，在这里可以建立多个会话相关的检测点，例如：现有 Cookie 被修改或删除、添加新 Cookie、重用另一个用户的会话 ID，或在会话中途用户位置或用户代理发生变化。
 
-With the goal of detecting (and, in some scenarios, protecting against) user misbehaviors and session hijacking, it is highly recommended to bind the session ID to other user or client properties, such as the client IP address, User-Agent, or client-based digital certificate. If the web application detects any change or anomaly between these different properties in the middle of an established session, this is a very good indicator of session manipulation and hijacking attempts, and this simple fact can be used to alert and/or terminate the suspicious session.
+### 将会话 ID 绑定到其他用户属性
 
-Although these properties cannot be used by web applications to trustingly defend against session attacks, they significantly increase the web application detection (and protection) capabilities. However, a skilled attacker can bypass these controls by reusing the same IP address assigned to the victim user by sharing the same network (very common in NAT environments, like Wi-Fi hotspots) or by using the same outbound web proxy (very common in corporate environments), or by manually modifying his User-Agent to look exactly as the victim users does.
+为了检测（在某些情况下还可以防止）用户不当行为和会话劫持，强烈建议将会话 ID 绑定到其他用户或客户端属性，如客户端 IP 地址、用户代理或基于客户端的数字证书。如果 Web 应用程序在已建立的会话中检测到这些不同属性之间的任何变化或异常，这是会话操纵和劫持尝试的非常好的指标，这一简单事实可用于发出警报和/或终止可疑会话。
 
-### Logging Sessions Life Cycle: Monitoring Creation, Usage, and Destruction of Session IDs
+尽管这些属性不能被 Web 应用程序用于可靠地防御会话攻击，但它们显著提高了 Web 应用程序的检测（和保护）能力。然而，熟练的攻击者可以通过以下方式绕过这些控制：通过共享相同网络（在 NAT 环境中非常常见，如 Wi-Fi 热点）重用分配给受害用户的相同 IP 地址，或使用相同的出站 Web 代理（在企业环境中很常见），或手动修改用户代理使其看起来与受害用户完全相同。
 
-Web applications should increase their logging capabilities by including information regarding the full life cycle of sessions. In particular, it is recommended to record session related events, such as the creation, renewal, and destruction of session IDs, as well as details about its usage within login and logout operations, privilege level changes within the session, timeout expiration, invalid session activities (when detected), and critical business operations during the session.
+### 记录会话生命周期：监控会话 ID 的创建、使用和销毁
 
-The log details might include a timestamp, source IP address, web target resource requested (and involved in a session operation), HTTP headers (including the User-Agent and Referer), GET and POST parameters, error codes and messages, username (or user ID), plus the session ID (cookies, URL, GET, POST…).
+Web 应用程序应通过包含会话完整生命周期的信息来增强其日志记录能力。特别建议记录与会话相关的事件，例如会话 ID 的创建、续期和销毁，以及登录和注销操作、会话内权限级别变更、超时过期、检测到的无效会话活动以及会话期间的关键业务操作的详细信息。
 
-Sensitive data like the session ID should not be included in the logs in order to protect the session logs against session ID local or remote disclosure or unauthorized access. However, some kind of session-specific information must be logged in order to correlate log entries to specific sessions. It is recommended to log a salted-hash of the session ID instead of the session ID itself in order to allow for session-specific log correlation without exposing the session ID.
+日志详细信息可能包括：时间戳、源 IP 地址、请求的 Web 目标资源（涉及会话操作）、HTTP 标头（包括用户代理和引用页）、GET 和 POST 参数、错误代码和消息、用户名（或用户 ID），以及会话 ID（Cookie、URL、GET、POST 等）。
 
-In particular, web applications must thoroughly protect administrative interfaces that allow to manage all the current active sessions. Frequently these are used by support personnel to solve session related issues, or even general issues, by impersonating the user and looking at the web application as the user does.
+为了防止会话 ID 本地或远程泄露或未经授权访问，敏感数据如会话 ID 不应包含在日志中。但是，必须记录某种特定于会话的信息，以便将日志条目与特定会话关联。建议记录会话 ID 的加盐哈希值，而不是会话 ID 本身，以便在不暴露会话 ID 的情况下实现会话特定的日志关联。
 
-The session logs become one of the main web application intrusion detection data sources, and can also be used by intrusion protection systems to automatically terminate sessions and/or disable user accounts when (one or many) attacks are detected. If active protections are implemented, these defensive actions must be logged too.
+特别是，Web 应用程序必须彻底保护允许管理所有当前活动会话的管理界面。这些界面经常被支持人员用于解决会话相关问题，甚至通过模拟用户并以用户的视角查看 Web 应用程序来解决一般性问题。
 
-### Simultaneous Session Logons
+会话日志成为 Web 应用程序入侵检测的主要数据源，还可以被入侵防护系统用于在检测到（一个或多个）攻击时自动终止会话和/或禁用用户帐户。如果实施了主动保护，这些防御操作也必须被记录。
 
-It is the web application design decision to determine if multiple simultaneous logons from the same user are allowed from the same or from different client IP addresses. If the web application does not want to allow simultaneous session logons, it must take effective actions after each new authentication event, implicitly terminating the previously available session, or asking the user (through the old, new or both sessions) about the session that must remain active.
+### 同时会话登录
 
-It is recommended for web applications to add user capabilities that allow checking the details of active sessions at any time, monitor and alert the user about concurrent logons, provide user features to remotely terminate sessions manually, and track account activity history (logbook) by recording multiple client details such as IP address, User-Agent, login date and time, idle time, etc.
+是否允许同一用户从相同或不同客户端 IP 地址同时登录，这取决于 Web 应用程序的设计决策。如果 Web 应用程序不想允许同时会话登录，则必须在每次新的身份验证事件后采取有效措施，隐式终止先前可用的会话，或询问用户（通过旧会话、新会话或两者）哪个会话应保持活动状态。
 
-## Session Management WAF Protections
+建议 Web 应用程序添加用户功能，允许随时检查活动会话的详细信息，监控并提醒用户有关并发登录的情况，提供用户手动远程终止会话的功能，并通过记录多个客户端详细信息（如 IP 地址、用户代理、登录日期和时间、空闲时间等）跟踪帐户活动历史（日志）。
 
-There are situations where the web application source code is not available or cannot be modified, or when the changes required to implement the multiple security recommendations and best practices detailed above imply a full redesign of the web application architecture, and therefore, cannot be easily implemented in the short term.
+## 会话管理 WAF 保护
 
-In these scenarios, or to complement the web application defenses, and with the goal of keeping the web application as secure as possible, it is recommended to use external protections such as Web Application Firewalls (WAFs) that can mitigate the session management threats already described.
+在某些情况下，Web 应用程序源代码不可用或无法修改，或者实施上述多个安全建议和最佳实践所需的更改意味着需要对 Web 应用程序架构进行全面重新设计，因此无法在短期内轻松实施。
 
-Web Application Firewalls offer detection and protection capabilities against session based attacks. On the one hand, it is trivial for WAFs to enforce the usage of security attributes on cookies, such as the `Secure` and `HttpOnly` flags, applying basic rewriting rules on the `Set-Cookie` header for all the web application responses that set a new cookie.
+在这些场景中，或为了补充 Web 应用程序防御，目的是尽可能保持 Web 应用程序的安全性，建议使用外部保护，如 Web 应用程序防火墙（WAF），可以缓解已描述的基于会话的威胁。
 
-On the other hand, more advanced capabilities can be implemented to allow the WAF to keep track of sessions, and the corresponding session IDs, and apply all kind of protections against session fixation (by renewing the session ID on the client-side when privilege changes are detected), enforcing sticky sessions (by verifying the relationship between the session ID and other client properties, like the IP address or User-Agent), or managing session expiration (by forcing both the client and the web application to finalize the session).
+Web 应用程序防火墙提供针对基于会话的攻击的检测和保护功能。一方面，对于 WAF 来说，强制在 Cookie 上使用安全属性（如 `Secure` 和 `HttpOnly` 标志）是微不足道的，只需对所有设置新 Cookie 的 Web 应用程序响应的 `Set-Cookie` 标头应用基本重写规则。
 
-The open-source ModSecurity WAF, plus the OWASP [Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/), provide capabilities to detect and apply security cookie attributes, countermeasures against session fixation attacks, and session tracking features to enforce sticky sessions.
+另一方面，可以实施更高级的功能，使 WAF 能够跟踪会话和相应的会话 ID，并针对会话固定（通过在检测到权限变更时在客户端续期会话 ID）、强制粘性会话（通过验证会话 ID 与其他客户端属性的关系，如 IP 地址或用户代理）或管理会话过期（通过强制客户端和 Web 应用程序都结束会话）应用各种保护。
+
+开源 ModSecurity WAF 加上 OWASP [核心规则集](https://owasp.org/www-project-modsecurity-core-rule-set/)，提供了检测和应用安全 Cookie 属性、针对会话固定攻击的对策以及强制粘性会话的会话跟踪功能。
