@@ -1,49 +1,48 @@
-# Transport Layer Security Cheat Sheet
+# 传输层安全备忘录
 
-## Introduction
+## 引言
 
-This cheat sheet provides guidance on implementing transport layer protection for applications using Transport Layer Security (TLS). It primarily focuses on how to use TLS to protect clients connecting to a web application over HTTPS, though much of this guidance is also applicable to other uses of TLS. When correctly implemented, TLS can provide several security benefits:
+本备忘录提供了使用传输层安全（TLS）为应用程序实施传输层保护的指导。它主要关注如何使用 TLS 保护通过 HTTPS 连接到 Web 应用程序的客户端，尽管大部分指导也适用于 TLS 的其他用途。当正确实施时，TLS 可以提供几个安全优势：
 
-- **Confidentiality**: Provides protection against attackers reading the contents of the traffic.
-- **Integrity**: Provides protection against traffic modification, such as an attacker replaying requests against the server.
-- **[Authentication](Authentication_Cheat_Sheet.md)**: Enables the client to confirm they are connected to the legitimate server. Note that the identity of the client is not verified unless [client certificates](#client-certificates-and-mutual-tls) are employed.
+- **机密性**：防止攻击者读取流量内容。
+- **完整性**：防止流量被修改，如攻击者重放针对服务器的请求。
+- **[认证](Authentication_Cheat_Sheet.md)**：使客户端能够确认他们连接到合法服务器。请注意，除非使用[客户端证书](#客户端证书和双向-tls)，否则不会验证客户端的身份。
 
-### SSL vs TLS
+### SSL 与 TLS
 
-Secure Socket Layer (SSL) was the original protocol that was used to provide encryption for HTTP traffic, in the form of HTTPS. There were two publicly released versions of SSL - versions 2 and 3. Both of these have serious cryptographic weaknesses and should no longer be used.
+安全套接字层（SSL）是最初用于为 HTTP 流量提供加密的协议，以 HTTPS 的形式存在。公开发布的 SSL 版本有两个 - 版本 2 和 3。这两个版本都有严重的加密弱点，不应再使用。
 
-For [various reasons](http://tim.dierks.org/2014/05/security-standards-and-name-changes-in.html) the next version of the protocol (effectively SSL 3.1) was named Transport Layer Security (TLS) version 1.0. Subsequently TLS versions 1.1, 1.2 and 1.3 have been released.
+出于[各种原因](http://tim.dierks.org/2014/05/security-standards-and-name-changes-in.html)，协议的下一个版本（实际上是 SSL 3.1）被命名为传输层安全（TLS）1.0 版本。随后发布了 TLS 1.1、1.2 和 1.3 版本。
 
-The terms "SSL", "SSL/TLS" and "TLS" are frequently used interchangeably, and in many cases "SSL" is used when referring to the more modern TLS protocol. This cheat sheet will use the term "TLS" except where referring to the legacy protocols.
+术语"SSL"、"SSL/TLS"和"TLS"经常互换使用，在许多情况下，"SSL"被用来指更现代的 TLS 协议。本备忘录将使用"TLS"一词，除非特指旧版协议。
 
-## Server Configuration
+## 服务器配置
 
-### Only Support Strong Protocols
+### 仅支持强协议
 
-General purpose web applications should default to **TLS 1.3** (support TLS 1.2 if necessary) with all other protocols disabled.
+通用 Web 应用程序应默认使用 **TLS 1.3**（如有必要，支持 TLS 1.2），并禁用所有其他协议。
 
- In specific and uncommon situations where a web server is required to accommodate legacy clients that depend on outdated and unsecured browsers (like Internet Explorer 10), activating TLS 1.0 may be the only option. However, this approach should be exercised with caution and is generally not advised due to the security implications. Additionally, ["TLS_FALLBACK_SCSV" extension](https://tools.ietf.org/html/rfc7507) should be enabled in order to prevent downgrade attacks against newer clients.
+在特定且罕见的情况下，如果 Web 服务器需要支持依赖过时和不安全浏览器（如 Internet Explorer 10）的旧客户端，可能唯一的选择是激活 TLS 1.0。然而，由于安全隐患，这种方法应谨慎使用，通常不建议。另外，应启用["TLS_FALLBACK_SCSV"扩展](https://tools.ietf.org/html/rfc7507)以防止针对新客户端的降级攻击。
 
-Note that PCI DSS [forbids the use of legacy protocols such as TLS 1.0](https://www.pcisecuritystandards.org/documents/Migrating-from-SSL-Early-TLS-Info-Supp-v1_1.pdf).
+请注意，PCI DSS [禁止使用 TLS 1.0 等旧版协议](https://www.pcisecuritystandards.org/documents/Migrating-from-SSL-Early-TLS-Info-Supp-v1_1.pdf)。
 
-### Only Support Strong Ciphers
+### 仅支持强加密算法
 
-There are a large number of different ciphers (or cipher suites) that are supported by TLS, that provide varying levels of security. Where possible, only GCM ciphers should be enabled. However, if it is necessary to support legacy clients, then other ciphers may be required. At a minimum, the following types of ciphers should always be disabled:
+TLS 支持大量不同的加密算法（或加密套件），提供不同级别的安全性。在可能的情况下，应仅启用 GCM 加密算法。但是，如果需要支持旧客户端，则可能需要其他加密算法。至少，应始终禁用以下类型的加密算法：
 
-- Null ciphers
-- Anonymous ciphers
-- EXPORT ciphers
+- 空加密算法
+- 匿名加密算法
+- 出口加密算法
 
-The Mozilla Foundation provides an [easy-to-use secure configuration generator](https://ssl-config.mozilla.org/) for web, database and mail servers. This tool allows site administrators to select the software they are using and receive a configuration file that is optimized to balance security and compatibility for a wide variety of browser versions and server software.
+Mozilla 基金会提供了一个[易于使用的安全配置生成器](https://ssl-config.mozilla.org/)，适用于 Web、数据库和邮件服务器。该工具允许站点管理员选择他们正在使用的软件，并获得针对各种浏览器版本和服务器软件平衡安全性和兼容性的配置文件。
 
-### Set the appropriate Diffie-Hellman groups
+### 设置适当的迪菲-赫尔曼群组
 
-The practice of earlier than TLS 1.3 protocol versions of Diffie-Hellman parameter generation for use by the ephemeral Diffie-Hellman key exchange (signified by the "DHE" or "EDH" strings in the cipher suite name) had practical issues. For example, the client had no say in the selection of server parameters, meaning it could only unconditionally accept or drop, and the random parameter generation often resulted to denial of service attacks (CVE-2022-40735, CVE-2002-20001).
+早于 TLS 1.3 的协议版本中，用于临时迪菲-赫尔曼密钥交换（由加密套件名称中的"DHE"或"EDH"字符串表示）的迪菲-赫尔曼参数生成存在实际问题。例如，客户端对服务器参数的选择没有发言权，只能无条件接受或拒绝，而随机参数生成常常导致拒绝服务攻击（CVE-2022-40735、CVE-2002-20001）。
 
-TLS 1.3 restricts Diffie-Hellman group parameters to known groups via the `supported_groups` extension. The available
-Diffie-Hellman groups are `ffdhe2048`, `ffdhe3072`, `ffdhe4096`, `ffdhe6144`, `ffdhe8192` as specified in [RFC7919](https://www.rfc-editor.org/rfc/rfc7919).
+TLS 1.3 通过 `supported_groups` 扩展将迪菲-赫尔曼群组参数限制为已知群组。可用的迪菲-赫尔曼群组是 `ffdhe2048`、`ffdhe3072`、`ffdhe4096`、`ffdhe6144`、`ffdhe8192`，如 [RFC7919](https://www.rfc-editor.org/rfc/rfc7919) 中指定。
 
-By default openssl 3.0 enables all the above groups. To modify them ensure that the right Diffie-Hellman group parameters are present in `openssl.cnf`. For example
+默认情况下，openssl 3.0 启用所有上述群组。要修改它们，请确保在 `openssl.cnf` 中存在正确的迪菲-赫尔曼群组参数。例如：
 
 ```text
 openssl_conf = openssl_init
@@ -55,144 +54,77 @@ system_default = tls_system_default
 Groups = x25519:prime256v1:x448:ffdhe2048:ffdhe3072
 ```
 
-An apache configuration would look like
+Apache 配置将如下所示：
 
 ```text
 SSLOpenSSLConfCmd Groups x25519:secp256r1:ffdhe3072
 ```
 
-The same group on NGINX would look like the following
+NGINX 上的相同配置如下：
 
 ```text
 ssl_ecdh_curve x25519:secp256r1:ffdhe3072;
 ```
 
-For TLS 1.2 or earlier versions it is recommended not to set Diffie-Hellman parameters.
+对于 TLS 1.2 或更早版本，建议不要设置迪菲-赫尔曼参数。
 
-### Disable Compression
+### 禁用压缩
 
-TLS compression should be disabled in order to protect against a vulnerability (nicknamed [CRIME](https://threatpost.com/crime-attack-uses-compression-ratio-tls-requests-side-channel-hijack-secure-sessions-091312/77006/)) which could potentially allow sensitive information such as session cookies to be recovered by an attacker.
+应禁用 TLS 压缩，以防止一个昵称为 [CRIME](https://threatpost.com/crime-attack-uses-compression-ratio-tls-requests-side-channel-hijack-secure-sessions-091312/77006/) 的漏洞，该漏洞可能允许攻击者恢复会话 Cookie 等敏感信息。
 
-### Patch Cryptographic Libraries
+### 修补加密库
 
-As well as the vulnerabilities in the SSL and TLS protocols, there have also been a large number of historic vulnerability in SSL and TLS libraries, with [Heartbleed](http://heartbleed.com) being the most well known. As such, it is important to ensure that these libraries are kept up to date with the latest security patches.
+除了 SSL 和 TLS 协议中的漏洞外，SSL 和 TLS 库中还存在大量历史漏洞，[心脏出血](http://heartbleed.com)是最著名的。因此，重要的是确保这些库保持最新的安全补丁。
 
-### Test the Server Configuration
+### 测试服务器配置
 
-Once the server has been hardened, the configuration should be tested. The [OWASP Testing Guide chapter on SSL/TLS Testing](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_Transport_Layer_Security) contains further information on testing.
+服务器加固后，应测试配置。[OWASP 测试指南中关于 SSL/TLS 测试的章节](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_Transport_Layer_Security)包含更多测试信息。
 
-There are a number of online tools that can be used to quickly validate the configuration of a server, including:
+有许多在线工具可用于快速验证服务器配置，包括：
 
-- [SSL Labs Server Test](https://www.ssllabs.com/ssltest)
+- [SSL Labs 服务器测试](https://www.ssllabs.com/ssltest)
 - [CryptCheck](https://cryptcheck.fr/)
 - [Hardenize](https://www.hardenize.com/)
 - [ImmuniWeb](https://www.immuniweb.com/ssl/)
-- [Observatory by Mozilla](https://observatory.mozilla.org)
+- [Mozilla Observatory](https://observatory.mozilla.org)
 - [Scanigma](https://scanigma.com)
 - [Stellastra](https://stellastra.com/tls-cipher-suite-check)
-- [OWASP PurpleTeam](https://purpleteam-labs.com/) `cloud`
+- [OWASP PurpleTeam](https://purpleteam-labs.com/) `云`
 
-Additionally, there are a number of offline tools that can be used:
+此外，还有一些离线工具可供使用：
 
-- [O-Saft - OWASP SSL advanced forensic tool](https://wiki.owasp.org/index.php/O-Saft)
+- [O-Saft - OWASP SSL 高级取证工具](https://wiki.owasp.org/index.php/O-Saft)
 - [CipherScan](https://github.com/mozilla/cipherscan)
 - [CryptoLyzer](https://gitlab.com/coroner/cryptolyzer)
-- [SSLScan - Fast SSL Scanner](https://github.com/rbsec/sslscan)
+- [SSLScan - 快速 SSL 扫描器](https://github.com/rbsec/sslscan)
 - [SSLyze](https://github.com/nabla-c0d3/sslyze)
-- [testssl.sh - Testing any TLS/SSL encryption](https://testssl.sh)
+- [testssl.sh - 测试任何 TLS/SSL 加密](https://testssl.sh)
 - [tls-scan](https://github.com/prbinu/tls-scan)
-- [OWASP PurpleTeam](https://purpleteam-labs.com/) `local`
+- [OWASP PurpleTeam](https://purpleteam-labs.com/) `本地`
 
-## Certificates
+## 应用
 
-### Use Strong Keys and Protect Them
+### 对所有页面使用 TLS
 
-The private key used to generate the cipher key must be sufficiently strong for the anticipated lifetime of the private key and corresponding certificate. The current best practice is to select a key size of at least 2048 bits. Additional information on key lifetimes and comparable key strengths can be found [here](http://www.keylength.com/en/compare/) and in [NIST SP 800-57](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf).
+TLS 应该用于所有页面，而不仅仅是被认为敏感的页面，如登录页面。如果有任何页面未强制使用 TLS，这可能会给攻击者提供窃听敏感信息（如会话令牌）的机会，或者向响应中注入恶意 JavaScript 以对用户执行其他攻击。
 
-The private key should also be protected from unauthorized access using filesystem permissions and other technical and administrative controls.
+对于面向公众的应用程序，可以让 Web 服务器在端口 80 上监听未加密的 HTTP 连接，然后立即使用永久重定向（HTTP 301）重定向它们，以便为手动输入域名的用户提供更好的体验。然后，应使用 [HTTP 严格传输安全（HSTS）](#使用-http-严格传输安全)标头来防止他们在将来通过 HTTP 访问站点。
 
-### Use Strong Cryptographic Hashing Algorithms
+仅限 API 的端点应完全禁用 HTTP 并仅支持加密连接。如果不可能，API 端点应拒绝通过未加密的 HTTP 连接发出的请求，而不是重定向它们。
 
-Certificates should use SHA-256 for the hashing algorithm, rather than the older MD5 and SHA-1 algorithms. These have a number of cryptographic weaknesses, and are not trusted by modern browsers.
+### 不要混合 TLS 和非 TLS 内容
 
-### Use Correct Domain Names
+在 TLS 上可用的页面不应包含通过未加密 HTTP 加载的任何资源（如 JavaScript 或 CSS）文件。这些未加密的资源可能允许攻击者窃听会话 Cookie 或将恶意代码注入页面。现代浏览器还将阻止尝试将未加密 HTTP 上的活动内容加载到安全页面中。
 
-The domain name (or subject) of the certificate must match the fully qualified name of the server that presents the certificate. Historically this was stored in the `commonName` (CN) attribute of the certificate. However, modern versions of Chrome ignore the CN attribute, and require that the FQDN is in the `subjectAlternativeName` (SAN) attribute. For compatibility reasons, certificates should have the primary FQDN in the CN, and the full list of FQDNs in the SAN.
+### 使用"安全"Cookie 标志
 
-Additionally, when creating the certificate, the following should be taken into account:
+所有 Cookie 都应标记为"[Secure](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies)"属性，该属性指示浏览器仅通过加密的 HTTPS 连接发送它们，以防止它们被从未加密的 HTTP 连接中窃听。即使网站不在 HTTP（端口 80）上侦听，这也很重要，因为执行主动中间人攻击的攻击者可能在端口 80 上向用户呈现伪造的 Web 服务器以窃取他们的 Cookie。
 
-- Consider whether the "www" subdomain should also be included.
-- Do not include non-qualified hostnames.
-- Do not include IP addresses.
-- Do not include internal domain names on externally facing certificates.
-    - If a server is accessible using both internal and external FQDNs, configure it with multiple certificates.
+### 防止敏感数据缓存
 
-### Carefully Consider the use of Wildcard Certificates
+尽管 TLS 在传输过程中提供数据保护，但一旦数据到达请求系统，就不再提供任何保护。因此，这些信息可能存储在用户浏览器的缓存中，或被配置为执行 TLS 解密的任何拦截代理存储。
 
-Wildcard certificates can be convenient, however they violate [the principle of least privilege](https://wiki.owasp.org/index.php/Least_privilege), as a single certificate is valid for all subdomains of a domain (such as *.example.org). Where multiple systems are sharing a wildcard certificate, the likelihood that the private key for the certificate is compromised increases, as the key may be present on multiple systems. Additionally, the value of this key is significantly increased, making it a more attractive target for attackers.
-
-The issues around the use of wildcard certificates are complicated, and there are [various](https://blog.sean-wright.com/wildcard-certs-not-quite-the-star/) other [discussions](https://gist.github.com/joepie91/7e5cad8c0726fd6a5e90360a754fc568) of them online.
-
-When risk assessing the use of wildcard certificates, the following areas should be considered:
-
-- Only use wildcard certificates where there is a genuine need, rather than for convenience.
-    - Consider the use of the [ACME](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) to allow systems to automatically request and update their own certificates instead.
-- Never use a wildcard certificates for systems at different trust levels.
-    - Two VPN gateways could use a shared wildcard certificate.
-    - Multiple instances of a web application could share a certificate.
-    - A VPN gateway and a public web server **should not** share a wildcard certificate.
-    - A public web server and an internal server **should not** share a wildcard certificate.
-- Consider the use of a reverse proxy server which performs TLS termination, so that the wildcard private key is only present on one system.
-- A list of all systems sharing a certificate should be maintained to allow them all to be updated if the certificate expires or is compromised.
-- Limit the scope of a wildcard certificate by issuing it for a subdomain (such as `*.foo.example.org`), or a for a separate domain.
-
-### Use an Appropriate Certification Authority for the Application's User Base
-
-In order to be trusted by users, certificates must be signed by a trusted certificate authority (CA). For Internet facing applications, this should be one of the CAs which are well-known and automatically trusted by operating systems and browsers.
-
-The [LetsEncrypt](https://letsencrypt.org) CA provides free domain validated SSL certificates, which are trusted by all major browsers. As such, consider whether there are any benefits to purchasing a certificate from a CA.
-
-For internal applications, an internal CA can be used. This means that the FQDN of the certificate will not be exposed (either to an external CA, or publicly in certificate transparency lists). However, the certificate will only be trusted by users who have imported and trusted the internal CA certificate that was used to sign them.
-
-### Use CAA Records to Restrict Which CAs can Issue Certificates
-
-Certification Authority Authorization (CAA) DNS records can be used to define which CAs are permitted to issue certificates for a domain. The records contains a list of CAs, and any CA who is not included in that list should refuse to issue a certificate for the domain. This can help to prevent an attacker from obtaining unauthorized certificates for a domain through a less-reputable CA. Where it is applied to all subdomains, it can also be useful from an administrative perspective by limiting which CAs administrators or developers are able to use, and by preventing them from obtaining unauthorized wildcard certificates.
-
-### Consider the Certificate’s Validation Type
-
-Certificates come in different types of validation. Validation is the process the Certificate Authority (CA) uses to make sure you are allowed to have the certificate. This is authorization. The [CA/Browser Forum](https://cabforum.org/working-groups/server/baseline-requirements/documents/) is an organization made of CA and browser vendors, as well as others with an interest in web security. They set the rules which CAs must follow based on the validation type. The base validation is called Domain Validated (DV). All publicly issued certificates must be domain validated. This process involves practical proof of control of the name or endpoint requested in the certificate. This usually involves a challenge and response in DNS, to an official email address, or to the endpoint that will get the certificate.
-
-Organization Validated (OV) certificates include the requestor’s organization information in the certificates subject. E.g. C = GB, ST = Manchester, **O = Sectigo Limited**, CN = sectigo.com. The process to acquire an OV certificate requires official contact with the requesting company via a method that proves to the CA that they are truly talking to the right company.
-
-Extended validation (EV) certificates provide an even higher level of verification as well as all the DV and OV verifications. This can effectively be viewed as the difference between "This site is really run by Example Company Inc." vs "This domain is really example.org". [Latest Extended Validation Guidelines](https://cabforum.org/working-groups/server/extended-validation/guidelines/)
-
-Historically these displayed differently in the browser, often showing the company name or a green icon or background in the address bar. However, as of 2019 no major browser shows EV status like this as they do not believe that EV certificates provide any additional protection. ([Chromium](https://groups.google.com/a/chromium.org/forum/m/#!msg/security-dev/h1bTcoTpfeI/jUTk1z7VAAAJ) Covering Chrome, Edge, Brave, and Opera. [Firefox](https://groups.google.com/forum/m/?fromgroups&hl=en#!topic/firefox-dev/6wAg_PpnlY4) [Safari](https://cabforum.org/2018/06/06/minutes-of-the-f2f-44-meeting-in-london-england-6-7-june-2018/#apple-root-program-update))
-
-As all browsers and TLS stacks are unaware of the difference between DV, OV, and EV certificates, they are effectively the same in terms of security. An attacker only needs to reach the level of practical control of the domain to get a rogue certificate.  The extra work for an attacker to get an OV or EV certificate in no way increases the scope of an incident. In fact, those actions would likely mean detection. The additional pain in getting OV and EV certificates may create an availability risk and their use should be reviewed with this in mind.
-
-## Application
-
-### Use TLS For All Pages
-
-TLS should be used for all pages, not just those that are considered sensitive such as the login page. If there are any pages that do not enforce the use of TLS, these could give an attacker an opportunity to sniff sensitive information such as session tokens, or to inject malicious JavaScript into the responses to carry out other attacks against the user.
-
-For public facing applications, it may be appropriate to have the web server listening for unencrypted HTTP connections on port 80, and then immediately redirecting them with a permanent redirect (HTTP 301) in order to provide a better experience to users who manually type in the domain name. This should then be supported with the [HTTP Strict Transport Security (HSTS)](#use-http-strict-transport-security) header to prevent them accessing the site over HTTP in the future.
-
-API-only endpoints should disable HTTP altogether and only support encrypted connections. When that is not possible, API endpoints should fail requests made over unencrypted HTTP connections instead of redirecting them.
-
-### Do Not Mix TLS and Non-TLS Content
-
-A page that is available over TLS should not include any resources (such as JavaScript or CSS) files which are loaded over unencrypted HTTP. These unencrypted resources could allow an attacker to sniff session cookies or inject malicious code into the page. Modern browsers will also block attempts to load active content over unencrypted HTTP into secure pages.
-
-### Use the "Secure" Cookie Flag
-
-All cookies should be marked with the "[Secure](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Secure_and_HttpOnly_cookies)" attribute, which instructs the browser to only send them over encrypted HTTPS connections, in order to prevent them from being sniffed from an unencrypted HTTP connection. This is important even if the website does not listen on HTTP (port 80), as an attacker performing an active man in the middle attack could present a spoofed web server on port 80 to the user in order to steal their cookie.
-
-### Prevent Caching of Sensitive Data
-
-Although TLS provides protection of data while it is in transit, it does not provide any protection for data once it has reached the requesting system. As such, this information may be stored in the cache of the user's browser, or by any intercepting proxies which are configured to perform TLS decryption.
-
-Where sensitive data is returned in responses, HTTP headers should be used to instruct the browser and any proxy servers not to cache the information, in order to prevent it being stored or returned to other users. This can be achieved by setting the following HTTP headers in the response:
+当敏感数据在响应中返回时，应使用 HTTP 标头指示浏览器和任何代理服务器不要缓存信息，以防止其被存储或返回给其他用户。可以通过在响应中设置以下 HTTP 标头来实现：
 
 ```text
 Cache-Control: no-cache, no-store, must-revalidate
@@ -200,47 +132,51 @@ Pragma: no-cache
 Expires: 0
 ```
 
-### Use HTTP Strict Transport Security
+### 使用 HTTP 严格传输安全
 
-HTTP Strict Transport Security (HSTS) instructs the user's browser to always request the site over HTTPS, and also prevents the user from bypassing certificate warnings. See the [HTTP Strict Transport Security Cheat Sheet](HTTP_Strict_Transport_Security_Cheat_Sheet.md) for further information on implementing HSTS.
+HTTP 严格传输安全（HSTS）指示用户的浏览器始终通过 HTTPS 请求站点，并防止用户绕过证书警告。有关实施 HSTS 的更多信息，请参见 [HTTP 严格传输安全备忘录](HTTP_Strict_Transport_Security_Cheat_Sheet.md)。
 
-### Client Certificates and Mutual TLS
+### 客户端证书和双向 TLS
 
-In a typical TLS configuration, a certificate on the server allows the client to verify the server's identity and provides an encrypted connection between them. However, this approach has two main weaknesses:
+在典型的 TLS 配置中，服务器上的证书允许客户端验证服务器的身份并在它们之间提供加密连接。然而，这种方法存在两个主要弱点：
 
-- The server lacks a mechanism to verify the client's identity.
-- An attacker, obtaining a valid certificate for the domain, can intercept the connection. This interception is often used by businesses to inspect TLS traffic, by installing a trusted CA certificate on their client systems.
+- 服务器缺乏验证客户端身份的机制。
+- 攻击者获取域的有效证书后可以拦截连接。这种拦截通常被企业用于通过在其客户端系统上安装受信任的 CA 证书来检查 TLS 流量。
 
-Client certificates, central to mutual TLS (mTLS), address these issues. In mTLS, both the client and server authenticate each other using TLS. The client proves their identity to the server with their own certificate. This not only enables strong authentication of the client but also prevents an intermediate party from decrypting TLS traffic, even if they have a trusted CA certificate on the client system.
+客户端证书，作为双向 TLS（mTLS）的核心，解决了这些问题。在 mTLS 中，客户端和服务器都使用 TLS 相互认证。客户端通过自己的证书向服务器证明自己的身份。这不仅实现了客户端的强身份验证，还防止中间方解密 TLS 流量，即使他们在客户端系统上有受信任的 CA 证书。
 
-Challenges and Considerations
+挑战和考虑因素
 
-Client certificates are rarely used in public systems due to several challenges:
+由于以下几个挑战，客户端证书很少在公共系统中使用：
 
-- Issuing and managing client certificates involves significant administrative overhead.
-- Non-technical users may find installing client certificates difficult.
-- Organizations' TLS decryption practices can cause client certificate authentication, a key component of mTLS, to fail.
+- 颁发和管理客户端证书涉及大量管理开销。
+- 非技术用户可能会发现安装客户端证书很困难。
+- 组织的 TLS 解密实践可能导致客户端证书认证（mTLS 的关键组件）失败。
 
-Despite these challenges, client certificates and mTLS should be considered for high-value applications or APIs, particularly where users are technically sophisticated or part of the same organization.
+尽管存在这些挑战，但对于高价值的应用程序或 API，特别是用户技术水平较高或属于同一组织的情况下，仍应考虑使用客户端证书和 mTLS。
 
-### Public Key Pinning
+### 公钥固定
 
-Public key pinning can be used to provides assurance that the server's certificate is not only valid and trusted, but also that it matches the certificate expected for the server. This provides protection against an attacker who is able to obtain a valid certificate, either by exploiting a weakness in the validation process, compromising a trusted certificate authority, or having administrative access to the client.
+公钥固定可用于提供保证，即服务器的证书不仅有效且受信任，而且与服务器预期的证书相匹配。这为攻击者提供了保护，即使攻击者能够通过以下方式获取有效证书：
 
-Public key pinning was added to browsers in the HTTP Public Key Pinning (HPKP) standard. However, due to a number of issues, it has subsequently been deprecated and is no longer recommended or [supported by modern browsers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Public-Key-Pins).
+- 利用验证过程中的弱点
+- 破坏受信任的证书颁发机构
+- 获得客户端的管理访问权限
 
-However, public key pinning can still provide security benefits for mobile applications, thick clients and server-to-server communication. This is discussed in further detail in the [Pinning Cheat Sheet](Pinning_Cheat_Sheet.md).
+公钥固定最初是在 HTTP 公钥固定（HPKP）标准中添加到浏览器中。然而，由于存在许多问题，它随后被弃用，不再被推荐或[被现代浏览器支持](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Public-Key-Pins)。
 
-## Related Articles
+尽管如此，公钥固定仍可为移动应用程序、厚客户端和服务器间通信提供安全优势。这在[固定备忘录](Pinning_Cheat_Sheet.md)中有更详细的讨论。
 
-- OWASP - [Testing for Weak TLS](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_Transport_Layer_Security)
-- OWASP - [Application Security Verification Standard (ASVS) - Communication Security Verification Requirements (V9)](https://github.com/OWASP/ASVS/blob/v4.0.1/4.0/en/0x17-V9-Communications.md)
-- Mozilla - [Mozilla Recommended Configurations](https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations)
-- NIST - [SP 800-52 Rev. 2 Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf)
-- NIST - [NIST SP 800-57 Recommendation for Key Management, Revision 5](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf)
-- NIST - [SP 800-95 Guide to Secure Web Services](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-95.pdf)
-- IETF - [RFC 5280 Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile](https://tools.ietf.org/html/rfc5280)
-- IETF - [RFC 2246 The Transport Layer Security (TLS) Protocol Version 1.0 (JAN 1999)](https://tools.ietf.org/html/rfc2246)
-- IETF - [RFC 4346 The Transport Layer Security (TLS) Protocol Version 1.1 (APR 2006)](https://tools.ietf.org/html/rfc4346)
-- IETF - [RFC 5246 The Transport Layer Security (TLS) Protocol Version 1.2 (AUG 2008)](https://tools.ietf.org/html/rfc5246)
-- Bettercrypto - [Applied Crypto Hardening: HOW TO for secure crypto settings of the most common services)](https://bettercrypto.org)
+## 相关文章
+
+- OWASP - [测试弱 TLS](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_Transport_Layer_Security)
+- OWASP - [应用安全验证标准（ASVS）- 通信安全验证要求（V9）](https://github.com/OWASP/ASVS/blob/v4.0.1/4.0/en/0x17-V9-Communications.md)
+- Mozilla - [Mozilla 推荐配置](https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations)
+- NIST - [SP 800-52 第 2 版 传输层安全（TLS）实施的选择、配置和使用指南](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf)
+- NIST - [NIST SP 800-57 密钥管理建议，第 5 版](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf)
+- NIST - [SP 800-95 安全 Web 服务指南](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-95.pdf)
+- IETF - [RFC 5280 互联网 X.509 公钥基础设施证书和证书吊销列表（CRL）配置文件](https://tools.ietf.org/html/rfc5280)
+- IETF - [RFC 2246 传输层安全（TLS）协议版本 1.0（1999年1月）](https://tools.ietf.org/html/rfc2246)
+- IETF - [RFC 4346 传输层安全（TLS）协议版本 1.1（2006年4月）](https://tools.ietf.org/html/rfc4346)
+- IETF - [RFC 5246 传输层安全（TLS）协议版本 1.2（2008年8月）](https://tools.ietf.org/html/rfc5246)
+- Bettercrypto - [应用加密硬化：最常见服务的安全加密设置方法](https://bettercrypto.org)
